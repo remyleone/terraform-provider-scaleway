@@ -88,12 +88,15 @@ func resourceScalewayRdbUserCreate(ctx context.Context, d *schema.ResourceData, 
 				if errWait != nil {
 					return resource.NonRetryableError(errWait)
 				}
+
 				return resource.RetryableError(errCreateUser)
 			}
+
 			return resource.NonRetryableError(errCreateUser)
 		}
 		// set database information
 		user = currentUser
+
 		return nil
 	})
 	if err != nil {
@@ -126,8 +129,10 @@ func resourceScalewayRdbUserRead(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -200,8 +205,10 @@ func resourceScalewayRdbUserDelete(ctx context.Context, d *schema.ResourceData, 
 				if errWait != nil {
 					return resource.NonRetryableError(errWait)
 				}
+
 				return resource.RetryableError(errDeleteUser)
 			}
+
 			return resource.NonRetryableError(errDeleteUser)
 		}
 		// set database information
@@ -228,5 +235,6 @@ func resourceScalewayRdbUserParseID(resourceID string) (region scw.Region, insta
 	if len(idParts) != 3 {
 		return "", "", "", fmt.Errorf("can't parse user resource id: %s", resourceID)
 	}
+
 	return scw.Region(idParts[0]), idParts[1], idParts[2], nil
 }

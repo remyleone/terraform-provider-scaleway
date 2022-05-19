@@ -88,8 +88,10 @@ func resourceScalewayRegistryNamespaceRead(ctx context.Context, d *schema.Resour
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -114,8 +116,10 @@ func resourceScalewayRegistryNamespaceUpdate(ctx context.Context, d *schema.Reso
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -143,8 +147,10 @@ func resourceScalewayRegistryNamespaceDelete(ctx context.Context, d *schema.Reso
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 

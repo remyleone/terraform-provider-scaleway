@@ -323,6 +323,7 @@ func resourceScalewayLbFrontendUpdateACL(ctx context.Context, d *schema.Resource
 			if err != nil {
 				return diag.FromErr(err)
 			}
+
 			continue
 		}
 		//old acl doesn't exist, create a new one

@@ -62,5 +62,6 @@ func dataSourceScalewayLbCertificateRead(ctx context.Context, d *schema.Resource
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayLbCertificateRead(ctx, d, meta)
 }

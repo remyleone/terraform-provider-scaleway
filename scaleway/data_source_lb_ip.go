@@ -69,5 +69,6 @@ func dataSourceScalewayLbIPRead(ctx context.Context, d *schema.ResourceData, met
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayLbIPRead(ctx, d, meta)
 }

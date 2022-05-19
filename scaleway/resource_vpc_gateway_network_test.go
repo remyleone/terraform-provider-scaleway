@@ -40,6 +40,7 @@ func testSweepVPCGatewayNetwork(_ string) error {
 				return fmt.Errorf("error deleting gateway network in sweeper: %s", err)
 			}
 		}
+
 		return nil
 	})
 }

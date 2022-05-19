@@ -90,10 +90,13 @@ func resourceScalewayRdbPrivilegeCreate(ctx context.Context, d *schema.ResourceD
 				if errWait != nil {
 					return resource.NonRetryableError(errWait)
 				}
+
 				return resource.RetryableError(errSetPrivilege)
 			}
+
 			return resource.NonRetryableError(errSetPrivilege)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -135,6 +138,7 @@ func resourceScalewayRdbPrivilegeRead(ctx context.Context, d *schema.ResourceDat
 
 	if listUsers == nil || len(listUsers.Users) == 0 {
 		d.SetId("")
+
 		return nil
 	}
 
@@ -148,8 +152,10 @@ func resourceScalewayRdbPrivilegeRead(ctx context.Context, d *schema.ResourceDat
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -186,13 +192,16 @@ func resourceScalewayRdbPrivilegeUpdate(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
 	if listUsers == nil || len(listUsers.Users) == 0 {
 		d.SetId("")
+
 		return nil
 	}
 
@@ -213,10 +222,13 @@ func resourceScalewayRdbPrivilegeUpdate(ctx context.Context, d *schema.ResourceD
 				if errWait != nil {
 					return resource.NonRetryableError(errWait)
 				}
+
 				return resource.RetryableError(errSet)
 			}
+
 			return resource.NonRetryableError(errSet)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -254,13 +266,16 @@ func resourceScalewayRdbPrivilegeDelete(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
 	if listUsers != nil || len(listUsers.Users) == 0 {
 		d.SetId("")
+
 		return nil
 	}
 
@@ -283,13 +298,16 @@ func resourceScalewayRdbPrivilegeDelete(ctx context.Context, d *schema.ResourceD
 		if err != nil {
 			if is404Error(err) {
 				d.SetId("")
+
 				return nil
 			}
+
 			return resource.NonRetryableError(errUserExist)
 		}
 
 		if listUsers != nil || len(listUsers.Users) == 0 {
 			d.SetId("")
+
 			return nil
 		}
 		_, errSet := rdbAPI.SetPrivilege(updateReq, scw.WithContext(ctx))
@@ -299,10 +317,13 @@ func resourceScalewayRdbPrivilegeDelete(ctx context.Context, d *schema.ResourceD
 				if errWait != nil {
 					return resource.NonRetryableError(errWait)
 				}
+
 				return resource.RetryableError(errSet)
 			}
+
 			return resource.NonRetryableError(errSet)
 		}
+
 		return nil
 	})
 	if err != nil {

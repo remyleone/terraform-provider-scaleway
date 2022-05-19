@@ -354,11 +354,13 @@ func testAccCheckScalewayObjectBucketDestroy(tt *TestTools) resource.TestCheckFu
 					// bucket doesn't exist
 					continue
 				}
+
 				return fmt.Errorf("couldn't get bucket to verify if it stil exists: %s", err)
 			}
 
 			return fmt.Errorf("bucket should be deleted")
 		}
+
 		return nil
 	}
 }
@@ -456,6 +458,7 @@ func TestAccScalewayObjectBucket_Cors_Update(t *testing.T) {
 						if err != nil && !isS3Err(err, "NoSuchCORSConfiguration", "") {
 							return err
 						}
+
 						return nil
 					},
 				),
@@ -524,6 +527,7 @@ func TestAccScalewayObjectBucket_Cors_Delete(t *testing.T) {
 			if err != nil && !isS3Err(err, ErrCodeNoSuchCORSConfiguration, "") {
 				return err
 			}
+
 			return nil
 		}
 	}
@@ -653,8 +657,10 @@ func testAccCheckScalewayObjectBucketExists(tt *TestTools, n string) resource.Te
 			if isS3Err(err, s3.ErrCodeNoSuchBucket, "") {
 				return fmt.Errorf("s3 bucket not found")
 			}
+
 			return err
 		}
+
 		return nil
 	}
 }
@@ -694,6 +700,7 @@ func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
 			if err != nil {
 				return fmt.Errorf("failed to put object in test bucket sub folder: %s", err)
 			}
+
 			return nil
 		}
 	}

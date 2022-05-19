@@ -119,8 +119,10 @@ func resourceScalewayVPCPublicGatewayRead(ctx context.Context, d *schema.Resourc
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 

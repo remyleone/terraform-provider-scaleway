@@ -26,6 +26,7 @@ func testSweepInstancePlacementGroup(_ string) error {
 		}, scw.WithAllPages())
 		if err != nil {
 			l.Warningf("error listing placement groups in (%s) in sweeper: %s", zone, err)
+
 			return nil
 		}
 
@@ -225,6 +226,7 @@ func testAccCheckScalewayInstancePlacementGroupDestroy(tt *TestTools) resource.T
 				return err
 			}
 		}
+
 		return nil
 	}
 }

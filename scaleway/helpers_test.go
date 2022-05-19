@@ -187,6 +187,7 @@ func testCheckResourceAttrFunc(name string, key string, test func(string) error)
 		if err != nil {
 			return fmt.Errorf("test for %s %s did not pass test: %s", name, key, err)
 		}
+
 		return nil
 	}
 }
@@ -203,6 +204,7 @@ func testCheckResourceAttrIPv4(name string, key string) resource.TestCheckFunc {
 		if ip.To4() == nil {
 			return fmt.Errorf("%s is not a valid IPv4", value)
 		}
+
 		return nil
 	})
 }
@@ -213,6 +215,7 @@ func testCheckResourceAttrIPv6(name string, key string) resource.TestCheckFunc {
 		if ip.To16() == nil {
 			return fmt.Errorf("%s is not a valid IPv6", value)
 		}
+
 		return nil
 	})
 }
@@ -223,6 +226,7 @@ func testCheckResourceAttrIP(name string, key string) resource.TestCheckFunc {
 		if ip == nil {
 			return fmt.Errorf("%s is not a valid IP", value)
 		}
+
 		return nil
 	})
 }

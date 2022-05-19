@@ -90,6 +90,7 @@ func testAccCheckScalewayBaremetalOfferExists(tt *TestTools, n string) resource.
 				return nil
 			}
 		}
+
 		return fmt.Errorf("offer %s not found in zone %s", id, zone)
 	}
 }

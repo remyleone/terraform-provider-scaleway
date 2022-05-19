@@ -24,6 +24,7 @@ func testSweepInstanceIP(_ string) error {
 		listIPs, err := instanceAPI.ListIPs(&instance.ListIPsRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			l.Warningf("error listing ips in (%s) in sweeper: %s", zone, err)
+
 			return nil
 		}
 

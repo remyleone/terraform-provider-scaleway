@@ -65,5 +65,6 @@ func dataSourceScalewayInstanceSecurityGroupRead(ctx context.Context, d *schema.
 	zonedID := datasourceNewZonedID(securityGroupID, zone)
 	d.SetId(zonedID)
 	_ = d.Set("security_group_id", zonedID)
+
 	return resourceScalewayInstanceSecurityGroupRead(ctx, d, meta)
 }

@@ -483,6 +483,7 @@ func testAccCheckScalewayInstanceSecurityGroupRuleMatch(tt *TestTools, name stri
 		if ok, _ := securityGroupRuleEquals(expected, actual); !ok {
 			return fmt.Errorf("security group does not match %v, %v", actual, expected)
 		}
+
 		return nil
 	})
 }
@@ -595,6 +596,7 @@ func testSweepComputeInstanceSecurityGroup(_ string) error {
 		}, scw.WithAllPages())
 		if err != nil {
 			l.Warningf("error listing security groups in sweeper: %s", err)
+
 			return nil
 		}
 

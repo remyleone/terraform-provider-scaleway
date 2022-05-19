@@ -71,5 +71,6 @@ func dataSourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.Reso
 	zonedID := datasourceNewZonedID(privateNetworkID, zone)
 	d.SetId(zonedID)
 	_ = d.Set("private_network_id", zonedID)
+
 	return resourceScalewayVPCPrivateNetworkRead(ctx, d, meta)
 }

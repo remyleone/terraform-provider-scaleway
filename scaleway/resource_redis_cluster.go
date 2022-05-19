@@ -191,8 +191,10 @@ func resourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceDat
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 

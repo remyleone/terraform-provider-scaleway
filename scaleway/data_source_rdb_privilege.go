@@ -23,5 +23,6 @@ func dataSourceScalewayRDBPrivilegeRead(ctx context.Context, d *schema.ResourceD
 	instanceID, _ := d.Get("instance_id").(string)
 
 	d.SetId(instanceID)
+
 	return resourceScalewayRdbPrivilegeRead(ctx, d, meta)
 }

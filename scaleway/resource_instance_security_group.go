@@ -361,6 +361,7 @@ func updateSecurityGroupeRules(ctx context.Context, d *schema.ResourceData, zone
 				if err != nil {
 					return err
 				}
+
 				continue
 			}
 

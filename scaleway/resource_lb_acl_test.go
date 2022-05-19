@@ -233,6 +233,7 @@ func testAccCheckScalewayACLAreCorrect(tt *TestTools, frontendName string, expec
 			if testAcl.Name == "" {
 				testAcl.Name = apiAcl.Name
 			}
+
 			return aclEquals(&testAcl, &apiAcl)
 		}
 

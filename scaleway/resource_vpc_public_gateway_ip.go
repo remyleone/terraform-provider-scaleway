@@ -107,8 +107,10 @@ func resourceScalewayVPCPublicGatewayIPRead(ctx context.Context, d *schema.Resou
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -165,6 +167,7 @@ func resourceScalewayVPCPublicGatewayIPDelete(ctx context.Context, d *schema.Res
 				Summary:  err.Error(),
 			})
 		}
+
 		return diag.FromErr(err)
 	}
 

@@ -37,6 +37,7 @@ func baremetalAPIWithZoneAndID(m interface{}, id string) (*baremetal.API, ZonedI
 	if err != nil {
 		return nil, ZonedID{}, err
 	}
+
 	return baremetalAPI, newZonedID(zone, ID), nil
 }
 

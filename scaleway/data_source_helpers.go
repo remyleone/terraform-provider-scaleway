@@ -49,6 +49,7 @@ func datasourceSchemaFromResourceSchema(rs map[string]*schema.Schema) map[string
 		switch v.Type {
 		case schema.TypeSet:
 			dv.Set = v.Set
+
 			fallthrough
 		case schema.TypeList:
 			// List & Set types are generally used for 2 cases:
@@ -70,6 +71,7 @@ func datasourceSchemaFromResourceSchema(rs map[string]*schema.Schema) map[string
 		}
 		ds[k] = dv
 	}
+
 	return ds
 }
 

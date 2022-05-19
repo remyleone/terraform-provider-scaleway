@@ -24,6 +24,7 @@ func sweepZones(zones []scw.Zone, f func(scwClient *scw.Client, zone scw.Zone) e
 			l.Warningf("error running sweepZones, ignoring: %s", err)
 		}
 	}
+
 	return nil
 }
 
@@ -31,9 +32,11 @@ func sweepRegions(regions []scw.Region, f func(scwClient *scw.Client, region scw
 	for _, region := range regions {
 		return sweepZones(region.GetZones(), func(scwClient *scw.Client, zone scw.Zone) error {
 			r, _ := zone.Region()
+
 			return f(scwClient, r)
 		})
 	}
+
 	return nil
 }
 
@@ -48,6 +51,7 @@ func sharedClientForZone(zone scw.Zone) (*scw.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return meta.scwClient, nil
 }
 
@@ -61,5 +65,6 @@ func sharedS3ClientForRegion(region scw.Region) (*s3.S3, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return newS3ClientFromMeta(meta)
 }

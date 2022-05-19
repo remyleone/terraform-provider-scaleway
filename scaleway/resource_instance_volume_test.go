@@ -41,6 +41,7 @@ func testSweepComputeInstanceVolume(_ string) error {
 				}
 			}
 		}
+
 		return nil
 	})
 }
@@ -290,6 +291,7 @@ func testAccCheckScalewayInstanceVolumeDestroy(tt *TestTools) resource.TestCheck
 				return err
 			}
 		}
+
 		return nil
 	}
 }

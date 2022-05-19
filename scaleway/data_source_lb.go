@@ -73,5 +73,6 @@ func dataSourceScalewayLbRead(ctx context.Context, d *schema.ResourceData, meta 
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayLbRead(ctx, d, meta)
 }

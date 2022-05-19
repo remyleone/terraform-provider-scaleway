@@ -28,10 +28,12 @@ func init() {
 		testDockerIMG = *testDockerIMGPtr
 	} else {
 		l.Infof("environment variable TF_TEST_DOCKER_IMG is required")
+
 		return
 	}
 	l.Infof("start container registry with image: %s", testDockerIMG)
 }
+
 func TestAccScalewayContainer_Basic(t *testing.T) {
 	tt := NewTestTools(t)
 	defer tt.Cleanup()

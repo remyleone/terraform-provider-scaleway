@@ -24,6 +24,7 @@ func testSweepBaremetalServer(_ string) error {
 		listServers, err := baremetalAPI.ListServers(&baremetal.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			l.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
+
 			return nil
 		}
 
@@ -173,6 +174,7 @@ func testAccCheckScalewayBaremetalServerDestroy(tt *TestTools) resource.TestChec
 				return err
 			}
 		}
+
 		return nil
 	}
 }

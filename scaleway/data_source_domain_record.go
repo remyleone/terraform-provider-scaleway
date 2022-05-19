@@ -67,5 +67,6 @@ func dataSourceScalewayDomainRecordRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	d.SetId(fmt.Sprintf("%s/%s", d.Get("dns_zone"), recordID.(string)))
+
 	return resourceScalewayDomainRecordRead(ctx, d, meta)
 }

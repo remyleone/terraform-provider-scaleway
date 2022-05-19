@@ -87,8 +87,10 @@ func resourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.Resour
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -144,6 +146,7 @@ func resourceScalewayVPCPrivateNetworkDelete(ctx context.Context, d *schema.Reso
 				Summary:  err.Error(),
 			})
 		}
+
 		return diag.FromErr(err)
 	}
 

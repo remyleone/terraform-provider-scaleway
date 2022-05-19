@@ -24,6 +24,7 @@ func testSweepIotHub(_ string) error {
 		listHubs, err := iotAPI.ListHubs(&iot.ListHubsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			l.Debugf("sweeper: destroying the iot hub in (%s)", region)
+
 			return fmt.Errorf("error listing hubs in (%s) in sweeper: %s", region, err)
 		}
 
@@ -141,6 +142,7 @@ func testAccCheckScalewayIotHubDestroy(tt *TestTools) resource.TestCheckFunc {
 				return err
 			}
 		}
+
 		return nil
 	}
 }

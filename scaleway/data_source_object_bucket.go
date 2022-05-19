@@ -45,5 +45,6 @@ func dataSourceScalewayObjectStorageRead(ctx context.Context, d *schema.Resource
 
 	bucketRegionalID := newRegionalIDString(region, bucket)
 	d.SetId(bucketRegionalID)
+
 	return resourceScalewayObjectBucketRead(ctx, d, meta)
 }

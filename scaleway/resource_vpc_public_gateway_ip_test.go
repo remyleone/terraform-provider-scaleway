@@ -38,6 +38,7 @@ func testSweepVPCPublicGatewayIP(_ string) error {
 				return fmt.Errorf("error deleting public gateway ip in sweeper: %s", err)
 			}
 		}
+
 		return nil
 	})
 }

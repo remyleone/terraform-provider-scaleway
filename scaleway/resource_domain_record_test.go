@@ -40,12 +40,14 @@ func init() {
 	for _, reservedDomain := range reservedDomains {
 		if reservedDomain.MatchString(testDomain) {
 			isReserved = true
+
 			break
 		}
 	}
 
 	if isReserved {
 		l.Warningf("TF_TEST_DOMAIN cannot be a Scaleway required domain. Please use another one.")
+
 		return
 	}
 
@@ -700,6 +702,7 @@ func testAccCheckScalewayDomainRecordDestroy(tt *TestTools) resource.TestCheckFu
 			if listDNSZones.TotalCount > 0 {
 				return fmt.Errorf("zone %s still exist", rs.Primary.Attributes["dns_zone"])
 			}
+
 			return nil
 		}
 

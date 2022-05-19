@@ -35,5 +35,6 @@ func dataSourceScalewayVPCPublicGatewayIPRead(ctx context.Context, d *schema.Res
 	zonedID := datasourceNewZonedID(ipID, zone)
 	d.SetId(zonedID)
 	_ = d.Set("ip_id", zonedID)
+
 	return resourceScalewayVPCPublicGatewayIPRead(ctx, d, meta)
 }

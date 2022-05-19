@@ -35,13 +35,16 @@ func validationUUIDWithLocality() func(interface{}, string) ([]string, []error) 
 		uuid, isString := v.(string)
 		if !isString {
 			errors = []error{fmt.Errorf("invalid UUID for key '%s': not a string", key)}
+
 			return
 		}
 		_, subUUID, err := parseLocalizedID(uuid)
 		if err != nil {
 			errors = []error{fmt.Errorf("invalid UUID with locality for key  '%s': '%s' (%d): format should be 'locality/uuid'", key, uuid, len(uuid))}
+
 			return
 		}
+
 		return validationUUID()(subUUID, key)
 	}
 }

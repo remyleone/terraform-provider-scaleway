@@ -72,6 +72,7 @@ func dataSourceScalewayBaremetalOsRead(ctx context.Context, d *schema.ResourceDa
 		for _, os := range res.Os {
 			if os.Name == d.Get("name") && os.Version == d.Get("version") {
 				osID, osVersion, osName = os.ID, os.Version, os.Name
+
 				break
 			}
 		}

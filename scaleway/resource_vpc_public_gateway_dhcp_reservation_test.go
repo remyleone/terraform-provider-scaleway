@@ -155,6 +155,7 @@ func testAccCheckScalewayVPCPublicGatewayDHCPReservationExists(tt *TestTools, n 
 		}
 
 		l.Debugf("reservation: ID: (%s) exist", entry.ID)
+
 		return nil
 	}
 }

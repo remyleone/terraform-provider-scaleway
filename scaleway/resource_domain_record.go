@@ -526,6 +526,7 @@ func resourceScalewayDomainRecordDelete(ctx context.Context, d *schema.ResourceD
 		for _, r := range res.Records {
 			if r.Type != domain.RecordTypeNS {
 				hasRecords = true
+
 				break
 			}
 			tflog.Debug(ctx, fmt.Sprintf("record [%s], type [%s]", r.Name, r.Type))

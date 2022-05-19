@@ -62,5 +62,6 @@ func dataSourceScalewayBaremetalServerRead(ctx context.Context, d *schema.Resour
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayBaremetalServerRead(ctx, d, meta)
 }

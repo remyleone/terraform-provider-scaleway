@@ -45,6 +45,7 @@ func getRecordFromData(data string, records []*domain.Record) (*domain.Record, e
 		flattenCurrentData := flattenDomainData(strings.ToLower(data), r.Type).(string)
 		if flattenCurrentData == flattedData {
 			currentRecord = r
+
 			break
 		}
 	}

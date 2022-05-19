@@ -67,5 +67,6 @@ func dataSourceScalewayInstanceVolumeRead(ctx context.Context, d *schema.Resourc
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayInstanceVolumeRead(ctx, d, meta)
 }

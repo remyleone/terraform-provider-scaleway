@@ -53,6 +53,7 @@ linters:
     - unconvert # Remove unnecessary type conversions [fast: false, auto-fix: false]
     - varcheck # Finds unused global variables and constants [fast: false, auto-fix: false]
     - whitespace # Tool for detection of leading and trailing whitespace [fast: true, auto-fix: true]
+    - nlreturn # nlreturn checks for a new line before return and branch statements to increase code clarity [fast: true, auto-fix: false]
 
   disable:
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: true, auto-fix: false]
@@ -82,7 +83,6 @@ linters:
     - maligned #[deprecated]: Tool to detect Go structs that would take less memory if their fields were sorted [fast: false, auto-fix: false]
     - nestif # Reports deeply nested if statements [fast: true, auto-fix: false]
     - nilnil # Checks that there is no simultaneous return of `nil` error and an invalid value. [fast: false, auto-fix: false]
-    - nlreturn # nlreturn checks for a new line before return and branch statements to increase code clarity [fast: true, auto-fix: false]
     - nonamedreturns # Reports all named returns [fast: true, auto-fix: false]
     - paralleltest # paralleltest detects missing usage of t.Parallel() method in your Go test [fast: true, auto-fix: false]
     - prealloc # Finds slice declarations that could potentially be preallocated [fast: true, auto-fix: false]
@@ -103,6 +103,8 @@ linters-settings:
     min-len: 5
 
 issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
   exclude-rules:
     - path: _test\.go
       linters:

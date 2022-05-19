@@ -71,5 +71,6 @@ func dataSourceScalewayIotHubRead(ctx context.Context, d *schema.ResourceData, m
 	if d.Id() == "" {
 		return diag.Errorf("IOT Hub not found (%s)", regionalID)
 	}
+
 	return nil
 }

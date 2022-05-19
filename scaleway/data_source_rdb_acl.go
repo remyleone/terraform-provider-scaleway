@@ -38,5 +38,6 @@ func dataSourceScalewayRDBACLRead(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	return resourceScalewayRdbACLRead(ctx, d, meta)
 }

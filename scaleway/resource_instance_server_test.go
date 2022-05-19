@@ -25,6 +25,7 @@ func testSweepInstanceServer(_ string) error {
 		listServers, err := instanceAPI.ListServers(&instance.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			l.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
+
 			return nil
 		}
 

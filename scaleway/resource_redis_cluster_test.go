@@ -323,6 +323,7 @@ func testAccCheckScalewayRedisClusterDestroy(tt *TestTools) resource.TestCheckFu
 				return err
 			}
 		}
+
 		return nil
 	}
 }
@@ -347,6 +348,7 @@ func testAccCheckScalewayRedisExists(tt *TestTools, n string) resource.TestCheck
 		if err != nil {
 			return err
 		}
+
 		return nil
 	}
 }

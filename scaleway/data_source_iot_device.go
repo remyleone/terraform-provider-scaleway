@@ -78,5 +78,6 @@ func dataSourceScalewayIotDeviceRead(ctx context.Context, d *schema.ResourceData
 	if d.Id() == "" {
 		return diag.Errorf("IOT Device not found (%s)", regionalID)
 	}
+
 	return nil
 }

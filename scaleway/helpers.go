@@ -93,6 +93,7 @@ func parseLocalizedID(localizedID string) (locality string, ID string, err error
 	if len(tab) != 2 {
 		return "", localizedID, fmt.Errorf("cant parse localized id: %s", localizedID)
 	}
+
 	return tab[0], tab[1], nil
 }
 
@@ -102,6 +103,7 @@ func parseLocalizedNestedID(localizedID string) (locality string, innerID, outer
 	if len(tab) != 3 {
 		return "", "", localizedID, fmt.Errorf("cant parse localized id: %s", localizedID)
 	}
+
 	return tab[0], tab[1], tab[2], nil
 }
 
@@ -113,6 +115,7 @@ func parseZonedID(zonedID string) (zone scw.Zone, id string, err error) {
 	}
 
 	zone, err = scw.ParseZone(locality)
+
 	return
 }
 
@@ -124,6 +127,7 @@ func parseZonedNestedID(zonedNestedID string) (zone scw.Zone, outerID, innerID s
 	}
 
 	zone, err = scw.ParseZone(locality)
+
 	return
 }
 
@@ -133,6 +137,7 @@ func expandID(id interface{}) string {
 	if err != nil {
 		return id.(string)
 	}
+
 	return ID
 }
 
@@ -144,6 +149,7 @@ func parseRegionalID(regionalID string) (region scw.Region, id string, err error
 	}
 
 	region, err = scw.ParseRegion(locality)
+
 	return
 }
 
@@ -222,23 +228,27 @@ func isHTTPCodeError(err error, statusCode int) bool {
 	if xerrors.As(err, &responseError) && responseError.StatusCode == statusCode {
 		return true
 	}
+
 	return false
 }
 
 // is404Error returns true if err is an HTTP 404 error
 func is404Error(err error) bool {
 	notFoundError := &scw.ResourceNotFoundError{}
+
 	return isHTTPCodeError(err, http.StatusNotFound) || xerrors.As(err, &notFoundError)
 }
 
 func is412Error(err error) bool {
 	preConditionFailedError := &scw.PreconditionFailedError{}
+
 	return isHTTPCodeError(err, http.StatusPreconditionFailed) || xerrors.As(err, &preConditionFailedError)
 }
 
 // is403Error returns true if err is an HTTP 403 error
 func is403Error(err error) bool {
 	permissionsDeniedError := &scw.PermissionsDeniedError{}
+
 	return isHTTPCodeError(err, http.StatusForbidden) || xerrors.As(err, &permissionsDeniedError)
 }
 
@@ -246,6 +256,7 @@ func is403Error(err error) bool {
 func is409Error(err error) bool {
 	//check transient error
 	transientStateError := &scw.TransientStateError{}
+
 	return isHTTPCodeError(err, http.StatusConflict) || xerrors.As(err, &transientStateError)
 }
 
@@ -297,6 +308,7 @@ func regionSchema() *schema.Schema {
 	for _, z := range scw.AllRegions {
 		allRegions = append(allRegions, z.String())
 	}
+
 	return &schema.Schema{
 		Type:             schema.TypeString,
 		Description:      "The region you want to attach the resource to",
@@ -328,6 +340,7 @@ func validateStringInSliceWithWarning(correctValues []string, field string) func
 				AttributePath: path,
 			})
 		}
+
 		return res
 	}
 }
@@ -343,6 +356,7 @@ func flattenTime(date *time.Time) interface{} {
 	if date != nil {
 		return date.Format(time.RFC3339)
 	}
+
 	return ""
 }
 
@@ -350,6 +364,7 @@ func flattenDuration(duration *time.Duration) interface{} {
 	if duration != nil {
 		return duration.String()
 	}
+
 	return ""
 }
 
@@ -368,6 +383,7 @@ func expandOrGenerateString(data interface{}, prefix string) string {
 	if data == nil || data == "" {
 		return newRandomName(prefix)
 	}
+
 	return data.(string)
 }
 
@@ -375,6 +391,7 @@ func expandStringWithDefault(data interface{}, defaultValue string) string {
 	if data == nil || data.(string) == "" {
 		return defaultValue
 	}
+
 	return data.(string)
 }
 
@@ -383,6 +400,7 @@ func expandStrings(data interface{}) []string {
 	for _, s := range data.([]interface{}) {
 		stringSlice = append(stringSlice, s.(string))
 	}
+
 	return stringSlice
 }
 
@@ -394,6 +412,7 @@ func expandStringsPtr(data interface{}) *[]string {
 	for _, s := range data.([]interface{}) {
 		stringSlice = append(stringSlice, s.(string))
 	}
+
 	return &stringSlice
 }
 
@@ -405,6 +424,7 @@ func expandSliceIDsPtr(rawIDs interface{}) *[]string {
 	for _, s := range rawIDs.([]interface{}) {
 		stringSlice = append(stringSlice, expandID(s.(string)))
 	}
+
 	return &stringSlice
 }
 
@@ -416,6 +436,7 @@ func expandStringsOrEmpty(data interface{}) []string {
 	for _, s := range data.([]interface{}) {
 		stringSlice = append(stringSlice, s.(string))
 	}
+
 	return stringSlice
 }
 
@@ -427,6 +448,7 @@ func expandSliceStringPtr(data interface{}) []*string {
 	for _, s := range data.([]interface{}) {
 		stringSlice = append(stringSlice, expandStringPtr(s))
 	}
+
 	return stringSlice
 }
 
@@ -434,6 +456,7 @@ func flattenIPPtr(ip *net.IP) interface{} {
 	if ip == nil {
 		return ""
 	}
+
 	return ip.String()
 }
 
@@ -441,6 +464,7 @@ func flattenStringPtr(s *string) interface{} {
 	if s == nil {
 		return ""
 	}
+
 	return *s
 }
 
@@ -449,6 +473,7 @@ func flattenSliceStringPtr(s []*string) interface{} {
 	for _, strPtr := range s {
 		res = append(res, flattenStringPtr(strPtr))
 	}
+
 	return res
 }
 
@@ -457,6 +482,7 @@ func flattenSliceString(s []string) interface{} {
 	for _, strPtr := range s {
 		res = append(res, strPtr)
 	}
+
 	return res
 }
 
@@ -473,6 +499,7 @@ func expandStringPtr(data interface{}) *string {
 	if data == nil || data == "" {
 		return nil
 	}
+
 	return scw.StringPtr(data.(string))
 }
 
@@ -480,6 +507,7 @@ func expandBoolPtr(data interface{}) *bool {
 	if data == nil {
 		return nil
 	}
+
 	return scw.BoolPtr(data.(bool))
 }
 
@@ -487,6 +515,7 @@ func flattenInt32Ptr(i *int32) interface{} {
 	if i == nil {
 		return 0
 	}
+
 	return *i
 }
 
@@ -494,6 +523,7 @@ func expandInt32Ptr(data interface{}) *int32 {
 	if data == nil || data == "" {
 		return nil
 	}
+
 	return scw.Int32Ptr(int32(data.(int)))
 }
 
@@ -515,6 +545,7 @@ func flattenIPNet(ipNet scw.IPNet) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(raw[1 : len(raw)-1]), nil // remove quotes
 }
 
@@ -524,10 +555,12 @@ func validateDuration() schema.SchemaValidateFunc {
 		if !isStr {
 			return nil, []error{fmt.Errorf("%v is not a string", i)}
 		}
+
 		_, err := time.ParseDuration(str)
 		if err != nil {
 			return nil, []error{fmt.Errorf("cannot parse duration for value %s", str)}
 		}
+
 		return nil, nil
 	}
 }
@@ -540,6 +573,7 @@ func flattenMap(m map[string]string) interface{} {
 	for k, v := range m {
 		flattenedMap[k] = v
 	}
+
 	return flattenedMap
 }
 
@@ -552,6 +586,7 @@ func diffSuppressFuncDuration(k, old, new string, d *schema.ResourceData) bool {
 	if err1 != nil || err2 != nil {
 		return false
 	}
+
 	return d1 == d2
 }
 
@@ -576,6 +611,7 @@ func diffSuppressFuncLocality(k, old, new string, d *schema.ResourceData) bool {
 func TimedOut(err error) bool {
 	// This explicitly does *not* match wrapped TimeoutErrors
 	timeoutErr, ok := err.(*resource.TimeoutError) //nolint:errorlint // Explicitly does *not* match wrapped TimeoutErrors
+
 	return ok && timeoutErr.LastError == nil
 }
 
@@ -587,6 +623,7 @@ func expandMapStringStringPtr(data interface{}) *map[string]string {
 	for k, v := range data.(map[string]interface{}) {
 		m[k] = v.(string)
 	}
+
 	return &m
 }
 
@@ -610,5 +647,6 @@ func ErrCodeEquals(err error, codes ...string) bool {
 			}
 		}
 	}
+
 	return false
 }

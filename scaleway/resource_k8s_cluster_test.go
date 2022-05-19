@@ -25,8 +25,10 @@ func testAccScalewayK8SClusterGetLatestK8SVersion(tt *TestTools) string {
 	}
 	if len(versions.Versions) > 1 {
 		latestK8SVersion := versions.Versions[0].Name
+
 		return latestK8SVersion
 	}
+
 	return ""
 }
 func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *TestTools) string {
@@ -38,8 +40,10 @@ func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *TestTools) string {
 	if len(versions.Versions) > 1 {
 		latestK8SVersion := versions.Versions[0].Name
 		latestK8SVersionMinor, _ := k8sGetMinorVersionFromFull(latestK8SVersion)
+
 		return latestK8SVersionMinor
 	}
+
 	return ""
 }
 
@@ -51,8 +55,10 @@ func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *TestTools) string {
 	}
 	if len(versions.Versions) > 1 {
 		previousK8SVersion := versions.Versions[1].Name
+
 		return previousK8SVersion
 	}
+
 	return ""
 }
 
@@ -65,8 +71,10 @@ func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *TestTools) string {
 	if len(versions.Versions) > 1 {
 		previousK8SVersion := versions.Versions[1].Name
 		previousK8SVersionMinor, _ := k8sGetMinorVersionFromFull(previousK8SVersion)
+
 		return previousK8SVersionMinor
 	}
+
 	return ""
 }
 
@@ -410,6 +418,7 @@ func testAccCheckScalewayK8SClusterDestroy(tt *TestTools) resource.TestCheckFunc
 				return err
 			}
 		}
+
 		return nil
 	}
 }

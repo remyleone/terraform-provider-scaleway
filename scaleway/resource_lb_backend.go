@@ -506,8 +506,10 @@ func resourceScalewayLbBackendDelete(ctx context.Context, d *schema.ResourceData
 	if err != nil {
 		if is403Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 
@@ -524,8 +526,10 @@ func resourceScalewayLbBackendDelete(ctx context.Context, d *schema.ResourceData
 	if err != nil {
 		if is403Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 

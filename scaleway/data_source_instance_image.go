@@ -130,6 +130,7 @@ func dataSourceScalewayInstanceImageRead(ctx context.Context, d *schema.Resource
 		for _, image := range matchingImages {
 			if image.Name == d.Get("name").(string) {
 				imageID = image.ID
+
 				break
 			}
 		}

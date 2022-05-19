@@ -66,5 +66,6 @@ func dataSourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceDat
 	regionalizedID := datasourceNewRegionalizedID(clusterID, region)
 	d.SetId(regionalizedID)
 	_ = d.Set("cluster_id", regionalizedID)
+
 	return resourceScalewayK8SClusterRead(ctx, d, meta)
 }

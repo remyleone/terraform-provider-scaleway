@@ -125,8 +125,10 @@ func resourceScalewayVPCPublicGatewayDHCPReservationRead(ctx context.Context, d 
 	if err != nil {
 		if is404Error(err) {
 			d.SetId("")
+
 			return nil
 		}
+
 		return diag.FromErr(err)
 	}
 

@@ -1,6 +1,7 @@
 package scaleway
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -213,7 +214,8 @@ func TestAccObjectBucketWebsiteConfiguration_update(t *testing.T) {
 
 func testAccCheckBucketWebsiteConfigurationDestroy(tt *TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		conn, err := newS3ClientFromMeta(tt.Meta)
+		ctx := context.Background()
+		conn, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}
@@ -250,12 +252,13 @@ func testAccCheckBucketWebsiteConfigurationDestroy(tt *TestTools) resource.TestC
 
 func testAccCheckBucketWebsiteConfigurationExists(tt *TestTools, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		ctx := context.Background()
 		rs := s.RootModule().Resources[resourceName]
 		if rs == nil {
 			return fmt.Errorf("resource not found")
 		}
 
-		conn, err := newS3ClientFromMeta(tt.Meta)
+		conn, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}

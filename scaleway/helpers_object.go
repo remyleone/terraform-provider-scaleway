@@ -29,7 +29,7 @@ const (
 	retryOnAWSAPI              = 2 * time.Minute
 )
 
-func newS3Client(httpClient *http.Client, region, accessKey, secretKey string) (*s3.S3, error) {
+func newS3Client(ctx context.Context, httpClient *http.Client, region, accessKey, secretKey string) (*s3.S3, error) {
 	config := &aws.Config{}
 	config.WithRegion(region)
 	config.WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
@@ -43,17 +43,17 @@ func newS3Client(httpClient *http.Client, region, accessKey, secretKey string) (
 	if err != nil {
 		return nil, err
 	}
-	return s3.New(s), nil
+	return s3.New(s), nil //nolint:contextcheck
 }
 
-func newS3ClientFromMeta(meta *Meta) (*s3.S3, error) {
+func newS3ClientFromMeta(ctx context.Context, meta *Meta) (*s3.S3, error) {
 	region, _ := meta.scwClient.GetDefaultRegion()
 	accessKey, _ := meta.scwClient.GetAccessKey()
 	secretKey, _ := meta.scwClient.GetSecretKey()
-	return newS3Client(meta.httpClient, region.String(), accessKey, secretKey)
+	return newS3Client(ctx, meta.httpClient, region.String(), accessKey, secretKey)
 }
 
-func s3ClientWithRegion(d *schema.ResourceData, m interface{}) (*s3.S3, scw.Region, error) {
+func s3ClientWithRegion(ctx context.Context, d *schema.ResourceData, m interface{}) (*s3.S3, scw.Region, error) {
 	meta := m.(*Meta)
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -63,7 +63,7 @@ func s3ClientWithRegion(d *schema.ResourceData, m interface{}) (*s3.S3, scw.Regi
 	accessKey, _ := meta.scwClient.GetAccessKey()
 	secretKey, _ := meta.scwClient.GetSecretKey()
 
-	s3Client, err := newS3Client(meta.httpClient, region.String(), accessKey, secretKey)
+	s3Client, err := newS3Client(ctx, meta.httpClient, region.String(), accessKey, secretKey)
 	if err != nil {
 		return nil, "", err
 	}
@@ -71,7 +71,7 @@ func s3ClientWithRegion(d *schema.ResourceData, m interface{}) (*s3.S3, scw.Regi
 	return s3Client, region, err
 }
 
-func s3ClientWithRegionAndName(m interface{}, name string) (*s3.S3, scw.Region, string, error) {
+func s3ClientWithRegionAndName(ctx context.Context, m interface{}, name string) (*s3.S3, scw.Region, string, error) {
 	meta := m.(*Meta)
 	region, name, err := parseRegionalID(name)
 	if err != nil {
@@ -79,14 +79,14 @@ func s3ClientWithRegionAndName(m interface{}, name string) (*s3.S3, scw.Region, 
 	}
 	accessKey, _ := meta.scwClient.GetAccessKey()
 	secretKey, _ := meta.scwClient.GetSecretKey()
-	s3Client, err := newS3Client(meta.httpClient, region.String(), accessKey, secretKey)
+	s3Client, err := newS3Client(ctx, meta.httpClient, region.String(), accessKey, secretKey)
 	if err != nil {
 		return nil, "", "", err
 	}
 	return s3Client, region, name, err
 }
 
-func s3ClientWithRegionAndNestedName(m interface{}, name string) (*s3.S3, scw.Region, string, string, error) {
+func s3ClientWithRegionAndNestedName(ctx context.Context, m interface{}, name string) (*s3.S3, scw.Region, string, string, error) {
 	meta := m.(*Meta)
 	region, outerID, innerID, err := parseRegionalNestedID(name)
 	if err != nil {
@@ -94,14 +94,14 @@ func s3ClientWithRegionAndNestedName(m interface{}, name string) (*s3.S3, scw.Re
 	}
 	accessKey, _ := meta.scwClient.GetAccessKey()
 	secretKey, _ := meta.scwClient.GetSecretKey()
-	s3Client, err := newS3Client(meta.httpClient, region.String(), accessKey, secretKey)
+	s3Client, err := newS3Client(ctx, meta.httpClient, region.String(), accessKey, secretKey)
 	if err != nil {
 		return nil, "", "", "", err
 	}
 	return s3Client, region, outerID, innerID, err
 }
 
-func s3ClientWithRegionWithNameACL(m interface{}, name string) (*s3.S3, scw.Region, string, string, error) {
+func s3ClientWithRegionWithNameACL(ctx context.Context, m interface{}, name string) (*s3.S3, scw.Region, string, string, error) {
 	meta := m.(*Meta)
 	region, name, outerID, err := parseLocalizedNestedOwnerID(name)
 	if err != nil {
@@ -110,7 +110,7 @@ func s3ClientWithRegionWithNameACL(m interface{}, name string) (*s3.S3, scw.Regi
 
 	accessKey, _ := meta.scwClient.GetAccessKey()
 	secretKey, _ := meta.scwClient.GetSecretKey()
-	s3Client, err := newS3Client(meta.httpClient, region, accessKey, secretKey)
+	s3Client, err := newS3Client(ctx, meta.httpClient, region, accessKey, secretKey)
 	if err != nil {
 		return nil, "", "", "", err
 	}

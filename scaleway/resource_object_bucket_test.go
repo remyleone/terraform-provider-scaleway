@@ -334,7 +334,8 @@ func TestAccScalewayObjectBucket_Basic(t *testing.T) {
 
 func testAccCheckScalewayObjectBucketDestroy(tt *TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		ctx := context.Background()
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}
@@ -509,7 +510,7 @@ func TestAccScalewayObjectBucket_Cors_Delete(t *testing.T) {
 				return fmt.Errorf("not found: %s", n)
 			}
 
-			conn, err := newS3ClientFromMeta(tt.Meta)
+			conn, err := newS3ClientFromMeta(ctx, tt.Meta)
 			if err != nil {
 				return err
 			}
@@ -587,7 +588,7 @@ func testAccCheckScalewayObjectBucketCors(tt *TestTools, n string, corsRules []*
 
 		rs := s.RootModule().Resources[n]
 		bucketName := rs.Primary.Attributes["name"]
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}
@@ -622,13 +623,14 @@ func testAccCheckScalewayObjectBucketCors(tt *TestTools, n string, corsRules []*
 
 func testAccCheckScalewayObjectBucketExists(tt *TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
+		ctx := context.Background()
 		rs := state.RootModule().Resources[n]
 		if rs == nil {
 			return fmt.Errorf("resource not found")
 		}
 		bucketName := rs.Primary.Attributes["name"]
 
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}
@@ -668,12 +670,13 @@ func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
 
 	addObjectToBucket := func(tt *TestTools, n string) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
+			ctx := context.Background()
 			rs, ok := s.RootModule().Resources[n]
 			if !ok {
 				return fmt.Errorf("not found: %s", n)
 			}
 
-			conn, err := newS3ClientFromMeta(tt.Meta)
+			conn, err := newS3ClientFromMeta(ctx, tt.Meta)
 			if err != nil {
 				return err
 			}
@@ -720,6 +723,7 @@ func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
 
 func testAccCheckBucketLifecycleConfigurationExists(tt *TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		ctx := context.Background()
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
 			return fmt.Errorf("not found: %s", n)
@@ -729,7 +733,7 @@ func testAccCheckBucketLifecycleConfigurationExists(tt *TestTools, n string) res
 			return fmt.Errorf("no ID is set")
 		}
 
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}

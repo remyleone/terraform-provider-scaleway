@@ -1,6 +1,7 @@
 package scaleway
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -447,6 +448,7 @@ func TestAccScalewayObject_Import(t *testing.T) {
 
 func testAccCheckScalewayObjectExists(tt *TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
+		ctx := context.Background()
 		rs := state.RootModule().Resources[n]
 		if rs == nil {
 			return fmt.Errorf("resource not found")
@@ -454,7 +456,7 @@ func testAccCheckScalewayObjectExists(tt *TestTools, n string) resource.TestChec
 		bucketName := rs.Primary.Attributes["bucket"]
 		key := rs.Primary.Attributes["key"]
 
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}
@@ -485,7 +487,8 @@ func testAccCheckScalewayObjectExists(tt *TestTools, n string) resource.TestChec
 
 func testAccCheckScalewayObjectDestroy(tt *TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		ctx := context.Background()
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}

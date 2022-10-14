@@ -1,6 +1,7 @@
 package scaleway
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -99,6 +100,7 @@ func TestAccSCWBucketPolicy_basic(t *testing.T) {
 
 func testAccCheckBucketHasPolicy(tt *TestTools, n string, expectedPolicyText string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		ctx := context.Background()
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
 			return fmt.Errorf("not found: %s", n)
@@ -108,7 +110,7 @@ func testAccCheckBucketHasPolicy(tt *TestTools, n string, expectedPolicyText str
 			return fmt.Errorf("no scw bucket id is set")
 		}
 
-		s3Client, err := newS3ClientFromMeta(tt.Meta)
+		s3Client, err := newS3ClientFromMeta(ctx, tt.Meta)
 		if err != nil {
 			return err
 		}

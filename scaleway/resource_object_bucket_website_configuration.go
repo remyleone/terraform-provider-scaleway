@@ -80,7 +80,7 @@ func ResourceBucketWebsiteConfiguration() *schema.Resource {
 }
 
 func resourceBucketWebsiteConfigurationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, region, err := s3ClientWithRegion(d, meta)
+	conn, region, err := s3ClientWithRegion(ctx, d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,7 +128,7 @@ func resourceBucketWebsiteConfigurationCreate(ctx context.Context, d *schema.Res
 }
 
 func resourceBucketWebsiteConfigurationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, region, bucket, err := s3ClientWithRegionAndName(meta, d.Id())
+	conn, region, bucket, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -192,7 +192,7 @@ func resourceBucketWebsiteConfigurationRead(ctx context.Context, d *schema.Resou
 }
 
 func resourceBucketWebsiteConfigurationUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, _, bucket, err := s3ClientWithRegionAndName(meta, d.Id())
+	conn, _, bucket, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -222,7 +222,7 @@ func resourceBucketWebsiteConfigurationUpdate(ctx context.Context, d *schema.Res
 }
 
 func resourceBucketWebsiteConfigurationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, _, bucket, err := s3ClientWithRegionAndName(meta, d.Id())
+	conn, _, bucket, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

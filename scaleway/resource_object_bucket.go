@@ -203,7 +203,7 @@ func resourceScalewayObjectBucketCreate(ctx context.Context, d *schema.ResourceD
 	bucketName := d.Get("name").(string)
 	acl := d.Get("acl").(string)
 
-	s3Client, region, err := s3ClientWithRegion(d, meta)
+	s3Client, region, err := s3ClientWithRegion(ctx, d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -240,7 +240,7 @@ func resourceScalewayObjectBucketCreate(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceScalewayObjectBucketUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	s3Client, _, bucketName, err := s3ClientWithRegionAndName(meta, d.Id())
+	s3Client, _, bucketName, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -420,7 +420,7 @@ func resourceBucketLifecycleUpdate(ctx context.Context, conn *s3.S3, d *schema.R
 
 //gocyclo:ignore
 func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	s3Client, region, bucketName, err := s3ClientWithRegionAndName(meta, d.Id())
+	s3Client, region, bucketName, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -588,7 +588,7 @@ func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceScalewayObjectBucketDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	s3Client, _, bucketName, err := s3ClientWithRegionAndName(meta, d.Id())
+	s3Client, _, bucketName, err := s3ClientWithRegionAndName(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

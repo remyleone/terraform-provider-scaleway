@@ -135,7 +135,7 @@ func resourceScalewayObjectBucketACL() *schema.Resource {
 }
 
 func resourceBucketACLCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, region, err := s3ClientWithRegion(d, meta)
+	conn, region, err := s3ClientWithRegion(ctx, d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -351,7 +351,7 @@ func flattenBucketACLAccessControlPolicyOwner(owner *s3.Owner) []interface{} {
 
 func resourceBucketACLRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	expectedBucketOwner := d.Get("expected_bucket_owner")
-	conn, region, bucket, acl, err := s3ClientWithRegionWithNameACL(meta, d.Id())
+	conn, region, bucket, acl, err := s3ClientWithRegionWithNameACL(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -401,7 +401,7 @@ func BucketACLCreateResourceID(region scw.Region, bucket, acl string) string {
 }
 
 func resourceBucketACLUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	conn, region, bucket, acl, err := s3ClientWithRegionWithNameACL(meta, d.Id())
+	conn, region, bucket, acl, err := s3ClientWithRegionWithNameACL(ctx, meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

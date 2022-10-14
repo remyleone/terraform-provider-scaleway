@@ -25,7 +25,7 @@ func dataSourceScalewayObjectBucket() *schema.Resource {
 }
 
 func dataSourceScalewayObjectStorageRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	s3Client, region, err := s3ClientWithRegion(d, meta)
+	s3Client, region, err := s3ClientWithRegion(ctx, d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

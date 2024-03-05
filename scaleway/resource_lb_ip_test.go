@@ -3,6 +3,7 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -19,10 +20,10 @@ func init() {
 }
 
 func testSweepLBIP(_ string) error {
-	return sweepZones([]scw.Zone{scw.ZoneFrPar1, scw.ZoneNlAms1, scw.ZonePlWaw1}, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones([]scw.Zone{scw.ZoneFrPar1, scw.ZoneNlAms1, scw.ZonePlWaw1}, func(scwClient *scw.Client, zone scw.Zone) error {
 		lbAPI := lbSDK.NewZonedAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the lb ips in zone (%s)", zone)
+		L.Debugf("sweeper: destroying the lb ips in zone (%s)", zone)
 		listIPs, err := lbAPI.ListIPs(&lbSDK.ZonedAPIListIPsRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing lb ips in (%s) in sweeper: %s", zone, err)
@@ -45,10 +46,10 @@ func testSweepLBIP(_ string) error {
 }
 
 func TestAccScalewayLbIP_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbIPDestroy(tt),
 		Steps: []resource.TestStep{
@@ -110,7 +111,7 @@ func TestAccScalewayLbIP_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayLbIPExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbIPExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -134,7 +135,7 @@ func testAccCheckScalewayLbIPExists(tt *TestTools, n string) resource.TestCheckF
 	}
 }
 
-func testAccCheckScalewayLbIPDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbIPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_ip" {
@@ -150,8 +151,8 @@ func testAccCheckScalewayLbIPDestroy(tt *TestTools) resource.TestCheckFunc {
 			if lbExist && len(lbID) > 0 {
 				retryInterval := defaultWaitLBRetryInterval
 
-				if DefaultWaitRetryInterval != nil {
-					retryInterval = *DefaultWaitRetryInterval
+				if transport.DefaultWaitRetryInterval != nil {
+					retryInterval = *transport.DefaultWaitRetryInterval
 				}
 
 				_, err := lbAPI.WaitForLbInstances(&lbSDK.ZonedAPIWaitForLBInstancesRequest{
@@ -162,7 +163,7 @@ func testAccCheckScalewayLbIPDestroy(tt *TestTools) resource.TestCheckFunc {
 				}, scw.WithContext(context.Background()))
 
 				// Unexpected api error we return it
-				if !is404Error(err) {
+				if !http_errors.Is404Error(err) {
 					return err
 				}
 			}
@@ -172,7 +173,7 @@ func testAccCheckScalewayLbIPDestroy(tt *TestTools) resource.TestCheckFunc {
 					Zone: zone,
 					IPID: ID,
 				})
-				if is403Error(errGet) {
+				if http_errors.Is403Error(errGet) {
 					return resource.RetryableError(errGet)
 				}
 
@@ -185,7 +186,7 @@ func testAccCheckScalewayLbIPDestroy(tt *TestTools) resource.TestCheckFunc {
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

@@ -2,8 +2,14 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"math"
 	"sort"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -37,14 +43,14 @@ func resourceScalewayLbFrontend() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The load-balancer ID",
 			},
 			"backend_id": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The load-balancer backend ID",
 			},
 			"name": {
@@ -77,7 +83,7 @@ func resourceScalewayLbFrontend() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validationUUIDorUUIDWithLocality(),
+					ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				},
 				Description: "Collection of Certificate IDs related to the load balancer and domain",
 			},
@@ -233,18 +239,18 @@ func resourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	lbID := expandID(d.Get("lb_id"))
+	lbID := locality.ExpandID(d.Get("lb_id"))
 	if lbID == "" {
 		return diag.Errorf("load balancer id wrong format: %v", d.Get("lb_id").(string))
 	}
 
 	// parse lb_id. It will be forced to a zoned lb
-	zone, _, err := parseZonedID(d.Get("lb_id").(string))
+	zone, _, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	backZone, _, err := parseZonedID(d.Get("backend_id").(string))
+	backZone, _, err := zonal.ParseZonedID(d.Get("backend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -255,7 +261,7 @@ func resourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceDat
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -270,9 +276,9 @@ func resourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceDat
 	createFrontendRequest := &lbSDK.ZonedAPICreateFrontendRequest{
 		Zone:          zone,
 		LBID:          lbID,
-		Name:          expandOrGenerateString(d.Get("name"), "lb-frt"),
+		Name:          types.ExpandOrGenerateString(d.Get("name"), "lb-frt"),
 		InboundPort:   int32(d.Get("inbound_port").(int)),
-		BackendID:     expandID(d.Get("backend_id")),
+		BackendID:     locality.ExpandID(d.Get("backend_id")),
 		TimeoutClient: timeoutClient,
 		EnableHTTP3:   d.Get("enable_http3").(bool),
 	}
@@ -287,7 +293,7 @@ func resourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, frontend.ID))
+	d.SetId(zonal.NewZonedIDString(zone, frontend.ID))
 
 	if d.Get("external_acls").(bool) {
 		return resourceScalewayLbFrontendRead(ctx, d, meta)
@@ -307,22 +313,22 @@ func resourceScalewayLbFrontendRead(ctx context.Context, d *schema.ResourceData,
 		FrontendID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("lb_id", newZonedIDString(zone, frontend.LB.ID))
-	_ = d.Set("backend_id", newZonedIDString(zone, frontend.Backend.ID))
+	_ = d.Set("lb_id", zonal.NewZonedIDString(zone, frontend.LB.ID))
+	_ = d.Set("backend_id", zonal.NewZonedIDString(zone, frontend.Backend.ID))
 	_ = d.Set("name", frontend.Name)
 	_ = d.Set("inbound_port", int(frontend.InboundPort))
 	_ = d.Set("timeout_client", flattenDuration(frontend.TimeoutClient))
 	_ = d.Set("enable_http3", frontend.EnableHTTP3)
 
 	if frontend.Certificate != nil {
-		_ = d.Set("certificate_id", newZonedIDString(zone, frontend.Certificate.ID))
+		_ = d.Set("certificate_id", zonal.NewZonedIDString(zone, frontend.Certificate.ID))
 	} else {
 		_ = d.Set("certificate_id", "")
 	}
@@ -407,7 +413,7 @@ func resourceScalewayLbFrontendUpdateACL(ctx context.Context, d *schema.Resource
 		_, err = lbAPI.CreateACL(&lbSDK.ZonedAPICreateACLRequest{
 			Zone:       zone,
 			FrontendID: frontendID,
-			Name:       expandOrGenerateString(stateACL.Name, "lb-acl"),
+			Name:       types.ExpandOrGenerateString(stateACL.Name, "lb-acl"),
 			Action:     stateACL.Action,
 			Match:      stateACL.Match,
 			Index:      key,
@@ -444,7 +450,7 @@ func resourceScalewayLbFrontendUpdate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -452,7 +458,7 @@ func resourceScalewayLbFrontendUpdate(ctx context.Context, d *schema.ResourceDat
 	// check err waiting process
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -466,9 +472,9 @@ func resourceScalewayLbFrontendUpdate(ctx context.Context, d *schema.ResourceDat
 	req := &lbSDK.ZonedAPIUpdateFrontendRequest{
 		Zone:           zone,
 		FrontendID:     ID,
-		Name:           expandOrGenerateString(d.Get("name"), "lb-frt"),
+		Name:           types.ExpandOrGenerateString(d.Get("name"), "lb-frt"),
 		InboundPort:    int32(d.Get("inbound_port").(int)),
-		BackendID:      expandID(d.Get("backend_id")),
+		BackendID:      locality.ExpandID(d.Get("backend_id")),
 		TimeoutClient:  timeoutClient,
 		CertificateIDs: expandSliceIDsPtr(d.Get("certificate_ids")),
 		EnableHTTP3:    d.Get("enable_http3").(bool),
@@ -493,7 +499,7 @@ func resourceScalewayLbFrontendDelete(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -507,7 +513,7 @@ func resourceScalewayLbFrontendDelete(ctx context.Context, d *schema.ResourceDat
 	}
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

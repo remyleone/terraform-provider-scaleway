@@ -2,6 +2,12 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -47,7 +53,7 @@ func resourceScalewayIamGroup() *schema.Resource {
 				Optional:    true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validationUUID(),
+					ValidateFunc: verify.UUID(),
 				},
 			},
 			"application_ids": {
@@ -56,7 +62,7 @@ func resourceScalewayIamGroup() *schema.Resource {
 				Optional:    true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validationUUID(),
+					ValidateFunc: verify.UUID(),
 				},
 			},
 			"external_membership": {
@@ -73,7 +79,7 @@ func resourceScalewayIamGroup() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the application",
 			},
-			"organization_id": organizationIDOptionalSchema(),
+			"organization_id": organization.OrganizationIDOptionalSchema(),
 		},
 	}
 }
@@ -82,7 +88,7 @@ func resourceScalewayIamGroupCreate(ctx context.Context, d *schema.ResourceData,
 	api := iamAPI(meta)
 	req := &iam.CreateGroupRequest{
 		OrganizationID: d.Get("organization_id").(string),
-		Name:           expandOrGenerateString(d.Get("name"), "group"),
+		Name:           types.ExpandOrGenerateString(d.Get("name"), "group"),
 		Description:    d.Get("description").(string),
 		Tags:           expandStrings(d.Get("tags")),
 	}
@@ -115,7 +121,7 @@ func resourceScalewayIamGroupRead(ctx context.Context, d *schema.ResourceData, m
 		GroupID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -202,7 +208,7 @@ func resourceScalewayIamGroupDelete(ctx context.Context, d *schema.ResourceData,
 	err := api.DeleteGroup(&iam.DeleteGroupRequest{
 		GroupID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

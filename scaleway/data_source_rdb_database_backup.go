@@ -2,10 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayRDBDatabaseBackup() *schema.Resource {
@@ -20,13 +22,13 @@ func dataSourceScalewayRDBDatabaseBackup() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the Backup",
 		ConflictsWith: []string{"name", "instance_id"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The ID of the project to filter the Backup",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -46,9 +48,9 @@ func dataSourceScalewayRDBDatabaseBackupRead(ctx context.Context, d *schema.Reso
 		backupName := d.Get("name").(string)
 		res, err := api.ListDatabaseBackups(&rdb.ListDatabaseBackupsRequest{
 			Region:     region,
-			Name:       expandStringPtr(backupName),
-			InstanceID: expandStringPtr(expandID(d.Get("instance_id"))),
-			ProjectID:  expandStringPtr(d.Get("project_id")),
+			Name:       types.ExpandStringPtr(backupName),
+			InstanceID: types.ExpandStringPtr(locality.ExpandID(d.Get("instance_id"))),
+			ProjectID:  types.ExpandStringPtr(d.Get("project_id")),
 		})
 		if err != nil {
 			return diag.FromErr(err)

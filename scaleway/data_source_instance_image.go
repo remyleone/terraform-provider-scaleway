@@ -3,7 +3,14 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"sort"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -42,9 +49,9 @@ func dataSourceScalewayInstanceImage() *schema.Resource {
 				Description:   "Select most recent image if multiple match",
 				ConflictsWith: []string{"image_id"},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 
 			"public": {
 				Type:        schema.TypeBool,
@@ -103,9 +110,9 @@ func dataSourceScalewayInstanceImageRead(ctx context.Context, d *schema.Resource
 	if !ok { // Get instance by name, zone, and arch.
 		res, err := instanceAPI.ListImages(&instance.ListImagesRequest{
 			Zone:    zone,
-			Name:    expandStringPtr(d.Get("name")),
-			Arch:    expandStringPtr(d.Get("architecture")),
-			Project: expandStringPtr(d.Get("project_id")),
+			Name:    types.ExpandStringPtr(d.Get("name")),
+			Arch:    types.ExpandStringPtr(d.Get("architecture")),
+			Project: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithAllPages(), scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
@@ -137,7 +144,7 @@ func dataSourceScalewayInstanceImageRead(ctx context.Context, d *schema.Resource
 	}
 
 	zonedID := datasourceNewZonedID(imageID, zone)
-	zone, imageID, _ = parseZonedID(zonedID)
+	zone, imageID, _ = zonal.ParseZonedID(zonedID)
 
 	d.SetId(zonedID)
 	_ = d.Set("image_id", zonedID)

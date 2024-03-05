@@ -3,6 +3,11 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -32,7 +37,7 @@ func resourceScalewayContainerTrigger() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				Description:  "The ID of the container to create a trigger for",
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 			},
 			"name": {
 				Type:        schema.TypeString,
@@ -137,9 +142,9 @@ func resourceScalewayContainerTriggerCreate(ctx context.Context, d *schema.Resou
 
 	req := &container.CreateTriggerRequest{
 		Region:      region,
-		Name:        expandOrGenerateString(d.Get("name").(string), "trigger"),
-		ContainerID: expandID(d.Get("container_id")),
-		Description: expandStringPtr(d.Get("description")),
+		Name:        types.ExpandOrGenerateString(d.Get("name").(string), "trigger"),
+		ContainerID: locality.ExpandID(d.Get("container_id")),
+		Description: types.ExpandStringPtr(d.Get("description")),
 	}
 
 	if scwSqs, isScwSqs := d.GetOk("sqs.0"); isScwSqs {
@@ -185,7 +190,7 @@ func resourceScalewayContainerTriggerRead(ctx context.Context, d *schema.Resourc
 
 	trigger, err := waitForContainerTrigger(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -220,7 +225,7 @@ func resourceScalewayContainerTriggerUpdate(ctx context.Context, d *schema.Resou
 
 	trigger, err := waitForContainerTrigger(ctx, api, region, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -267,7 +272,7 @@ func resourceScalewayContainerTriggerDelete(ctx context.Context, d *schema.Resou
 	}
 
 	_, err = waitForContainerTrigger(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

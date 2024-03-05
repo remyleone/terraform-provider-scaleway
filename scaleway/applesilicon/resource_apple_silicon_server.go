@@ -1,4 +1,4 @@
-package scaleway
+package applesilicon
 
 import (
 	"context"
@@ -8,9 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	applesilicon "github.com/scaleway/scaleway-sdk-go/api/applesilicon/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 )
 
-func resourceScalewayAppleSiliconServer() *schema.Resource {
+func ResourceScalewayAppleSiliconServer() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceScalewayAppleSiliconServerCreate,
 		ReadContext:   resourceScalewayAppleSiliconServerRead,
@@ -70,9 +75,9 @@ func resourceScalewayAppleSiliconServer() *schema.Resource {
 			},
 
 			// Common
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -84,7 +89,7 @@ func resourceScalewayAppleSiliconServerCreate(ctx context.Context, d *schema.Res
 	}
 
 	createReq := &applesilicon.CreateServerRequest{
-		Name:      expandOrGenerateString(d.Get("name"), "m1"),
+		Name:      types.ExpandOrGenerateString(d.Get("name"), "m1"),
 		Type:      d.Get("type").(string),
 		ProjectID: d.Get("project_id").(string),
 	}
@@ -94,7 +99,7 @@ func resourceScalewayAppleSiliconServerCreate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	_, err = waitForAppleSiliconServer(ctx, asAPI, zone, res.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -115,7 +120,7 @@ func resourceScalewayAppleSiliconServerRead(ctx context.Context, d *schema.Resou
 		ServerID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -150,7 +155,7 @@ func resourceScalewayAppleSiliconServerUpdate(ctx context.Context, d *schema.Res
 	}
 
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name"))
+		req.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 
 	_, err = asAPI.UpdateServer(req, scw.WithContext(ctx))
@@ -172,7 +177,7 @@ func resourceScalewayAppleSiliconServerDelete(ctx context.Context, d *schema.Res
 		ServerID: ID,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

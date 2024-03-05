@@ -2,7 +2,12 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -18,10 +23,10 @@ const (
 
 // blockAPIWithZone returns a new block API and the zone for a Create request
 func blockAPIWithZone(d *schema.ResourceData, m interface{}) (*block.API, scw.Zone, error) {
-	meta := m.(*Meta)
-	blockAPI := block.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	blockAPI := block.NewAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -31,10 +36,10 @@ func blockAPIWithZone(d *schema.ResourceData, m interface{}) (*block.API, scw.Zo
 
 // blockAPIWithZonedAndID returns a new block API with zone and ID extracted from the state
 func blockAPIWithZoneAndID(m interface{}, zonedID string) (*block.API, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	blockAPI := block.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	blockAPI := block.NewAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(zonedID)
+	zone, ID, err := zonal.ParseZonedID(zonedID)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -44,8 +49,8 @@ func blockAPIWithZoneAndID(m interface{}, zonedID string) (*block.API, scw.Zone,
 
 func waitForBlockVolume(ctx context.Context, blockAPI *block.API, zone scw.Zone, id string, timeout time.Duration) (*block.Volume, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	volume, err := blockAPI.WaitForVolumeAndReferences(&block.WaitForVolumeAndReferencesRequest{
@@ -71,8 +76,8 @@ func customDiffCannotShrink(key string) schema.CustomizeDiffFunc {
 
 func waitForBlockSnapshot(ctx context.Context, blockAPI *block.API, zone scw.Zone, id string, timeout time.Duration) (*block.Snapshot, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	snapshot, err := blockAPI.WaitForSnapshot(&block.WaitForSnapshotRequest{

@@ -3,9 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"strconv"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
@@ -19,8 +22,8 @@ const (
 
 // cockpitAPI returns a new cockpit API.
 func cockpitAPI(m interface{}) (*cockpit.API, error) {
-	meta := m.(*Meta)
-	api := cockpit.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := cockpit.NewAPI(meta.GetScwClient())
 
 	return api, nil
 }
@@ -117,8 +120,8 @@ func flattenCockpitTokenScopes(scopes *cockpit.TokenScopes) []map[string]interfa
 
 func waitForCockpit(ctx context.Context, api *cockpit.API, projectID string, timeout time.Duration) (*cockpit.Cockpit, error) {
 	retryInterval := defaultContainerRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForCockpit(&cockpit.WaitForCockpitRequest{

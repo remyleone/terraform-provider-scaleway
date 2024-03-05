@@ -2,10 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIotDevice() *schema.Resource {
@@ -20,7 +22,7 @@ func dataSourceScalewayIotDevice() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IOT Device",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 
 	return &schema.Resource{
@@ -39,7 +41,7 @@ func dataSourceScalewayIotDeviceRead(ctx context.Context, d *schema.ResourceData
 	if !ok {
 		hubID, hubIDExists := d.GetOk("hub_id")
 		if hubIDExists {
-			_, hubID, err = parseRegionalID(hubID.(string))
+			_, hubID, err = regional.ParseRegionalID(hubID.(string))
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -47,8 +49,8 @@ func dataSourceScalewayIotDeviceRead(ctx context.Context, d *schema.ResourceData
 		deviceName := d.Get("name").(string)
 		res, err := api.ListDevices(&iot.ListDevicesRequest{
 			Region: region,
-			Name:   expandStringPtr(deviceName),
-			HubID:  expandStringPtr(hubID),
+			Name:   types.ExpandStringPtr(deviceName),
+			HubID:  types.ExpandStringPtr(hubID),
 		})
 		if err != nil {
 			return diag.FromErr(err)

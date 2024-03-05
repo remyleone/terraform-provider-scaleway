@@ -2,6 +2,10 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -18,7 +22,7 @@ func dataSourceScalewayDocumentDBEndpointLoadBalancer() *schema.Resource {
 				Computed:         true,
 				Description:      "Instance on which the endpoint is attached",
 				ConflictsWith:    []string{"instance_name"},
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 			},
 			"instance_name": {
@@ -49,7 +53,7 @@ func dataSourceScalewayDocumentDBEndpointLoadBalancer() *schema.Resource {
 				Description: "The hostname of your endpoint",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -65,8 +69,8 @@ func dataSourceScalewayDocumentDBLoadBalancerRead(ctx context.Context, d *schema
 		rawInstanceName := d.Get("instance_name").(string)
 		res, err := api.ListInstances(&documentdb.ListInstancesRequest{
 			Region:    region,
-			Name:      expandStringPtr(rawInstanceName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(rawInstanceName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		})
 		if err != nil {
 			return diag.FromErr(err)
@@ -84,7 +88,7 @@ func dataSourceScalewayDocumentDBLoadBalancerRead(ctx context.Context, d *schema
 		rawInstanceID = foundRawInstance.ID
 	}
 
-	instanceID := expandID(rawInstanceID)
+	instanceID := locality.ExpandID(rawInstanceID)
 	instance, err := waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
 		return diag.FromErr(err)

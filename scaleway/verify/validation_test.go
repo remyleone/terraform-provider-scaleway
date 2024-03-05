@@ -1,4 +1,4 @@
-package scaleway
+package verify
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ func TestValidationUUIDWithInvalidUUIDReturnError(t *testing.T) {
 	assert := assert.New(t)
 
 	for _, uuid := range []string{"fr-par/wrong-uuid/resource", "fr-par/wrong-uuid", "wrong-uuid"} {
-		warnings, errors := validationUUID()(uuid, "key")
+		warnings, errors := validation.UUID()(uuid, "key")
 		assert.Empty(warnings)
 		assert.Len(errors, 1)
 	}
@@ -19,7 +19,7 @@ func TestValidationUUIDWithInvalidUUIDReturnError(t *testing.T) {
 func TestValidationUUIDWithValidUUIDReturnNothing(t *testing.T) {
 	assert := assert.New(t)
 
-	warnings, errors := validationUUID()("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "key")
+	warnings, errors := validation.UUID()("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "key")
 
 	assert.Empty(warnings)
 	assert.Empty(errors)
@@ -29,7 +29,7 @@ func TestValidationUUIDorUUIDWithLocalityWithValidUUIDReturnNothing(t *testing.T
 	assert := assert.New(t)
 
 	for _, uuid := range []string{"fr-par/6ba7b810-9dad-11d1-80b4-00c04fd430c8", "6ba7b810-9dad-11d1-80b4-00c04fd430c8"} {
-		warnings, errors := validationUUIDorUUIDWithLocality()(uuid, "key")
+		warnings, errors := validation.UUIDorUUIDWithLocality()(uuid, "key")
 		assert.Empty(warnings)
 		assert.Empty(errors)
 	}
@@ -39,7 +39,7 @@ func TestValidationUUIDorUUIDWithLocalityWithInvalidUUIDReturnError(t *testing.T
 	assert := assert.New(t)
 
 	for _, uuid := range []string{"fr-par/wrong-uuid/resource", "fr-par/wrong-uuid", "wrong-uuid"} {
-		warnings, errors := validationUUIDorUUIDWithLocality()(uuid, "key")
+		warnings, errors := validation.UUIDorUUIDWithLocality()(uuid, "key")
 		assert.Empty(warnings)
 		assert.Len(errors, 1)
 	}

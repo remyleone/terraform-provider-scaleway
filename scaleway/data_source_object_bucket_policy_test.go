@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	awspolicy "github.com/hashicorp/awspolicyequivalence"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -11,7 +13,7 @@ import (
 )
 
 func TestAccScalewayDataSourceObjectBucketPolicy_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scw-obp-data-basic")
@@ -35,7 +37,7 @@ func TestAccScalewayDataSourceObjectBucketPolicy_Basic(t *testing.T) {
 }`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{

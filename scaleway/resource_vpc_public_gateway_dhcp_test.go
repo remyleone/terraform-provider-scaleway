@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepVPCPublicGatewayDHCP(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		api := vpcgw.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying public gateway dhcps in (%+v)", zone)
+		L.Debugf("sweeper: destroying public gateway dhcps in (%+v)", zone)
 
 		listDHCPsResponse, err := api.ListDHCPs(&vpcgw.ListDHCPsRequest{
 			Zone: zone,
@@ -44,11 +46,11 @@ func testSweepVPCPublicGatewayDHCP(_ string) error {
 }
 
 func TestAccScalewayVPCPublicGatewayDHCP_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 		Steps: []resource.TestStep{
@@ -161,7 +163,7 @@ func TestAccScalewayVPCPublicGatewayDHCP_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayVPCPublicGatewayDHCPExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayDHCPExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -185,7 +187,7 @@ func testAccCheckScalewayVPCPublicGatewayDHCPExists(tt *TestTools, n string) res
 	}
 }
 
-func testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_vpc_public_gateway_dhcp" {
@@ -210,7 +212,7 @@ func testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt *TestTools) resource.Tes
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccScalewayDataSourceSecretVersion_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	const (
@@ -19,7 +21,7 @@ func TestAccScalewayDataSourceSecretVersion_Basic(t *testing.T) {
 	)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewaySecretVersionDestroy(tt),
 		Steps: []resource.TestStep{
@@ -105,13 +107,13 @@ func TestAccScalewayDataSourceSecretVersion_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceSecretVersion_ByNameSecret(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	secretName := "dataSourceSecretVersionByNameSecret"
 	secretVersionData := "my_super_secret"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewaySecretVersionDestroy(tt),
 		Steps: []resource.TestStep{

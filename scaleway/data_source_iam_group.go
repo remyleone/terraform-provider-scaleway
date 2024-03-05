@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIamGroup() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayIamGroup() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IAM group",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUID(),
+		ValidateFunc:  verify.UUID(),
 	}
 	dsSchema["organization_id"] = &schema.Schema{
 		Type:        schema.TypeString,
@@ -43,7 +44,7 @@ func dataSourceScalewayIamGroupRead(ctx context.Context, d *schema.ResourceData,
 		groupName := d.Get("name").(string)
 		req := &iam.ListGroupsRequest{
 			OrganizationID: flattenStringPtr(getOrganizationID(meta, d)).(string),
-			Name:           expandStringPtr(groupName),
+			Name:           types.ExpandStringPtr(groupName),
 		}
 
 		res, err := api.ListGroups(req, scw.WithContext(ctx))

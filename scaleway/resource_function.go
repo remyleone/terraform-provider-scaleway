@@ -3,7 +3,15 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -153,8 +161,8 @@ func resourceScalewayFunction() *schema.Resource {
 				Description: "The native function domain name.",
 			},
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("namespace_id"),
 	}
@@ -166,20 +174,20 @@ func resourceScalewayFunctionCreate(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	_, namespace, err := parseRegionalID(d.Get("namespace_id").(string))
+	_, namespace, err := regional.ParseRegionalID(d.Get("namespace_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	req := &function.CreateFunctionRequest{
-		Description:                expandStringPtr(d.Get("description").(string)),
+		Description:                types.ExpandStringPtr(d.Get("description").(string)),
 		EnvironmentVariables:       expandMapPtrStringString(d.Get("environment_variables")),
 		SecretEnvironmentVariables: expandFunctionsSecrets(d.Get("secret_environment_variables")),
-		Handler:                    expandStringPtr(d.Get("handler").(string)),
+		Handler:                    types.ExpandStringPtr(d.Get("handler").(string)),
 		MaxScale:                   expandUint32Ptr(d.Get("max_scale")),
 		MemoryLimit:                expandUint32Ptr(d.Get("memory_limit")),
 		MinScale:                   expandUint32Ptr(d.Get("min_scale")),
-		Name:                       expandOrGenerateString(d.Get("name").(string), "func"),
+		Name:                       types.ExpandOrGenerateString(d.Get("name").(string), "func"),
 		NamespaceID:                namespace,
 		Privacy:                    function.FunctionPrivacy(d.Get("privacy").(string)),
 		Region:                     region,
@@ -255,7 +263,7 @@ func resourceScalewayFunctionRead(ctx context.Context, d *schema.ResourceData, m
 
 	f, err := waitForFunction(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -307,7 +315,7 @@ func resourceScalewayFunctionUpdate(ctx context.Context, d *schema.ResourceData,
 
 	f, err := waitForFunction(ctx, api, region, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -341,7 +349,7 @@ func resourceScalewayFunctionUpdate(ctx context.Context, d *schema.ResourceData,
 	}
 
 	if d.HasChange("handler") {
-		req.Handler = expandStringPtr(d.Get("handler").(string))
+		req.Handler = types.ExpandStringPtr(d.Get("handler").(string))
 		updated = true
 	}
 
@@ -421,7 +429,7 @@ func resourceScalewayFunctionDelete(ctx context.Context, d *schema.ResourceData,
 		Region:     region,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

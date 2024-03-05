@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
@@ -17,11 +21,11 @@ import (
 )
 
 func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayMNQSQSQueueDestroy(tt),
 		Steps: []resource.TestStep{
@@ -94,12 +98,12 @@ func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
 }
 
 func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	ctx := context.Background()
 
-	accountAPI := accountV3.NewProjectAPI(tt.Meta.scwClient)
+	accountAPI := accountV3.NewProjectAPI(tt.meta.GetScwClient())
 	projectID := ""
 	project, err := accountAPI.CreateProject(&accountV3.ProjectAPICreateProjectRequest{
 		Name: "tf_tests_mnq_sqs_queue_default_project",
@@ -109,9 +113,9 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 	projectID = project.ID
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: func() map[string]func() (*schema.Provider, error) {
-			metaProd, err := buildMeta(ctx, &metaConfig{
+			metaProd, err := buildMeta(ctx, &meta.metaConfig{
 				terraformVersion: "terraform-tests",
 				httpClient:       tt.Meta.httpClient,
 			})
@@ -163,7 +167,7 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayMNQSQSQueueExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSQSQueueExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -191,7 +195,7 @@ func testAccCheckScalewayMNQSQSQueueExists(tt *TestTools, n string) resource.Tes
 	}
 }
 
-func testAccCheckScalewayMNQSQSQueueDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSQSQueueDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_mnq_sqs_queue" {
@@ -210,14 +214,14 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *TestTools) resource.TestCheckFun
 				ProjectID: projectID,
 			})
 			if err != nil {
-				if is404Error(err) {
+				if http_errors.Is404Error(err) {
 					return nil
 				}
 
 				return err
 			}
 
-			mnqAPI := mnq.NewSqsAPI(tt.Meta.scwClient)
+			mnqAPI := mnq.NewSqsAPI(tt.meta.GetScwClient())
 			sqsInfo, err := mnqAPI.GetSqsInfo(&mnq.SqsAPIGetSqsInfoRequest{
 				Region:    region,
 				ProjectID: projectID,
@@ -251,7 +255,7 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *TestTools) resource.TestCheckFun
 				return fmt.Errorf("mnq sqs queue (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

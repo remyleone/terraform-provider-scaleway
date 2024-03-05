@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -18,7 +23,7 @@ func dataSourceScalewayInstanceIP() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the IP address",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"address"},
 	}
 	dsSchema["address"] = &schema.Schema{
@@ -51,7 +56,7 @@ func dataSourceScalewayInstanceIPRead(ctx context.Context, d *schema.ResourceDat
 		}, scw.WithContext(ctx))
 		if err != nil {
 			// We check for 403 because instance API returns 403 for a deleted IP
-			if is404Error(err) || is403Error(err) {
+			if errors.Is404Error(err) || errors.Is403Error(err) {
 				d.SetId("")
 				return nil
 			}
@@ -59,9 +64,9 @@ func dataSourceScalewayInstanceIPRead(ctx context.Context, d *schema.ResourceDat
 		}
 		ID = res.IP.ID
 	} else {
-		_, ID, _ = parseLocalizedID(id.(string))
+		_, ID, _ = locality.ParseLocalizedID(id.(string))
 	}
-	d.SetId(newZonedIDString(zone, ID))
+	d.SetId(zonal.NewZonedIDString(zone, ID))
 
 	return resourceScalewayInstanceIPRead(ctx, d, meta)
 }

@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -79,7 +83,7 @@ func resourceScalewayMNQSNSTopic() *schema.Resource {
 				Description: "ARN of the topic, should have format 'arn:scw:sns:project-${project_id}:${topic_name}'",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 		CustomizeDiff: resourceMNQSSNSTopicCustomizeDiff,
 	}
@@ -91,7 +95,7 @@ func resourceScalewayMNQSNSTopicCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	projectID, _, err := extractProjectID(d, meta.(*Meta))
+	projectID, _, err := extractProjectID(d, meta.(*meta2.Meta))
 	if err != nil {
 		return diag.FromErr(err)
 	}

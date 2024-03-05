@@ -5,10 +5,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"net"
 	"reflect"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -26,10 +34,10 @@ const (
 
 // lbAPIWithZone returns an lb API WITH zone for a Create request
 func lbAPIWithZone(d *schema.ResourceData, m interface{}) (*lbSDK.ZonedAPI, scw.Zone, error) {
-	meta := m.(*Meta)
-	lbAPI := lbSDK.NewZonedAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	lbAPI := lbSDK.NewZonedAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -38,10 +46,10 @@ func lbAPIWithZone(d *schema.ResourceData, m interface{}) (*lbSDK.ZonedAPI, scw.
 
 // lbAPIWithZoneAndID returns an lb API with zone and ID extracted from the state
 func lbAPIWithZoneAndID(m interface{}, id string) (*lbSDK.ZonedAPI, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	lbAPI := lbSDK.NewZonedAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	lbAPI := lbSDK.NewZonedAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(id)
+	zone, ID, err := zonal.ParseZonedID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -143,7 +151,7 @@ func expandPrivateNetworks(data interface{}) ([]*lbSDK.PrivateNetwork, error) {
 	for _, pn := range data.(*schema.Set).List() {
 		rawPn := pn.(map[string]interface{})
 		privateNetwork := &lbSDK.PrivateNetwork{}
-		privateNetwork.PrivateNetworkID = expandID(rawPn["private_network_id"].(string))
+		privateNetwork.PrivateNetworkID = locality2.ExpandID(rawPn["private_network_id"].(string))
 		if staticConfig, hasStaticConfig := rawPn["static_config"]; hasStaticConfig && len(staticConfig.([]interface{})) > 0 {
 			privateNetwork.StaticConfig = expandLbPrivateNetworkStaticConfig(staticConfig)
 		} else {
@@ -245,14 +253,14 @@ func expandLbACLMatch(raw interface{}) *lbSDK.ACLMatch {
 	// scaleway api require ip subnet, so if we did not specify one, just put 0.0.0.0/0 instead
 	ipSubnet := expandSliceStringPtr(rawMap["ip_subnet"].([]interface{}))
 	if len(ipSubnet) == 0 {
-		ipSubnet = []*string{expandStringPtr("0.0.0.0/0")}
+		ipSubnet = []*string{types.ExpandStringPtr("0.0.0.0/0")}
 	}
 
 	return &lbSDK.ACLMatch{
 		IPSubnet:         ipSubnet,
 		HTTPFilter:       lbSDK.ACLHTTPFilter(rawMap["http_filter"].(string)),
 		HTTPFilterValue:  expandSliceStringPtr(rawMap["http_filter_value"].([]interface{})),
-		HTTPFilterOption: expandStringPtr(rawMap["http_filter_option"].(string)),
+		HTTPFilterOption: types.ExpandStringPtr(rawMap["http_filter_option"].(string)),
 		Invert:           rawMap["invert"].(bool),
 	}
 }
@@ -420,7 +428,7 @@ func lbUpgradeV1SchemaUpgradeFunc(_ context.Context, rawState map[string]interfa
 }
 
 func lbUpgradeV1RegionalToZonedID(element string) (string, error) {
-	locality, id, err := parseLocalizedID(element)
+	locality, id, err := locality2.ParseLocalizedID(element)
 	// return error if can't parse
 	if err != nil {
 		return "", fmt.Errorf("upgrade: could not retrieve the locality from `%s`", element)
@@ -459,8 +467,8 @@ func expandLbPrivateNetworkDHCPConfig(raw interface{}) *lbSDK.PrivateNetworkDHCP
 
 func waitForLB(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) (*lbSDK.LB, error) {
 	retryInterval := defaultWaitLBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	loadBalancer, err := lbAPI.WaitForLb(&lbSDK.ZonedAPIWaitForLBRequest{
@@ -475,8 +483,8 @@ func waitForLB(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID s
 
 func waitForLbInstances(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) (*lbSDK.LB, error) {
 	retryInterval := defaultWaitLBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	loadBalancer, err := lbAPI.WaitForLbInstances(&lbSDK.ZonedAPIWaitForLBInstancesRequest{
@@ -491,8 +499,8 @@ func waitForLbInstances(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zon
 
 func waitForLBPN(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) ([]*lbSDK.PrivateNetwork, error) {
 	retryInterval := defaultWaitLBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	privateNetworks, err := lbAPI.WaitForLBPN(&lbSDK.ZonedAPIWaitForLBPNRequest{
@@ -507,8 +515,8 @@ func waitForLBPN(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID
 
 func waitForLBCertificate(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, id string, timeout time.Duration) (*lbSDK.Certificate, error) {
 	retryInterval := defaultWaitLBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	certificate, err := lbAPI.WaitForLBCertificate(&lbSDK.ZonedAPIWaitForLBCertificateRequest{
@@ -532,12 +540,12 @@ func attachLBPrivateNetworks(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone sc
 			StaticConfig:     pnConfigs[i].StaticConfig,
 			DHCPConfig:       pnConfigs[i].DHCPConfig,
 		}, scw.WithContext(ctx))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return nil, err
 		}
 
 		privateNetworks, err = waitForLBPN(ctx, lbAPI, zone, pn.LB.ID, timeout)
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return nil, err
 		}
 
@@ -548,7 +556,7 @@ func attachLBPrivateNetworks(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone sc
 					LBID:             pn.LB.ID,
 					PrivateNetworkID: pn.PrivateNetworkID,
 				}, scw.WithContext(ctx))
-				if err != nil && !is404Error(err) {
+				if err != nil && !http_errors.Is404Error(err) {
 					return nil, err
 				}
 				tflog.Debug(ctx, fmt.Sprintf("DHCP config: %v", pn.DHCPConfig))
@@ -614,7 +622,7 @@ func lbPrivateNetworkSetHash(v interface{}) int {
 
 	m := v.(map[string]interface{})
 	if pnID, ok := m["private_network_id"]; ok {
-		buf.WriteString(expandID(pnID))
+		buf.WriteString(locality2.ExpandID(pnID))
 	}
 
 	if staticConfig, ok := m["static_config"]; ok && len(staticConfig.([]interface{})) > 0 {

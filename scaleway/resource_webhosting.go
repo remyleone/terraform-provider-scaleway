@@ -2,6 +2,14 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -29,13 +37,13 @@ func resourceScalewayWebhosting() *schema.Resource {
 			"offer_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The ID of the selected offer for the hosting",
 			},
 			"email": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validationEmail(),
+				ValidateFunc: verify.Email(),
 				Description:  "Contact email of the client for the hosting",
 			},
 			"domain": {
@@ -135,8 +143,8 @@ func resourceScalewayWebhosting() *schema.Resource {
 				Description: "Main hosting cPanel username",
 			},
 			"region":          regionSchema(),
-			"project_id":      projectIDSchema(),
-			"organization_id": organizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 		},
 		CustomizeDiff: func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
 			if diff.HasChange("tags") {
@@ -162,7 +170,7 @@ func resourceScalewayWebhostingCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	_, offerID, err := parseRegionalID(d.Get("offer_id").(string))
+	_, offerID, err := regional.ParseRegionalID(d.Get("offer_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -187,7 +195,7 @@ func resourceScalewayWebhostingCreate(ctx context.Context, d *schema.ResourceDat
 
 	rawEmail, emailExist := d.GetOk("email")
 	if emailExist {
-		hostingCreateRequest.Email = expandStringPtr(rawEmail)
+		hostingCreateRequest.Email = types.ExpandStringPtr(rawEmail)
 	}
 
 	hostingResponse, err := api.CreateHosting(hostingCreateRequest, scw.WithContext(ctx))
@@ -213,7 +221,7 @@ func resourceScalewayWebhostingRead(ctx context.Context, d *schema.ResourceData,
 
 	webhostingResponse, err := waitForHosting(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -267,7 +275,7 @@ func resourceScalewayWebhostingUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if d.HasChange("offer_id") {
-		_, offerID, err := parseRegionalID(d.Get("offer_id").(string))
+		_, offerID, err := regional.ParseRegionalID(d.Get("offer_id").(string))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -310,7 +318,7 @@ func resourceScalewayWebhostingDelete(ctx context.Context, d *schema.ResourceDat
 		Region:    region,
 		HostingID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

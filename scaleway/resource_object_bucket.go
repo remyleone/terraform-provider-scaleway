@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/object"
 	"log"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -189,7 +192,7 @@ func resourceScalewayObjectBucket() *schema.Resource {
 				},
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 			"versioning": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -472,7 +475,7 @@ func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceDat
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		bucketFound, objectLockFound := addReadBucketErrorDiagnostic(&diags, err, "object lock configuration", ErrCodeObjectLockConfigurationNotFoundError)
+		bucketFound, objectLockFound := addReadBucketErrorDiagnostic(&diags, err, "object lock configuration", object.ErrCodeObjectLockConfigurationNotFoundError)
 		if !bucketFound {
 			d.SetId("")
 			return diags
@@ -509,7 +512,7 @@ func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceDat
 		Bucket: scw.StringPtr(bucketName),
 	})
 	if err != nil {
-		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "tags", ErrCodeNoSuchTagSet); !bucketFound {
+		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "tags", object.ErrCodeNoSuchTagSet); !bucketFound {
 			d.SetId("")
 			return diags
 		}
@@ -527,7 +530,7 @@ func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceDat
 		Bucket: scw.StringPtr(bucketName),
 	})
 	if err != nil {
-		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "CORS configuration", ErrCodeNoSuchCORSConfiguration); !bucketFound {
+		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "CORS configuration", object.ErrCodeNoSuchCORSConfiguration); !bucketFound {
 			d.SetId("")
 			return diags
 		}
@@ -552,7 +555,7 @@ func resourceScalewayObjectBucketRead(ctx context.Context, d *schema.ResourceDat
 		Bucket: scw.StringPtr(bucketName),
 	})
 	if err != nil {
-		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "lifecycle configuration", ErrCodeNoSuchLifecycleConfiguration); !bucketFound {
+		if bucketFound, _ := addReadBucketErrorDiagnostic(&diags, err, "lifecycle configuration", object.ErrCodeNoSuchLifecycleConfiguration); !bucketFound {
 			d.SetId("")
 			return diags
 		}
@@ -664,7 +667,7 @@ func resourceScalewayObjectBucketDelete(ctx context.Context, d *schema.ResourceD
 		return nil
 	}
 
-	if isS3Err(err, ErrCodeBucketNotEmpty, "") {
+	if isS3Err(err, object.ErrCodeBucketNotEmpty, "") {
 		if d.Get("force_destroy").(bool) {
 			err = deleteS3ObjectVersions(ctx, s3Client, bucketName, true)
 			if err != nil {

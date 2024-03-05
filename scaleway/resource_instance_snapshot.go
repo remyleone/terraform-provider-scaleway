@@ -3,7 +3,17 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -39,7 +49,7 @@ func resourceScalewayInstanceSnapshot() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Description:   "ID of the volume to take a snapshot from",
-				ValidateFunc:  validationUUIDorUUIDWithLocality(),
+				ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 				ConflictsWith: []string{"import"},
 			},
 			"type": {
@@ -97,9 +107,9 @@ func resourceScalewayInstanceSnapshot() *schema.Resource {
 				Computed:    true,
 				Description: "The date and time of the creation of the snapshot",
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("volume_id"),
 	}
@@ -113,8 +123,8 @@ func resourceScalewayInstanceSnapshotCreate(ctx context.Context, d *schema.Resou
 
 	req := &instance.CreateSnapshotRequest{
 		Zone:    zone,
-		Project: expandStringPtr(d.Get("project_id")),
-		Name:    expandOrGenerateString(d.Get("name"), "snap"),
+		Project: types.ExpandStringPtr(d.Get("project_id")),
+		Name:    types.ExpandOrGenerateString(d.Get("name"), "snap"),
 	}
 
 	if volumeType, ok := d.GetOk("type"); ok {
@@ -129,8 +139,8 @@ func resourceScalewayInstanceSnapshotCreate(ctx context.Context, d *schema.Resou
 	}
 
 	if _, isImported := d.GetOk("import"); isImported {
-		req.Bucket = expandStringPtr(d.Get("import.0.bucket"))
-		req.Key = expandStringPtr(d.Get("import.0.key"))
+		req.Bucket = types.ExpandStringPtr(d.Get("import.0.bucket"))
+		req.Key = types.ExpandStringPtr(d.Get("import.0.key"))
 	}
 
 	res, err := instanceAPI.CreateSnapshot(req, scw.WithContext(ctx))
@@ -138,12 +148,12 @@ func resourceScalewayInstanceSnapshotCreate(ctx context.Context, d *schema.Resou
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.Snapshot.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.Snapshot.ID))
 
 	_, err = instanceAPI.WaitForSnapshot(&instance.WaitForSnapshotRequest{
 		SnapshotID:    res.Snapshot.ID,
 		Zone:          zone,
-		RetryInterval: DefaultWaitRetryInterval,
+		RetryInterval: transport.DefaultWaitRetryInterval,
 		Timeout:       scw.TimeDurationPtr(d.Timeout(schema.TimeoutCreate)),
 	})
 	if err != nil {
@@ -164,7 +174,7 @@ func resourceScalewayInstanceSnapshotRead(ctx context.Context, d *schema.Resourc
 		Zone:       zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -221,14 +231,14 @@ func resourceScalewayInstanceSnapshotDelete(ctx context.Context, d *schema.Resou
 		Zone:       zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if !is404Error(err) {
+		if !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}
 
 	_, err = waitForInstanceSnapshot(ctx, instanceAPI, zone, id, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if !is404Error(err) {
+		if !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}

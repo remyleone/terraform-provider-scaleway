@@ -2,6 +2,10 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -62,7 +66,7 @@ func resourceScalewaySecret() *schema.Resource {
 				Description: "Date and time of secret's creation (RFC 3339 format)",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -86,7 +90,7 @@ func resourceScalewaySecretCreate(ctx context.Context, d *schema.ResourceData, m
 
 	rawDescription, descriptionExist := d.GetOk("description")
 	if descriptionExist {
-		secretCreateRequest.Description = expandStringPtr(rawDescription)
+		secretCreateRequest.Description = types.ExpandStringPtr(rawDescription)
 	}
 
 	secretResponse, err := api.CreateSecret(secretCreateRequest, scw.WithContext(ctx))
@@ -110,7 +114,7 @@ func resourceScalewaySecretRead(ctx context.Context, d *schema.ResourceData, met
 		SecretID: id,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -185,7 +189,7 @@ func resourceScalewaySecretDelete(ctx context.Context, d *schema.ResourceData, m
 		Region:   region,
 		SecretID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

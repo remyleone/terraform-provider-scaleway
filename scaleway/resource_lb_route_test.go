@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
 )
 
 func TestAccScalewayLbRoute_WithSNI(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbRouteDestroy(tt),
 		Steps: []resource.TestStep{
@@ -54,10 +56,10 @@ func TestAccScalewayLbRoute_WithSNI(t *testing.T) {
 }
 
 func TestAccScalewayLbRoute_WithHostHeader(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbRouteDestroy(tt),
 		Steps: []resource.TestStep{
@@ -97,7 +99,7 @@ func TestAccScalewayLbRoute_WithHostHeader(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayLbRouteExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbRouteExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -121,7 +123,7 @@ func testAccCheckScalewayLbRouteExists(tt *TestTools, n string) resource.TestChe
 	}
 }
 
-func testAccCheckScalewayLbRouteDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbRouteDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_route" {
@@ -144,7 +146,7 @@ func testAccCheckScalewayLbRouteDestroy(tt *TestTools) resource.TestCheckFunc {
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

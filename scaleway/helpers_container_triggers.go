@@ -2,7 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
@@ -11,8 +15,8 @@ import (
 
 func waitForContainerTrigger(ctx context.Context, containerAPI *container.API, region scw.Region, id string, timeout time.Duration) (*container.Trigger, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	trigger, err := containerAPI.WaitForTrigger(&container.WaitForTriggerRequest{
@@ -28,7 +32,7 @@ func waitForContainerTrigger(ctx context.Context, containerAPI *container.API, r
 func expandContainerTriggerMnqSqsCreationConfig(i interface{}) *container.CreateTriggerRequestMnqSqsClientConfig {
 	m := i.(map[string]interface{})
 
-	mnqNamespaceID := expandID(m["namespace_id"].(string))
+	mnqNamespaceID := locality.ExpandID(m["namespace_id"].(string))
 
 	req := &container.CreateTriggerRequestMnqSqsClientConfig{
 		Queue:        m["queue"].(string),
@@ -50,7 +54,7 @@ func expandContainerTriggerMnqNatsCreationConfig(i interface{}) *container.Creat
 		Subject:          m["subject"].(string),
 		MnqProjectID:     m["project_id"].(string),
 		MnqRegion:        m["region"].(string),
-		MnqNatsAccountID: expandID(m["account_id"]),
+		MnqNatsAccountID: locality.ExpandID(m["account_id"]),
 	}
 }
 
@@ -62,7 +66,7 @@ func completeContainerTriggerMnqCreationConfig(i interface{}, d *schema.Resource
 	}
 
 	if projectID, exists := m["project_id"]; !exists || projectID == "" {
-		projectID, _, err := extractProjectID(d, meta.(*Meta))
+		projectID, _, err := extractProjectID(d, meta.(*meta2.Meta))
 		if err == nil {
 			m["project_id"] = projectID
 		}

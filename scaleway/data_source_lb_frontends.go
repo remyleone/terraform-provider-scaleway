@@ -2,6 +2,13 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -74,9 +81,9 @@ func dataSourceScalewayLbFrontends() *schema.Resource {
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -87,7 +94,7 @@ func dataSourceScalewayLbFrontendsRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -95,7 +102,7 @@ func dataSourceScalewayLbFrontendsRead(ctx context.Context, d *schema.ResourceDa
 	res, err := lbAPI.ListFrontends(&lb.ZonedAPIListFrontendsRequest{
 		Zone: zone,
 		LBID: lbID,
-		Name: expandStringPtr(d.Get("name")),
+		Name: types.ExpandStringPtr(d.Get("name")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -104,9 +111,9 @@ func dataSourceScalewayLbFrontendsRead(ctx context.Context, d *schema.ResourceDa
 	frontends := []interface{}(nil)
 	for _, frontend := range res.Frontends {
 		rawFrontend := make(map[string]interface{})
-		rawFrontend["id"] = newZonedIDString(zone, frontend.ID)
+		rawFrontend["id"] = zonal.NewZonedIDString(zone, frontend.ID)
 		rawFrontend["name"] = frontend.Name
-		rawFrontend["lb_id"] = newZonedIDString(zone, frontend.LB.ID)
+		rawFrontend["lb_id"] = zonal.NewZonedIDString(zone, frontend.LB.ID)
 		rawFrontend["created_at"] = flattenTime(frontend.CreatedAt)
 		rawFrontend["update_at"] = flattenTime(frontend.UpdatedAt)
 		rawFrontend["inbound_port"] = frontend.InboundPort

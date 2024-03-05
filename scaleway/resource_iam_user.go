@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -65,7 +68,7 @@ func resourceScalewayIamUser() *schema.Resource {
 				Computed:    true,
 				Description: "The ID of the account root user associated with the iam user.",
 			},
-			"organization_id": organizationIDOptionalSchema(),
+			"organization_id": organization.OrganizationIDOptionalSchema(),
 		},
 	}
 }
@@ -91,7 +94,7 @@ func resourceScalewayIamUserRead(ctx context.Context, d *schema.ResourceData, me
 		UserID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -117,7 +120,7 @@ func resourceScalewayIamUserDelete(ctx context.Context, d *schema.ResourceData, 
 	err := api.DeleteUser(&iam.DeleteUserRequest{
 		UserID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

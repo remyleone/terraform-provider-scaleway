@@ -2,8 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
 	"regexp"
 	"strconv"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -50,7 +53,7 @@ func resourceScalewayCockpitGrafanaUser() *schema.Resource {
 					cockpit.GrafanaUserRoleViewer.String(),
 				}, false),
 			},
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -96,7 +99,7 @@ func resourceScalewayCockpitGrafanaUserRead(ctx context.Context, d *schema.Resou
 		ProjectID: projectID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -107,7 +110,7 @@ func resourceScalewayCockpitGrafanaUserRead(ctx context.Context, d *schema.Resou
 		ProjectID: projectID,
 	}, scw.WithContext(ctx), scw.WithAllPages())
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -144,7 +147,7 @@ func resourceScalewayCockpitGrafanaUserDelete(ctx context.Context, d *schema.Res
 		ProjectID: projectID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return nil
 		}
 		return diag.FromErr(err)
@@ -155,7 +158,7 @@ func resourceScalewayCockpitGrafanaUserDelete(ctx context.Context, d *schema.Res
 		GrafanaUserID: grafanaUserID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return nil
 		}
 		return diag.FromErr(err)

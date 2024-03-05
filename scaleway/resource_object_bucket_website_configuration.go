@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/object"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -73,7 +76,7 @@ func ResourceBucketWebsiteConfiguration() *schema.Resource {
 				Description: "The website endpoint.",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -151,7 +154,7 @@ func resourceBucketWebsiteConfigurationRead(ctx context.Context, d *schema.Resou
 	}
 
 	output, err := conn.GetBucketWebsiteWithContext(ctx, input)
-	if !d.IsNewResource() && ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, ErrCodeNoSuchWebsiteConfiguration) {
+	if !d.IsNewResource() && ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, object.ErrCodeNoSuchWebsiteConfiguration) {
 		tflog.Debug(ctx, fmt.Sprintf("[WARN] Object Bucket Website Configuration (%s) not found, removing from state", d.Id()))
 		d.SetId("")
 		return nil
@@ -230,7 +233,7 @@ func resourceBucketWebsiteConfigurationDelete(ctx context.Context, d *schema.Res
 
 	_, err = conn.DeleteBucketWebsiteWithContext(ctx, input)
 
-	if ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, ErrCodeNoSuchWebsiteConfiguration) {
+	if ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, object.ErrCodeNoSuchWebsiteConfiguration) {
 		return nil
 	}
 

@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayInstanceSecurityGroup() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayInstanceSecurityGroup() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the security group",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -43,8 +44,8 @@ func dataSourceScalewayInstanceSecurityGroupRead(ctx context.Context, d *schema.
 		sgName := d.Get("name").(string)
 		res, err := instanceAPI.ListSecurityGroups(&instance.ListSecurityGroupsRequest{
 			Zone:    zone,
-			Name:    expandStringPtr(sgName),
-			Project: expandStringPtr(d.Get("project_id")),
+			Name:    types.ExpandStringPtr(sgName),
+			Project: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithAllPages(), scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 )
 
 func TestAccScalewayVPCPublicGatewayDHCPEntry_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPEntryDestroy(tt),
 		Steps: []resource.TestStep{
@@ -134,7 +136,7 @@ func TestAccScalewayVPCPublicGatewayDHCPEntry_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayVPCPublicGatewayDHCPReservationExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayDHCPReservationExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -154,12 +156,12 @@ func testAccCheckScalewayVPCPublicGatewayDHCPReservationExists(tt *TestTools, n 
 			return err
 		}
 
-		l.Debugf("reservation: ID: (%s) exist", entry.ID)
+		L.Debugf("reservation: ID: (%s) exist", entry.ID)
 		return nil
 	}
 }
 
-func testAccCheckScalewayVPCPublicGatewayDHCPEntryDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayDHCPEntryDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_vpc_public_gateway_dhcp_reservation" {
@@ -184,7 +186,7 @@ func testAccCheckScalewayVPCPublicGatewayDHCPEntryDestroy(tt *TestTools) resourc
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

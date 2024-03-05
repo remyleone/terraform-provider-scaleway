@@ -2,6 +2,10 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/logging"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -45,7 +49,7 @@ func resourceScalewayCockpitToken() *schema.Resource {
 				Description: "The secret key of the token",
 				Sensitive:   true,
 			},
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -145,7 +149,7 @@ func resourceScalewayCockpitTokenCreate(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	l.Debugf("Creating token %+v", scopes)
+	logging.L.Debugf("Creating token %+v", scopes)
 
 	res, err := api.CreateToken(&cockpit.CreateTokenRequest{
 		Name:      name,
@@ -171,7 +175,7 @@ func resourceScalewayCockpitTokenRead(ctx context.Context, d *schema.ResourceDat
 		TokenID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}

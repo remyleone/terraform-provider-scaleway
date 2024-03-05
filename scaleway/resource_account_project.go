@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -47,7 +50,7 @@ func resourceScalewayAccountProject() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 			},
 		},
 	}
@@ -57,7 +60,7 @@ func resourceScalewayAccountProjectCreate(ctx context.Context, d *schema.Resourc
 	accountAPI := accountV3ProjectAPI(meta)
 
 	request := &accountV3.ProjectAPICreateProjectRequest{
-		Name:        expandOrGenerateString(d.Get("name"), "project"),
+		Name:        types.ExpandOrGenerateString(d.Get("name"), "project"),
 		Description: d.Get("description").(string),
 	}
 
@@ -81,7 +84,7 @@ func resourceScalewayAccountProjectRead(ctx context.Context, d *schema.ResourceD
 		ProjectID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -131,7 +134,7 @@ func resourceScalewayAccountProjectDelete(ctx context.Context, d *schema.Resourc
 	err := accountAPI.DeleteProject(&accountV3.ProjectAPIDeleteProjectRequest{
 		ProjectID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

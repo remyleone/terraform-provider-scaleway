@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/k8s/v1"
@@ -18,8 +20,8 @@ func init() {
 	})
 }
 
-func testAccScalewayK8SClusterGetLatestK8SVersion(tt *TestTools) string {
-	api := k8s.NewAPI(tt.Meta.scwClient)
+func testAccScalewayK8SClusterGetLatestK8SVersion(tt *tests.TestTools) string {
+	api := k8s.NewAPI(tt.meta.GetScwClient())
 	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
@@ -31,8 +33,8 @@ func testAccScalewayK8SClusterGetLatestK8SVersion(tt *TestTools) string {
 	return ""
 }
 
-func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *TestTools) string {
-	api := k8s.NewAPI(tt.Meta.scwClient)
+func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *tests.TestTools) string {
+	api := k8s.NewAPI(tt.meta.GetScwClient())
 	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
@@ -45,8 +47,8 @@ func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *TestTools) string {
 	return ""
 }
 
-func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *TestTools) string {
-	api := k8s.NewAPI(tt.Meta.scwClient)
+func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *tests.TestTools) string {
+	api := k8s.NewAPI(tt.meta.GetScwClient())
 	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
@@ -58,8 +60,8 @@ func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *TestTools) string {
 	return ""
 }
 
-func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *TestTools) string {
-	api := k8s.NewAPI(tt.Meta.scwClient)
+func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *tests.TestTools) string {
+	api := k8s.NewAPI(tt.meta.GetScwClient())
 	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
@@ -73,10 +75,10 @@ func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *TestTools) string {
 }
 
 func testSweepK8SCluster(_ string) error {
-	return sweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
 		k8sAPI := k8s.NewAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the k8s cluster in (%s)", region)
+		L.Debugf("sweeper: destroying the k8s cluster in (%s)", region)
 		listClusters, err := k8sAPI.ListClusters(&k8s.ListClustersRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing clusters in (%s) in sweeper: %s", region, err)
@@ -115,7 +117,7 @@ func testSweepK8SCluster(_ string) error {
 }
 
 func TestAccScalewayK8SCluster_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
@@ -123,7 +125,7 @@ func TestAccScalewayK8SCluster_Basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -172,14 +174,14 @@ func TestAccScalewayK8SCluster_Basic(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_Autoscaling(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -248,14 +250,14 @@ func TestAccScalewayK8SCluster_Autoscaling(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_OIDC(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -315,7 +317,7 @@ func TestAccScalewayK8SCluster_OIDC(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_AutoUpgrade(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
@@ -325,7 +327,7 @@ func TestAccScalewayK8SCluster_AutoUpgrade(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -398,7 +400,7 @@ func TestAccScalewayK8SCluster_AutoUpgrade(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_PrivateNetwork(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
@@ -407,7 +409,7 @@ func TestAccScalewayK8SCluster_PrivateNetwork(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -439,14 +441,14 @@ func TestAccScalewayK8SCluster_PrivateNetwork(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_Multicloud(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayK8SClusterDestroy(tt),
@@ -463,7 +465,7 @@ func TestAccScalewayK8SCluster_Multicloud(t *testing.T) {
 }
 
 func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestK8SVersion := testAccScalewayK8SClusterGetLatestK8SVersion(tt)
@@ -472,7 +474,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			tests.TestAccPreCheck(t)
 		},
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -547,7 +549,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayK8SClusterDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayK8SClusterDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_k8s_cluster" {
@@ -570,7 +572,7 @@ func testAccCheckScalewayK8SClusterDestroy(tt *TestTools) resource.TestCheckFunc
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -578,7 +580,7 @@ func testAccCheckScalewayK8SClusterDestroy(tt *TestTools) resource.TestCheckFunc
 	}
 }
 
-func testAccCheckScalewayK8SClusterExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayK8SClusterExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -602,7 +604,7 @@ func testAccCheckScalewayK8SClusterExists(tt *TestTools, n string) resource.Test
 	}
 }
 
-func testAccCheckScalewayK8sClusterPrivateNetworkID(tt *TestTools, clusterName, pnName string) resource.TestCheckFunc {
+func testAccCheckScalewayK8sClusterPrivateNetworkID(tt *tests.TestTools, clusterName, pnName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[clusterName]
 		if !ok {

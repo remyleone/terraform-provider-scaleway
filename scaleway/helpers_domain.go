@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"net"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
@@ -20,9 +24,9 @@ const (
 
 // domainAPI returns a new domain API.
 func newDomainAPI(m interface{}) *domain.API {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 
-	return domain.NewAPI(meta.scwClient)
+	return domain.NewAPI(meta.GetScwClient())
 }
 
 func flattenDomainData(data string, recordType domain.RecordType) interface{} {
@@ -175,9 +179,9 @@ func expandDomainHTTPService(i interface{}, ok bool) *domain.RecordHTTPServiceCo
 	}
 
 	return &domain.RecordHTTPServiceConfig{
-		MustContain: expandStringPtr(rawMap["must_contain"]),
+		MustContain: types.ExpandStringPtr(rawMap["must_contain"]),
 		URL:         rawMap["url"].(string),
-		UserAgent:   expandStringPtr(rawMap["user_agent"]),
+		UserAgent:   types.ExpandStringPtr(rawMap["user_agent"]),
 		Strategy:    domain.RecordHTTPServiceConfigStrategy(rawMap["strategy"].(string)),
 		IPs:         ips,
 	}
@@ -264,8 +268,8 @@ func expandDomainView(i interface{}, ok bool) *domain.RecordViewConfig {
 
 func waitForDNSZone(ctx context.Context, domainAPI *domain.API, dnsZone string, timeout time.Duration) (*domain.DNSZone, error) {
 	retryInterval := defaultDomainZoneRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return domainAPI.WaitForDNSZone(&domain.WaitForDNSZoneRequest{
@@ -277,8 +281,8 @@ func waitForDNSZone(ctx context.Context, domainAPI *domain.API, dnsZone string, 
 
 func waitForDNSRecordExist(ctx context.Context, domainAPI *domain.API, dnsZone, recordName string, recordType domain.RecordType, timeout time.Duration) (*domain.Record, error) {
 	retryInterval := defaultDomainZoneRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return domainAPI.WaitForDNSRecordExist(&domain.WaitForDNSRecordExistRequest{

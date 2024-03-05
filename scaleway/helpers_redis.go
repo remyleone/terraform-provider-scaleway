@@ -4,8 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"sort"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -20,15 +26,15 @@ const (
 
 // newRedisApi returns a new Redis API
 func newRedisAPI(m interface{}) *redis.API {
-	meta := m.(*Meta)
-	return redis.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	return redis.NewAPI(meta.GetScwClient())
 }
 
 // redisAPIWithZone returns a new Redis API and the zone for a Create request
 func redisAPIWithZone(d *schema.ResourceData, m interface{}) (*redis.API, scw.Zone, error) {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -37,7 +43,7 @@ func redisAPIWithZone(d *schema.ResourceData, m interface{}) (*redis.API, scw.Zo
 
 // redisAPIWithZoneAndID returns a Redis API with zone and ID extracted from the state
 func redisAPIWithZoneAndID(m interface{}, id string) (*redis.API, scw.Zone, string, error) {
-	zone, ID, err := parseZonedID(id)
+	zone, ID, err := zonal.ParseZonedID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -46,8 +52,8 @@ func redisAPIWithZoneAndID(m interface{}, id string) (*redis.API, scw.Zone, stri
 
 func waitForRedisCluster(ctx context.Context, api *redis.API, zone scw.Zone, id string, timeout time.Duration) (*redis.Cluster, error) {
 	retryInterval := defaultWaitRedisClusterRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForCluster(&redis.WaitForClusterRequest{
@@ -66,7 +72,7 @@ func expandRedisPrivateNetwork(data []interface{}) ([]*redis.EndpointSpec, error
 
 	for _, rawPN := range data {
 		pn := rawPN.(map[string]interface{})
-		pnID := expandID(pn["id"].(string))
+		pnID := locality.ExpandID(pn["id"].(string))
 		rawIPs := pn["service_ips"].([]interface{})
 		ips := []scw.IPNet(nil)
 		spec := &redis.EndpointSpecPrivateNetworkSpec{
@@ -193,7 +199,7 @@ func redisPrivateNetworkSetHash(v interface{}) int {
 
 	m := v.(map[string]interface{})
 	if pnID, ok := m["id"]; ok {
-		buf.WriteString(expandID(pnID))
+		buf.WriteString(locality.ExpandID(pnID))
 	}
 
 	if serviceIPs, ok := m["service_ips"]; ok {

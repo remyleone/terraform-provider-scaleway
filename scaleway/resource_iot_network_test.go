@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
 )
 
 func TestAccScalewayIotNetwork_Minimal(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: testAccCheckScalewayIotHubDestroy(tt),
@@ -48,10 +50,10 @@ func TestAccScalewayIotNetwork_Minimal(t *testing.T) {
 }
 
 func TestAccScalewayIotNetwork_RESTWithTopicPrefix(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: testAccCheckScalewayIotHubDestroy(tt),
@@ -88,10 +90,10 @@ func TestAccScalewayIotNetwork_RESTWithTopicPrefix(t *testing.T) {
 }
 
 func TestAccScalewayIotNetwork_Sigfox(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: testAccCheckScalewayIotHubDestroy(tt),
@@ -125,7 +127,7 @@ func TestAccScalewayIotNetwork_Sigfox(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIotNetworkExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayIotNetworkExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

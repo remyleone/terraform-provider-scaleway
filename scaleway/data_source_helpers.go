@@ -3,20 +3,22 @@ package scaleway
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 )
 
 func datasourceNewZonedID(idI interface{}, fallBackZone scw.Zone) string {
-	zone, id, err := parseZonedID(idI.(string))
+	zone, id, err := zonal.ParseZonedID(idI.(string))
 	if err != nil {
 		id = idI.(string)
 		zone = fallBackZone
 	}
 
-	return newZonedIDString(zone, id)
+	return zonal.NewZonedIDString(zone, id)
 }
 
 func datasourceNewRegionalID(idI interface{}, fallBackRegion scw.Region) string {
-	region, id, err := parseRegionalID(idI.(string))
+	region, id, err := regional.ParseRegionalID(idI.(string))
 	if err != nil {
 		id = idI.(string)
 		region = fallBackRegion

@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -127,7 +131,7 @@ func resourceScalewayLbCertificate() *schema.Resource {
 }
 
 func resourceScalewayLbCertificateCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	zone, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	zone, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -140,7 +144,7 @@ func resourceScalewayLbCertificateCreate(ctx context.Context, d *schema.Resource
 	createReq := &lbSDK.ZonedAPICreateCertificateRequest{
 		Zone:              zone,
 		LBID:              lbID,
-		Name:              expandOrGenerateString(d.Get("name"), "lb-cert"),
+		Name:              types.ExpandOrGenerateString(d.Get("name"), "lb-cert"),
 		Letsencrypt:       expandLbLetsEncrypt(d.Get("letsencrypt")),
 		CustomCertificate: expandLbCustomCertificate(d.Get("custom_certificate")),
 	}
@@ -150,7 +154,7 @@ func resourceScalewayLbCertificateCreate(ctx context.Context, d *schema.Resource
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -162,11 +166,11 @@ func resourceScalewayLbCertificateCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, certificate.ID))
+	d.SetId(zonal.NewZonedIDString(zone, certificate.ID))
 
 	_, err = waitForLBCertificate(ctx, lbAPI, zone, certificate.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -187,14 +191,14 @@ func resourceScalewayLbCertificateRead(ctx context.Context, d *schema.ResourceDa
 		Zone:          zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("lb_id", newZonedIDString(zone, certificate.LB.ID))
+	_ = d.Set("lb_id", zonal.NewZonedIDString(zone, certificate.LB.ID))
 	_ = d.Set("name", certificate.Name)
 	_ = d.Set("common_name", certificate.CommonName)
 	_ = d.Set("subject_alternative_name", certificate.SubjectAlternativeName)
@@ -242,7 +246,7 @@ func resourceScalewayLbCertificateUpdate(ctx context.Context, d *schema.Resource
 			return diag.FromErr(err)
 		}
 		if err != nil {
-			if is403Error(err) {
+			if http_errors.Is403Error(err) {
 				d.SetId("")
 				return nil
 			}
@@ -273,7 +277,7 @@ func resourceScalewayLbCertificateDelete(ctx context.Context, d *schema.Resource
 	}
 
 	_, err = waitForLBCertificate(ctx, lbAPI, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is403Error(err) && !is404Error(err) {
+	if err != nil && !http_errors.Is403Error(err) && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

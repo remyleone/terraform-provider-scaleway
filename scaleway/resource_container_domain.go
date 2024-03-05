@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -37,7 +40,7 @@ func resourceScalewayContainerDomain() *schema.Resource {
 				Required:         true,
 				ForceNew:         true,
 				Description:      "Container the domain will be bound to",
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 			},
 			"url": {
@@ -58,7 +61,7 @@ func resourceScalewayContainerDomainCreate(ctx context.Context, d *schema.Resour
 	}
 
 	hostname := d.Get("hostname").(string)
-	containerID := expandID(d.Get("container_id"))
+	containerID := locality.ExpandID(d.Get("container_id"))
 
 	_, err = waitForContainer(ctx, api, containerID, region, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -94,7 +97,7 @@ func resourceScalewayContainerDomainRead(ctx context.Context, d *schema.Resource
 
 	domain, err := waitForContainerDomain(ctx, api, domainID, region, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -117,7 +120,7 @@ func resourceScalewayContainerDomainDelete(ctx context.Context, d *schema.Resour
 
 	_, err = waitForContainerDomain(ctx, api, domainID, region, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -128,7 +131,7 @@ func resourceScalewayContainerDomainDelete(ctx context.Context, d *schema.Resour
 		Region:   region,
 		DomainID: domainID,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

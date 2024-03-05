@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepFunctionTrigger(_ string) error {
-	return sweepRegions((&function.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions((&function.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		functionAPI := function.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the function triggers in (%s)", region)
+		L.Debugf("sweeper: destroying the function triggers in (%s)", region)
 		listTriggers, err := functionAPI.ListTriggers(
 			&function.ListTriggersRequest{
 				Region: region,
@@ -35,7 +37,7 @@ func testSweepFunctionTrigger(_ string) error {
 				Region:    region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting trigger in sweeper: %s", err)
 			}
@@ -46,7 +48,7 @@ func testSweepFunctionTrigger(_ string) error {
 }
 
 func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	config := `
@@ -100,7 +102,7 @@ func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
 				`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayFunctionTriggerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -122,7 +124,7 @@ func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
 }
 
 func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	config := `
@@ -152,7 +154,7 @@ func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
 				`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayFunctionTriggerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -176,11 +178,11 @@ func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
 func TestAccScalewayFunctionTrigger_Error(t *testing.T) {
 	// https://github.com/hashicorp/terraform-plugin-testing/issues/69
 	t.Skip("Currently cannot test warnings")
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayFunctionTriggerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -224,7 +226,7 @@ func TestAccScalewayFunctionTrigger_Error(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayFunctionTriggerExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayFunctionTriggerExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -248,7 +250,7 @@ func testAccCheckScalewayFunctionTriggerExists(tt *TestTools, n string) resource
 	}
 }
 
-func testAccCheckScalewayFunctionTriggerStatusReady(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayFunctionTriggerStatusReady(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -276,7 +278,7 @@ func testAccCheckScalewayFunctionTriggerStatusReady(tt *TestTools, n string) res
 	}
 }
 
-func testAccCheckScalewayFunctionTriggerDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayFunctionTriggerDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_function_trigger" {
@@ -297,7 +299,7 @@ func testAccCheckScalewayFunctionTriggerDestroy(tt *TestTools) resource.TestChec
 				return fmt.Errorf("function trigger (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

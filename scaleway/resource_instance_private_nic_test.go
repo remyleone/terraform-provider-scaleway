@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
@@ -17,10 +19,10 @@ func init() {
 }
 
 func TestAccScalewayInstancePrivateNIC_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstancePrivateNICDestroy(tt),
 		Steps: []resource.TestStep{
@@ -52,10 +54,10 @@ func TestAccScalewayInstancePrivateNIC_Basic(t *testing.T) {
 }
 
 func TestAccScalewayInstancePrivateNIC_Tags(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstancePrivateNICDestroy(tt),
 		Steps: []resource.TestStep{
@@ -139,7 +141,7 @@ func TestAccScalewayInstancePrivateNIC_Tags(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayInstancePrivateNICExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayInstancePrivateNICExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -164,7 +166,7 @@ func testAccCheckScalewayInstancePrivateNICExists(tt *TestTools, n string) resou
 	}
 }
 
-func testAccCheckScalewayInstancePrivateNICDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayInstancePrivateNICDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_instance_private_nic" {
@@ -190,7 +192,7 @@ func testAccCheckScalewayInstancePrivateNICDestroy(tt *TestTools) resource.TestC
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

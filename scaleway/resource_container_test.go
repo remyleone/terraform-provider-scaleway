@@ -10,6 +10,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 	docker "github.com/docker/docker/client"
@@ -29,9 +31,9 @@ func init() {
 }
 
 func testSweepContainer(_ string) error {
-	return sweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
 		containerAPI := container.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the container in (%s)", region)
+		L.Debugf("sweeper: destroying the container in (%s)", region)
 		listNamespaces, err := containerAPI.ListContainers(
 			&container.ListContainersRequest{
 				Region: region,
@@ -46,7 +48,7 @@ func testSweepContainer(_ string) error {
 				Region:      region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting container in sweeper: %s", err)
 			}
@@ -57,10 +59,10 @@ func testSweepContainer(_ string) error {
 }
 
 func TestAccScalewayContainer_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -161,10 +163,10 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 }
 
 func TestAccScalewayContainer_Env(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -240,12 +242,12 @@ func TestAccScalewayContainer_Env(t *testing.T) {
 }
 
 func TestAccScalewayContainer_WithIMG(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	containerNamespace := "test-cr-ns-02"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -318,10 +320,10 @@ func TestAccScalewayContainer_WithIMG(t *testing.T) {
 }
 
 func TestAccScalewayContainer_HTTPOption(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -373,7 +375,7 @@ func TestAccScalewayContainer_HTTPOption(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayContainerExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayContainerExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -397,7 +399,7 @@ func testAccCheckScalewayContainerExists(tt *TestTools, n string) resource.TestC
 	}
 }
 
-func testAccCheckScalewayContainerDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayContainerDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_container_namespace" {
@@ -418,7 +420,7 @@ func testAccCheckScalewayContainerDestroy(tt *TestTools) resource.TestCheckFunc 
 				return fmt.Errorf("container (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -427,7 +429,7 @@ func testAccCheckScalewayContainerDestroy(tt *TestTools) resource.TestCheckFunc 
 	}
 }
 
-func testConfigContainerNamespace(tt *TestTools, n string) resource.TestCheckFunc {
+func testConfigContainerNamespace(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Do not execute docker requests when running with cassettes
 		if !*UpdateCassettes {
@@ -454,8 +456,8 @@ func testConfigContainerNamespace(tt *TestTools, n string) resource.TestCheckFun
 		meta := tt.Meta
 		var errorMessage ErrorRegistryMessage
 
-		accessKey, _ := meta.scwClient.GetAccessKey()
-		secretKey, _ := meta.scwClient.GetSecretKey()
+		accessKey, _ := meta.GetScwClient().GetAccessKey()
+		secretKey, _ := meta.GetScwClient().GetSecretKey()
 		authConfig := registry.AuthConfig{
 			ServerAddress: ns.RegistryEndpoint,
 			Username:      accessKey,

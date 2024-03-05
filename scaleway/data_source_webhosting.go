@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,15 +22,15 @@ func dataSourceScalewayWebhosting() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the Webhosting",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"domain"},
 	}
-	dsSchema["organization_id"] = organizationIDOptionalSchema()
+	dsSchema["organization_id"] = organization.OrganizationIDOptionalSchema()
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The project ID the resource is associated to",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -47,9 +50,9 @@ func dataSourceScalewayWebhostingRead(ctx context.Context, d *schema.ResourceDat
 		hostingDomain := d.Get("domain").(string)
 		res, err := api.ListHostings(&webhosting.ListHostingsRequest{
 			Region:         region,
-			Domain:         expandStringPtr(hostingDomain),
-			ProjectID:      expandStringPtr(d.Get("project_id")),
-			OrganizationID: expandStringPtr(d.Get("organization_id")),
+			Domain:         types.ExpandStringPtr(hostingDomain),
+			ProjectID:      types.ExpandStringPtr(d.Get("project_id")),
+			OrganizationID: types.ExpandStringPtr(d.Get("organization_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

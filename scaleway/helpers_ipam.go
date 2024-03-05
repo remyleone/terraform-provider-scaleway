@@ -2,9 +2,14 @@
 package scaleway
 
 import (
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"net"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ipam "github.com/scaleway/scaleway-sdk-go/api/ipam/v1"
@@ -19,8 +24,8 @@ const (
 
 // ipamAPIWithRegion returns a new ipam API and the region
 func ipamAPIWithRegion(d *schema.ResourceData, m interface{}) (*ipam.API, scw.Region, error) {
-	meta := m.(*Meta)
-	ipamAPI := ipam.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	ipamAPI := ipam.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -32,10 +37,10 @@ func ipamAPIWithRegion(d *schema.ResourceData, m interface{}) (*ipam.API, scw.Re
 
 // ipamAPIWithRegionAndID returns a new ipam API with locality and ID extracted from the state
 func ipamAPIWithRegionAndID(m interface{}, id string) (*ipam.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	ipamAPI := ipam.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	ipamAPI := ipam.NewAPI(meta.GetScwClient())
 
-	region, ID, err := parseRegionalID(id)
+	region, ID, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -67,9 +72,9 @@ func expandIPSource(raw interface{}) *ipam.Source {
 
 	rawMap := raw.([]interface{})[0].(map[string]interface{})
 	return &ipam.Source{
-		Zonal:            expandStringPtr(rawMap["zonal"].(string)),
-		PrivateNetworkID: expandStringPtr(expandID(rawMap["private_network_id"].(string))),
-		SubnetID:         expandStringPtr(rawMap["subnet_id"].(string)),
+		Zonal:            types.ExpandStringPtr(rawMap["zonal"].(string)),
+		PrivateNetworkID: types.ExpandStringPtr(locality.ExpandID(rawMap["private_network_id"].(string))),
+		SubnetID:         types.ExpandStringPtr(rawMap["subnet_id"].(string)),
 	}
 }
 

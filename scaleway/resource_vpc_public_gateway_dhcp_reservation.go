@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"errors"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 	"net"
 	"time"
 
@@ -68,7 +71,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservation() *schema.Resource {
 				Computed:    true,
 				Description: "The configuration last modification date.",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("gateway_network_id"),
 	}
@@ -90,7 +93,7 @@ func resourceScalewayVPCPublicGatewayDHCPCReservationCreate(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
-	gatewayNetworkID := expandID(d.Get("gateway_network_id"))
+	gatewayNetworkID := locality.ExpandID(d.Get("gateway_network_id"))
 	_, err = waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, gatewayNetworkID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
@@ -106,7 +109,7 @@ func resourceScalewayVPCPublicGatewayDHCPCReservationCreate(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	_, err = waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, gatewayNetworkID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -127,7 +130,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservationRead(ctx context.Context, d 
 		Zone:        zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -138,7 +141,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservationRead(ctx context.Context, d 
 	_ = d.Set("mac_address", entry.MacAddress)
 	_ = d.Set("hostname", entry.Hostname)
 	_ = d.Set("type", entry.Type.String())
-	_ = d.Set("gateway_network_id", newZonedIDString(zone, entry.GatewayNetworkID))
+	_ = d.Set("gateway_network_id", zonal.NewZonedIDString(zone, entry.GatewayNetworkID))
 	_ = d.Set("created_at", entry.CreatedAt.Format(time.RFC3339))
 	_ = d.Set("updated_at", entry.UpdatedAt.Format(time.RFC3339))
 	_ = d.Set("zone", zone)
@@ -158,7 +161,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservationUpdate(ctx context.Context, 
 			return diag.FromErr(errors.New("could not parse ip_address"))
 		}
 
-		gatewayNetworkID := expandID(d.Get("gateway_network_id"))
+		gatewayNetworkID := locality.ExpandID(d.Get("gateway_network_id"))
 		_, err = waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, gatewayNetworkID, d.Timeout(schema.TimeoutUpdate))
 		if err != nil {
 			return diag.FromErr(err)
@@ -190,7 +193,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservationDelete(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	gatewayNetworkID := expandID(d.Get("gateway_network_id"))
+	gatewayNetworkID := locality.ExpandID(d.Get("gateway_network_id"))
 	_, err = waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, gatewayNetworkID, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
@@ -201,7 +204,7 @@ func resourceScalewayVPCPublicGatewayDHCPReservationDelete(ctx context.Context, 
 		Zone:        zone,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

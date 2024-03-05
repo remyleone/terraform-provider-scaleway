@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
@@ -17,10 +19,10 @@ func TestAccScalewayLbCertificate_Basic(t *testing.T) {
 	* an additional step which creates a DNS record and depending on it
 	* We use a DNS name like: 195-154-70-235.lb.fr-par.scw.cloud
 	 */
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayLbDestroy(tt),
@@ -225,7 +227,7 @@ EOF
 	})
 }
 
-func testAccCheckScalewayLbCertificateDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbCertificateDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_certificate" {
@@ -248,7 +250,7 @@ func testAccCheckScalewayLbCertificateDestroy(tt *TestTools) resource.TestCheckF
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

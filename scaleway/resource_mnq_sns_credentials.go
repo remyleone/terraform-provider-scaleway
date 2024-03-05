@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -55,7 +60,7 @@ func resourceScalewayMNQSNSCredentials() *schema.Resource {
 				},
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 
 			// Computed
 			"access_key": {
@@ -83,7 +88,7 @@ func resourceScalewayMNQSNSCredentialsCreate(ctx context.Context, d *schema.Reso
 	credentials, err := api.CreateSnsCredentials(&mnq.SnsAPICreateSnsCredentialsRequest{
 		Region:    region,
 		ProjectID: d.Get("project_id").(string),
-		Name:      expandOrGenerateString(d.Get("name").(string), "sns-credentials"),
+		Name:      types.ExpandOrGenerateString(d.Get("name").(string), "sns-credentials"),
 		Permissions: &mnq.SnsPermissions{
 			CanPublish: expandBoolPtr(d.Get("permissions.0.can_publish")),
 			CanReceive: expandBoolPtr(d.Get("permissions.0.can_receive")),
@@ -113,7 +118,7 @@ func resourceScalewayMNQSNSCredentialsRead(ctx context.Context, d *schema.Resour
 		SnsCredentialsID: id,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -183,7 +188,7 @@ func resourceScalewayMNQSNSCredentialsDelete(ctx context.Context, d *schema.Reso
 		Region:           region,
 		SnsCredentialsID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

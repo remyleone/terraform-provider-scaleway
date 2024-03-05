@@ -3,7 +3,11 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"strings"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -58,7 +62,7 @@ func resourceScalewayObjectBucketACL() *schema.Resource {
 													Type:         schema.TypeString,
 													Required:     true,
 													Description:  "The project ID owner of the grantee.",
-													ValidateFunc: validationUUID(),
+													ValidateFunc: verify.UUID(),
 												},
 												"type": {
 													Type:         schema.TypeString,
@@ -90,13 +94,13 @@ func resourceScalewayObjectBucketACL() *schema.Resource {
 										Computed:     true,
 										Optional:     true,
 										Description:  "The project ID of the grantee.",
-										ValidateFunc: validationUUID(),
+										ValidateFunc: verify.UUID(),
 									},
 									"id": {
 										Type:         schema.TypeString,
 										Required:     true,
 										Description:  "The display ID of the project.",
-										ValidateFunc: validationUUID(),
+										ValidateFunc: verify.UUID(),
 									},
 								},
 							},
@@ -128,10 +132,10 @@ func resourceScalewayObjectBucketACL() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Description:  "The project ID as owner.",
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -398,7 +402,7 @@ func resourceBucketACLRead(ctx context.Context, d *schema.ResourceData, meta int
 	}
 	_ = d.Set("region", region)
 	_ = d.Set("project_id", normalizeOwnerID(output.Owner.ID))
-	_ = d.Set("bucket", expandID(bucket))
+	_ = d.Set("bucket", locality.ExpandID(bucket))
 
 	return nil
 }

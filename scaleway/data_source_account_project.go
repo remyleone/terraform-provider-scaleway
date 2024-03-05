@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,7 +24,7 @@ func dataSourceScalewayAccountProject() *schema.Resource {
 		Computed:     true,
 		Optional:     true,
 		Description:  "The ID of the SSH key",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -41,7 +46,7 @@ func dataSourceScalewayAccountProjectRead(ctx context.Context, d *schema.Resourc
 		}
 		res, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{
 			OrganizationID: *orgID,
-			Name:           expandStringPtr(name),
+			Name:           types.ExpandStringPtr(name),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
@@ -58,7 +63,7 @@ func dataSourceScalewayAccountProjectRead(ctx context.Context, d *schema.Resourc
 
 		projectID = foundProject.ID
 	} else {
-		extractedProjectID, _, err := extractProjectID(d, meta.(*Meta))
+		extractedProjectID, _, err := extractProjectID(d, meta.(*meta2.Meta))
 		if err != nil {
 			return diag.FromErr(err)
 		}

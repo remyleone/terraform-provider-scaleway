@@ -4,9 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"strconv"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/k8s/v1"
@@ -20,8 +25,8 @@ const (
 )
 
 func k8sAPIWithRegion(d *schema.ResourceData, m interface{}) (*k8s.API, scw.Region, error) {
-	meta := m.(*Meta)
-	k8sAPI := k8s.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	k8sAPI := k8s.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -31,10 +36,10 @@ func k8sAPIWithRegion(d *schema.ResourceData, m interface{}) (*k8s.API, scw.Regi
 }
 
 func k8sAPIWithRegionAndID(m interface{}, id string) (*k8s.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	k8sAPI := k8s.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	k8sAPI := k8s.NewAPI(meta.GetScwClient())
 
-	region, ID, err := parseRegionalID(id)
+	region, ID, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -50,7 +55,7 @@ func k8sGetMinorVersionFromFull(version string) (string, error) {
 	return versionSplit[0] + "." + versionSplit[1], nil
 }
 
-// k8sGetLatestVersionFromMinor returns the latest full version (x.y.z) for a given minor version (x.y)
+// k8sGetLatestVersionFromMinor returns the latest full Version (x.y.z) for a given minor Version (x.y)
 func k8sGetLatestVersionFromMinor(ctx context.Context, k8sAPI *k8s.API, region scw.Region, version string) (string, error) {
 	versionSplit := strings.Split(version, ".")
 	if len(versionSplit) != 2 {
@@ -78,8 +83,8 @@ func k8sGetLatestVersionFromMinor(ctx context.Context, k8sAPI *k8s.API, region s
 
 func waitK8SCluster(ctx context.Context, k8sAPI *k8s.API, region scw.Region, clusterID string, timeout time.Duration) (*k8s.Cluster, error) {
 	retryInterval := defaultK8SRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	cluster, err := k8sAPI.WaitForCluster(&k8s.WaitForClusterRequest{
@@ -94,8 +99,8 @@ func waitK8SCluster(ctx context.Context, k8sAPI *k8s.API, region scw.Region, clu
 
 func waitK8SClusterPool(ctx context.Context, k8sAPI *k8s.API, region scw.Region, clusterID string, timeout time.Duration) (*k8s.Cluster, error) {
 	retryInterval := defaultK8SRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return k8sAPI.WaitForClusterPool(&k8s.WaitForClusterRequest{
@@ -108,8 +113,8 @@ func waitK8SClusterPool(ctx context.Context, k8sAPI *k8s.API, region scw.Region,
 
 func waitK8SClusterStatus(ctx context.Context, k8sAPI *k8s.API, cluster *k8s.Cluster, status k8s.ClusterStatus, timeout time.Duration) (*k8s.Cluster, error) {
 	retryInterval := defaultK8SRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	cluster, err := k8sAPI.WaitForCluster(&k8s.WaitForClusterRequest{
@@ -120,7 +125,7 @@ func waitK8SClusterStatus(ctx context.Context, k8sAPI *k8s.API, cluster *k8s.Clu
 		RetryInterval: &retryInterval,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if status == k8s.ClusterStatusDeleted && is404Error(err) {
+		if status == k8s.ClusterStatusDeleted && http_errors.Is404Error(err) {
 			return cluster, nil
 		}
 		return cluster, err
@@ -131,8 +136,8 @@ func waitK8SClusterStatus(ctx context.Context, k8sAPI *k8s.API, cluster *k8s.Clu
 
 func waitK8SPoolReady(ctx context.Context, k8sAPI *k8s.API, region scw.Region, poolID string, timeout time.Duration) (*k8s.Pool, error) {
 	retryInterval := defaultK8SRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	pool, err := k8sAPI.WaitForPool(&k8s.WaitForPoolRequest{

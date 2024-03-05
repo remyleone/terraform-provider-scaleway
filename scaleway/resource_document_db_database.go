@@ -3,6 +3,13 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -29,7 +36,7 @@ func resourceScalewayDocumentDBDatabase() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "Instance on which the database is created",
 			},
 			"name": {
@@ -55,7 +62,7 @@ func resourceScalewayDocumentDBDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -66,7 +73,7 @@ func resourceScalewayDocumentDBDatabaseCreate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	instanceID := expandID(d.Get("instance_id"))
+	instanceID := locality.ExpandID(d.Get("instance_id"))
 
 	_, err = waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -76,7 +83,7 @@ func resourceScalewayDocumentDBDatabaseCreate(ctx context.Context, d *schema.Res
 	database, err := api.CreateDatabase(&documentdb.CreateDatabaseRequest{
 		Region:     region,
 		InstanceID: instanceID,
-		Name:       expandOrGenerateString(d.Get("name").(string), "database"),
+		Name:       types.ExpandOrGenerateString(d.Get("name").(string), "database"),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -121,7 +128,7 @@ func resourceScalewayDocumentDBDatabaseRead(ctx context.Context, d *schema.Resou
 
 	instance, err := waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -155,7 +162,7 @@ func resourceScalewayDocumentDBDatabaseDelete(ctx context.Context, d *schema.Res
 
 	_, err = waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -172,7 +179,7 @@ func resourceScalewayDocumentDBDatabaseDelete(ctx context.Context, d *schema.Res
 	}
 
 	_, err = waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

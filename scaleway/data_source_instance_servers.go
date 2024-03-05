@@ -3,7 +3,13 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"strconv"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -128,15 +134,15 @@ func dataSourceScalewayInstanceServers() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeBool,
 						},
-						"zone":            zoneSchema(),
-						"organization_id": organizationIDSchema(),
-						"project_id":      projectIDSchema(),
+						"zone":            zonal.Schema(),
+						"organization_id": organization.OrganizationIDSchema(),
+						"project_id":      project.ProjectIDSchema(),
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -148,8 +154,8 @@ func dataSourceScalewayInstanceServersRead(ctx context.Context, d *schema.Resour
 	}
 	res, err := instanceAPI.ListServers(&instance.ListServersRequest{
 		Zone:    zone,
-		Name:    expandStringPtr(d.Get("name")),
-		Project: expandStringPtr(d.Get("project_id")),
+		Name:    types.ExpandStringPtr(d.Get("name")),
+		Project: types.ExpandStringPtr(d.Get("project_id")),
 		Tags:    expandStrings(d.Get("tags")),
 	}, scw.WithContext(ctx))
 	if err != nil {

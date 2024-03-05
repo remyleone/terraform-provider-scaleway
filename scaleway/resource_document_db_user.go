@@ -3,6 +3,11 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -35,7 +40,7 @@ func resourceScalewayDocumentDBUser() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "Instance on which the user is created",
 			},
 			"name": {
@@ -70,7 +75,7 @@ func resourceScalewayDocumentDBUserCreate(ctx context.Context, d *schema.Resourc
 
 	// resource depends on the instance locality
 	regionalID := d.Get("instance_id").(string)
-	region, instanceID, err := parseRegionalID(regionalID)
+	region, instanceID, err := regional.ParseRegionalID(regionalID)
 	if err != nil {
 		diag.FromErr(err)
 	}
@@ -93,7 +98,7 @@ func resourceScalewayDocumentDBUserCreate(ctx context.Context, d *schema.Resourc
 	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		currentUser, errCreateUser := api.CreateUser(createUserReq, scw.WithContext(ctx))
 		if errCreateUser != nil {
-			if is409Error(errCreateUser) {
+			if http_errors.Is409Error(errCreateUser) {
 				_, errWait := waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutCreate))
 				if errWait != nil {
 					return retry.NonRetryableError(errWait)
@@ -110,7 +115,7 @@ func resourceScalewayDocumentDBUserCreate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resourceScalewayDocumentDBUserID(region, expandID(instanceID), user.Name))
+	d.SetId(resourceScalewayDocumentDBUserID(region, locality.ExpandID(instanceID), user.Name))
 
 	return resourceScalewayDocumentDBUserRead(ctx, d, meta)
 }
@@ -132,7 +137,7 @@ func resourceScalewayDocumentDBUserRead(ctx context.Context, d *schema.ResourceD
 		Name:       &userName,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -179,7 +184,7 @@ func resourceScalewayDocumentDBUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if d.HasChange("password") {
-		req.Password = expandStringPtr(d.Get("password"))
+		req.Password = types.ExpandStringPtr(d.Get("password"))
 	}
 	if d.HasChange("is_admin") {
 		req.IsAdmin = scw.BoolPtr(d.Get("is_admin").(bool))
@@ -216,7 +221,7 @@ func resourceScalewayDocumentDBUserDelete(ctx context.Context, d *schema.Resourc
 			Name:       userName,
 		}, scw.WithContext(ctx))
 		if errDeleteUser != nil {
-			if is409Error(errDeleteUser) {
+			if http_errors.Is409Error(errDeleteUser) {
 				_, errWait := waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutDelete))
 				if errWait != nil {
 					return retry.NonRetryableError(errWait)
@@ -229,7 +234,7 @@ func resourceScalewayDocumentDBUserDelete(ctx context.Context, d *schema.Resourc
 		return nil
 	})
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

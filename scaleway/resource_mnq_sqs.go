@@ -3,6 +3,8 @@ package scaleway
 import (
 	"context"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
@@ -25,7 +27,7 @@ func resourceScalewayMNQSQS() *schema.Resource {
 				Description: "Endpoint of the SQS service",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }

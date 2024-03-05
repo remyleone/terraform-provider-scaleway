@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
 )
 
 func TestAccScalewayLbAcl_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbACLDestroy(tt),
 		Steps: []resource.TestStep{
@@ -138,7 +140,7 @@ func TestAccScalewayLbAcl_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayLbACLExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbACLExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -162,7 +164,7 @@ func testAccCheckScalewayLbACLExists(tt *TestTools, n string) resource.TestCheck
 	}
 }
 
-func testAccCheckScalewayLbACLDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbACLDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_acl" {
@@ -185,7 +187,7 @@ func testAccCheckScalewayLbACLDestroy(tt *TestTools) resource.TestCheckFunc {
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

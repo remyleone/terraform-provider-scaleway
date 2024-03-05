@@ -3,7 +3,10 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/object"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -42,7 +45,7 @@ func resourceScalewayObjectBucketPolicy() *schema.Resource {
 				DiffSuppressFunc: SuppressEquivalentPolicyDiffs,
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -118,7 +121,7 @@ func resourceScalewayObjectBucketPolicyRead(ctx context.Context, d *schema.Resou
 		Bucket: aws.String(bucket),
 	})
 
-	if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, ErrCodeNoSuchBucketPolicy, s3.ErrCodeNoSuchBucket) {
+	if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, object.ErrCodeNoSuchBucketPolicy, s3.ErrCodeNoSuchBucket) {
 		tflog.Warn(ctx, fmt.Sprintf("[WARN] SCW Bucket Policy (%s) not found, removing from state", d.Id()))
 		d.SetId("")
 		return nil

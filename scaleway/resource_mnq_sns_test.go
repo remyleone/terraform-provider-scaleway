@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
@@ -20,11 +22,11 @@ func init() {
 }
 
 func testSweepMNQSNS(_ string) error {
-	return sweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
 		mnqAPI := mnq.NewSnsAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the mnq sns in (%s)", region)
+		L.Debugf("sweeper: destroying the mnq sns in (%s)", region)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -40,7 +42,7 @@ func testSweepMNQSNS(_ string) error {
 				ProjectID: project.ID,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 				return err
 			}
 		}
@@ -50,11 +52,11 @@ func testSweepMNQSNS(_ string) error {
 }
 
 func TestAccScalewayMNQSNS_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayMNQSNSDestroy(tt),
 		Steps: []resource.TestStep{
@@ -78,7 +80,7 @@ func TestAccScalewayMNQSNS_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayMNQSNSExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -107,7 +109,7 @@ func testAccCheckScalewayMNQSNSExists(tt *TestTools, n string) resource.TestChec
 	}
 }
 
-func testAccCheckScalewayMNQSNSDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_mnq_sns" {
@@ -124,7 +126,7 @@ func testAccCheckScalewayMNQSNSDestroy(tt *TestTools) resource.TestCheckFunc {
 				Region:    region,
 			})
 			if err != nil {
-				if is404Error(err) {
+				if http_errors.Is404Error(err) {
 					return nil
 				}
 				return err
@@ -134,7 +136,7 @@ func testAccCheckScalewayMNQSNSDestroy(tt *TestTools) resource.TestCheckFunc {
 				return fmt.Errorf("mnq sns (%s) should be disabled", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

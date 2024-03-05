@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/k8s/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayK8SPool() *schema.Resource {
@@ -23,7 +24,7 @@ func dataSourceScalewayK8SPool() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the pool",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name", "cluster_id"},
 	}
 
@@ -46,7 +47,7 @@ func dataSourceScalewayK8SPoolRead(ctx context.Context, d *schema.ResourceData, 
 		clusterID := expandRegionalID(d.Get("cluster_id"))
 		res, err := k8sAPI.ListPools(&k8s.ListPoolsRequest{
 			Region:    region,
-			Name:      expandStringPtr(poolName),
+			Name:      types.ExpandStringPtr(poolName),
 			ClusterID: clusterID.ID,
 		}, scw.WithContext(ctx))
 		if err != nil {

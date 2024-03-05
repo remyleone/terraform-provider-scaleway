@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	secret "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
@@ -18,10 +20,10 @@ func init() {
 }
 
 func testSweepSecret(_ string) error {
-	return sweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
 		secretAPI := secret.NewAPI(scwClient)
 
-		l.Debugf("sweeper: deleting the secrets in (%s)", region)
+		L.Debugf("sweeper: deleting the secrets in (%s)", region)
 
 		listSecrets, err := secretAPI.ListSecrets(&secret.ListSecretsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +36,7 @@ func testSweepSecret(_ string) error {
 				Region:   region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting secret in sweeper: %s", err)
 			}
@@ -45,14 +47,14 @@ func testSweepSecret(_ string) error {
 }
 
 func TestAccScalewaySecret_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	secretName := "secretNameBasic"
 	updatedName := "secretNameBasicUpdated"
 	secretDescription := "secret description"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewaySecretDestroy(tt),
 		Steps: []resource.TestStep{
@@ -113,7 +115,7 @@ func TestAccScalewaySecret_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewaySecretExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewaySecretExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -137,7 +139,7 @@ func testAccCheckScalewaySecretExists(tt *TestTools, n string) resource.TestChec
 	}
 }
 
-func testAccCheckScalewaySecretDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewaySecretDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_secret" {
@@ -158,7 +160,7 @@ func testAccCheckScalewaySecretDestroy(tt *TestTools) resource.TestCheckFunc {
 				return fmt.Errorf("secret (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

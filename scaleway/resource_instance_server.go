@@ -5,9 +5,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"io"
 	"log"
 	"strconv"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
@@ -148,7 +160,7 @@ func resourceScalewayInstanceServer() *schema.Resource {
 				Type: schema.TypeList,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
-					ValidateFunc:     validationUUIDorUUIDWithLocality(),
+					ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 					DiffSuppressFunc: diffSuppressFuncLocality,
 				},
 				Optional:    true,
@@ -235,7 +247,7 @@ func resourceScalewayInstanceServer() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				Description:  "ID of the target bootscript (set boot_type to bootscript)",
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 			},
 			"cloud_init": {
 				Type:         schema.TypeString,
@@ -266,7 +278,7 @@ func resourceScalewayInstanceServer() *schema.Resource {
 						"pn_id": {
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateFunc:     validationUUIDorUUIDWithLocality(),
+							ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 							Description:      "The Private Network ID",
 							DiffSuppressFunc: diffSuppressFuncLocality,
 						},
@@ -281,7 +293,7 @@ func resourceScalewayInstanceServer() *schema.Resource {
 							Computed:    true,
 							Description: "The private NIC state",
 						},
-						"zone": zoneSchema(),
+						"zone": zonal.Schema(),
 					},
 				},
 			},
@@ -311,9 +323,9 @@ func resourceScalewayInstanceServer() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 		CustomizeDiff: customdiff.All(
 			customizeDiffLocalityCheck(
@@ -340,12 +352,12 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 
 	commercialType := d.Get("type").(string)
 
-	imageUUID := expandID(d.Get("image"))
+	imageUUID := locality.ExpandID(d.Get("image"))
 	if imageUUID != "" && !scwvalidation.IsUUID(imageUUID) {
 		// Replace dashes with underscores ubuntu-focal -> ubuntu_focal
 		imageLabel := formatImageLabel(imageUUID)
 
-		marketPlaceAPI := marketplace.NewAPI(meta.(*Meta).scwClient)
+		marketPlaceAPI := marketplace.NewAPI(meta.(*meta2.Meta).GetScwClient())
 		image, err := marketPlaceAPI.GetLocalImageByLabel(&marketplace.GetLocalImageByLabelRequest{
 			CommercialType: commercialType,
 			Zone:           zone,
@@ -360,11 +372,11 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 
 	req := &instance.CreateServerRequest{
 		Zone:              zone,
-		Name:              expandOrGenerateString(d.Get("name"), "srv"),
-		Project:           expandStringPtr(d.Get("project_id")),
+		Name:              types.ExpandOrGenerateString(d.Get("name"), "srv"),
+		Project:           types.ExpandStringPtr(d.Get("project_id")),
 		Image:             imageUUID,
 		CommercialType:    commercialType,
-		SecurityGroup:     expandStringPtr(expandZonedID(d.Get("security_group_id")).ID),
+		SecurityGroup:     types.ExpandStringPtr(expandZonedID(d.Get("security_group_id")).ID),
 		DynamicIPRequired: scw.BoolPtr(d.Get("enable_dynamic_ip").(bool)),
 		Tags:              expandStrings(d.Get("tags")),
 		RoutedIPEnabled:   expandBoolPtr(getBool(d, "routed_ip_enabled")),
@@ -376,7 +388,7 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	if bootScriptID, ok := d.GetOk("bootscript_id"); ok {
-		req.Bootscript = expandStringPtr(bootScriptID)
+		req.Bootscript = types.ExpandStringPtr(bootScriptID)
 	}
 
 	if bootType, ok := d.GetOk("boot_type"); ok {
@@ -385,7 +397,7 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	if ipID, ok := d.GetOk("ip_id"); ok {
-		req.PublicIP = expandStringPtr(expandZonedID(ipID).ID)
+		req.PublicIP = types.ExpandStringPtr(expandZonedID(ipID).ID)
 	}
 
 	if ipIDs, ok := d.GetOk("ip_ids"); ok {
@@ -397,7 +409,7 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	if placementGroupID, ok := d.GetOk("placement_group_id"); ok {
-		req.PlacementGroup = expandStringPtr(expandZonedID(placementGroupID).ID)
+		req.PlacementGroup = types.ExpandStringPtr(expandZonedID(placementGroupID).ID)
 	}
 
 	serverType := getServerType(ctx, api.API, req.Zone, req.CommercialType)
@@ -428,7 +440,7 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 
 	rootVolumeName := ""
 	if req.Image == "" { // When creating an instance from an image, volume should not have a name
-		rootVolumeName = newRandomName("vol")
+		rootVolumeName = types.NewRandomName("vol")
 	}
 
 	var rootVolumeSize *scw.Size
@@ -442,8 +454,8 @@ func resourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	req.Volumes["0"] = &instance.VolumeServerTemplate{
-		Name:       expandStringPtr(rootVolumeName),
-		ID:         expandStringPtr(rootVolumeID),
+		Name:       types.ExpandStringPtr(rootVolumeName),
+		ID:         types.ExpandStringPtr(rootVolumeID),
 		VolumeType: instance.VolumeVolumeType(rootVolumeType),
 		Size:       rootVolumeSize,
 		Boot:       rootVolumeIsBootVolume,
@@ -759,7 +771,7 @@ func resourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("name") {
 		serverShouldUpdate = true
-		updateRequest.Name = expandStringPtr(d.Get("name"))
+		updateRequest.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 
 	if d.HasChange("tags") {
@@ -771,7 +783,7 @@ func resourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 		serverShouldUpdate = true
 		updateRequest.SecurityGroup = &instance.SecurityGroupTemplate{
 			ID:   expandZonedID(d.Get("security_group_id")).ID,
-			Name: newRandomName("sg"), // this value will be ignored by the API
+			Name: types.NewRandomName("sg"), // this value will be ignored by the API
 		}
 	}
 
@@ -790,7 +802,7 @@ func resourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 	if raw, hasAdditionalVolumes := d.GetOk("additional_volume_ids"); d.HasChanges("additional_volume_ids", "root_volume") {
 		volumes["0"] = &instance.VolumeServerTemplate{
 			ID:   scw.StringPtr(expandZonedID(d.Get("root_volume.0.volume_id")).ID),
-			Name: scw.StringPtr(newRandomName("vol")), // name is ignored by the API, any name will work here
+			Name: scw.StringPtr(types.NewRandomName("vol")), // name is ignored by the API, any name will work here
 			Boot: expandBoolPtr(d.Get("root_volume.0.boot")),
 		}
 
@@ -819,7 +831,7 @@ func resourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 			}
 			volumes[strconv.Itoa(i+1)] = &instance.VolumeServerTemplate{
 				ID:   scw.StringPtr(expandZonedID(volumeID).ID),
-				Name: scw.StringPtr(newRandomName("vol")), // name is ignored by the API, any name will work here
+				Name: scw.StringPtr(types.NewRandomName("vol")), // name is ignored by the API, any name will work here
 			}
 		}
 
@@ -910,7 +922,7 @@ func resourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChanges("bootscript_id") {
 		serverShouldUpdate = true
-		updateRequest.Bootscript = expandStringPtr(d.Get("bootscript_id").(string))
+		updateRequest.Bootscript = types.ExpandStringPtr(d.Get("bootscript_id").(string))
 		if !isStopped {
 			warnings = append(warnings, diag.Diagnostic{
 				Severity: diag.Warning,
@@ -1077,7 +1089,7 @@ func resourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 	}
 	// reach stopped state
 	err = reachState(ctx, api, zone, id, instance.ServerStateStopped)
-	if is404Error(err) {
+	if http_errors.Is404Error(err) {
 		return nil
 	}
 	if err != nil {
@@ -1102,7 +1114,7 @@ func resourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 	}
 
 	_, err = waitForInstanceServer(ctx, api.API, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -1110,12 +1122,12 @@ func resourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 		Zone:     zone,
 		ServerID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForInstanceServer(ctx, api.API, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -1128,9 +1140,9 @@ func resourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 		}
 		err = api.DeleteVolume(&instance.DeleteVolumeRequest{
 			Zone:     zone,
-			VolumeID: expandID(volumeID),
+			VolumeID: locality.ExpandID(volumeID),
 		})
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}
@@ -1233,7 +1245,7 @@ func customDiffInstanceServerImage(ctx context.Context, diff *schema.ResourceDif
 
 	// If image is a label, we check that server.Image.ID matches the label in case the user has edited
 	// the image with another tool.
-	marketplaceAPI := marketplace.NewAPI(meta.(*Meta).scwClient)
+	marketplaceAPI := marketplace.NewAPI(meta.(*meta2.Meta).GetScwClient())
 	if err != nil {
 		return err
 	}
@@ -1242,7 +1254,7 @@ func customDiffInstanceServerImage(ctx context.Context, diff *schema.ResourceDif
 	}, scw.WithContext(ctx))
 	if err != nil {
 		// If UUID is not in marketplace, then it's an image change
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return diff.ForceNew("image")
 		}
 		return err
@@ -1268,7 +1280,7 @@ func resourceScalewayInstanceServerMigrate(ctx context.Context, d *schema.Resour
 	_, err = api.UpdateServer(&instance.UpdateServerRequest{
 		Zone:           zone,
 		ServerID:       id,
-		CommercialType: expandStringPtr(d.Get("type")),
+		CommercialType: types.ExpandStringPtr(d.Get("type")),
 	})
 	if err != nil {
 		return errors.New("failed to change server type server")
@@ -1316,7 +1328,7 @@ func resourceScalewayInstanceServerUpdateIPs(ctx context.Context, d *schema.Reso
 
 	// Gather request IPs in a map
 	for _, rawIP := range schemaIPs {
-		requestedIPs[expandID(rawIP)] = false
+		requestedIPs[locality.ExpandID(rawIP)] = false
 	}
 
 	// Detach all IPs that are not requested and set to true the one that are already attached

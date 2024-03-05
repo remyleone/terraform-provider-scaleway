@@ -2,7 +2,12 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -84,7 +89,7 @@ func resourceScalewayJobDefinition() *schema.Resource {
 				},
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -97,7 +102,7 @@ func resourceScalewayJobDefinitionCreate(ctx context.Context, d *schema.Resource
 
 	req := &jobs.CreateJobDefinitionRequest{
 		Region:               region,
-		Name:                 expandOrGenerateString(d.Get("name").(string), "job"),
+		Name:                 types.ExpandOrGenerateString(d.Get("name").(string), "job"),
 		CPULimit:             uint32(d.Get("cpu_limit").(int)),
 		MemoryLimit:          uint32(d.Get("memory_limit").(int)),
 		ImageURI:             d.Get("image_uri").(string),
@@ -143,7 +148,7 @@ func resourceScalewayJobDefinitionRead(ctx context.Context, d *schema.ResourceDa
 		Region:          region,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -241,7 +246,7 @@ func resourceScalewayJobDefinitionDelete(ctx context.Context, d *schema.Resource
 		Region:          region,
 		JobDefinitionID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

@@ -2,7 +2,10 @@ package scaleway
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"testing"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -10,7 +13,7 @@ import (
 )
 
 func TestAccScalewayFlexibleIPMACAddress_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -38,7 +41,7 @@ func TestAccScalewayFlexibleIPMACAddress_Basic(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIPMACAddress_MoveToAnotherFlexibleIP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -93,7 +96,7 @@ func TestAccScalewayFlexibleIPMACAddress_MoveToAnotherFlexibleIP(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIPMACAddress_DuplicateOnOtherFlexibleIPs(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -189,7 +192,7 @@ func TestAccScalewayFlexibleIPMACAddress_DuplicateOnOtherFlexibleIPs(t *testing.
 	})
 }
 
-func testAccCheckScalewayFlexibleIPAttachedMACAddress(tt *TestTools, fipResource, macResource string) resource.TestCheckFunc {
+func testAccCheckScalewayFlexibleIPAttachedMACAddress(tt *tests.TestTools, fipResource, macResource string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		fipState, ok := s.RootModule().Resources[fipResource]
 		if !ok {
@@ -212,7 +215,7 @@ func testAccCheckScalewayFlexibleIPAttachedMACAddress(tt *TestTools, fipResource
 			return err
 		}
 
-		if ip.MacAddress != nil && expandID(ip.MacAddress.ID) != expandID(macState.Primary.ID) {
+		if ip.MacAddress != nil && locality.ExpandID(ip.MacAddress.ID) != locality.ExpandID(macState.Primary.ID) {
 			return fmt.Errorf("IDs should be the same in %s and %s: %v is different than %v", fipResource, macResource, ip.MacAddress.ID, macState.Primary.ID)
 		}
 

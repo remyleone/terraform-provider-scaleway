@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayInstancePrivateNIC() *schema.Resource {
@@ -24,7 +25,7 @@ func dataSourceScalewayInstancePrivateNIC() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the Private NIC",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"private_network_id"},
 	}
 
@@ -40,7 +41,7 @@ func dataSourceScalewayInstancePrivateNICRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	serverID := expandID(d.Get("server_id"))
+	serverID := locality.ExpandID(d.Get("server_id"))
 
 	id, ok := d.GetOk("private_nic_id")
 	var privateNICID string
@@ -61,10 +62,10 @@ func dataSourceScalewayInstancePrivateNICRead(ctx context.Context, d *schema.Res
 
 		privateNICID = privateNic.ID
 	} else {
-		_, privateNICID, _ = parseLocalizedID(id.(string))
+		_, privateNICID, _ = locality.ParseLocalizedID(id.(string))
 	}
 
-	zonedID := newZonedNestedIDString(
+	zonedID := NewZonedNestedIDString(
 		zone,
 		serverID,
 		privateNICID,
@@ -88,7 +89,7 @@ func dataSourceScalewayInstancePrivateNICRead(ctx context.Context, d *schema.Res
 }
 
 func privateNICWithFilters(privateNICs []*instance.PrivateNIC, d *schema.ResourceData) (*instance.PrivateNIC, error) {
-	privateNetworkID := expandID(d.Get("private_network_id"))
+	privateNetworkID := locality.ExpandID(d.Get("private_network_id"))
 
 	if privateNetworkID == "" {
 		switch {

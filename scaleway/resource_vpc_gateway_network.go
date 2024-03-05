@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -33,20 +36,20 @@ func resourceScalewayVPCGatewayNetwork() *schema.Resource {
 			"gateway_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The ID of the public gateway where connect to",
 			},
 			"private_network_id": {
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 				Description:      "The ID of the private network where connect to",
 			},
 			"dhcp_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validationUUIDorUUIDWithLocality(),
+				ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 				Description:   "The ID of the public gateway DHCP config",
 				ConflictsWith: []string{"static_address", "ipam_config"},
 			},
@@ -94,7 +97,7 @@ func resourceScalewayVPCGatewayNetwork() *schema.Resource {
 							Optional:         true,
 							Computed:         true,
 							Description:      "Use this IPAM-booked IP ID as the Gateway's IP in this Private Network",
-							ValidateFunc:     validationUUIDorUUIDWithLocality(),
+							ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 							DiffSuppressFunc: diffSuppressFuncLocality,
 						},
 					},
@@ -121,7 +124,7 @@ func resourceScalewayVPCGatewayNetwork() *schema.Resource {
 				Computed:    true,
 				Description: "The status of the Public Gateway's connection to the Private Network",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("gateway_id", "private_network_id", "dhcp_id"),
 	}
@@ -173,7 +176,7 @@ func resourceScalewayVPCGatewayNetworkCreate(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, gatewayNetwork.ID))
+	d.SetId(zonal.NewZonedIDString(zone, gatewayNetwork.ID))
 
 	_, err = waitForVPCPublicGateway(ctx, vpcgwAPI, zone, gatewayNetwork.GatewayID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -196,7 +199,7 @@ func resourceScalewayVPCGatewayNetworkRead(ctx context.Context, d *schema.Resour
 
 	gatewayNetwork, err := waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, ID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -334,12 +337,12 @@ func resourceScalewayVPCGatewayNetworkDelete(ctx context.Context, d *schema.Reso
 	}
 
 	_, err = waitForVPCGatewayNetwork(ctx, vpcgwAPI, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForVPCPublicGateway(ctx, vpcgwAPI, zone, gwNetwork.GatewayID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

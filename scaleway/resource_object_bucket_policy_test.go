@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/aws/aws-sdk-go/service/s3"
 	awspolicy "github.com/hashicorp/awspolicyequivalence"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -71,11 +73,11 @@ func TestAccScalewayObjectBucketPolicy_Basic(t *testing.T) {
    ]
 }`
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
@@ -157,11 +159,11 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketID(t *testing.T) {
    ]
 }`
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
@@ -191,11 +193,11 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketID(t *testing.T) {
 func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketName(t *testing.T) {
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scw-obp-with-bucket-name")
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
@@ -241,7 +243,7 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketName(t *testing.T) {
 	})
 }
 
-func testAccCheckBucketHasPolicy(tt *TestTools, n string, expectedPolicyText string) resource.TestCheckFunc {
+func testAccCheckBucketHasPolicy(tt *tests.TestTools, n string, expectedPolicyText string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -260,7 +262,7 @@ func testAccCheckBucketHasPolicy(tt *TestTools, n string, expectedPolicyText str
 
 		bucketName := rs.Primary.Attributes["name"]
 		policy, err := s3Client.GetBucketPolicy(&s3.GetBucketPolicyInput{
-			Bucket: expandStringPtr(bucketName),
+			Bucket: types.ExpandStringPtr(bucketName),
 		})
 		if err != nil {
 			return fmt.Errorf("GetBucketPolicy error: %v", err)

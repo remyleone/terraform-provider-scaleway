@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	pnName := "TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Basic"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 
@@ -112,11 +114,11 @@ func TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Basic(t *testing.T
 }
 
 func TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Static(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	pnName := "TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Static"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 

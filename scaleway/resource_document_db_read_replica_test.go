@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBReadReplica_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayDocumentDBInstanceDestroy(tt),
@@ -48,10 +50,10 @@ func TestAccScalewayDocumentDBReadReplica_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDocumentDBReadReplica_PrivateNetwork(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayDocumentDBInstanceDestroy(tt),
@@ -92,10 +94,10 @@ func TestAccScalewayDocumentDBReadReplica_PrivateNetwork(t *testing.T) {
 }
 
 func TestAccScalewayDocumentDBReadReplica_Update(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayDocumentDBInstanceDestroy(tt),
@@ -162,10 +164,10 @@ func TestAccScalewayDocumentDBReadReplica_Update(t *testing.T) {
 }
 
 func TestAccScalewayDocumentDBReadReplica_MultipleEndpoints(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayDocumentDBInstanceDestroy(tt),
@@ -210,7 +212,7 @@ func TestAccScalewayDocumentDBReadReplica_MultipleEndpoints(t *testing.T) {
 	})
 }
 
-func testAccCheckDocumentDBReadReplicaExists(tt *TestTools, readReplica string) resource.TestCheckFunc {
+func testAccCheckDocumentDBReadReplicaExists(tt *tests.TestTools, readReplica string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		readReplicaResource, ok := state.RootModule().Resources[readReplica]
 		if !ok {
@@ -234,7 +236,7 @@ func testAccCheckDocumentDBReadReplicaExists(tt *TestTools, readReplica string) 
 	}
 }
 
-func testAccCheckScalewayDocumentDBReadReplicaDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayDocumentDBReadReplicaDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_documentdb_read_replica" {
@@ -257,7 +259,7 @@ func testAccCheckScalewayDocumentDBReadReplicaDestroy(tt *TestTools) resource.Te
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

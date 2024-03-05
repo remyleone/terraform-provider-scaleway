@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayBaremetalServer() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayBaremetalServer() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the server",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -43,7 +44,7 @@ func dataSourceScalewayBaremetalServerRead(ctx context.Context, d *schema.Resour
 		res, err := api.ListServers(&baremetal.ListServersRequest{
 			Zone:      zone,
 			Name:      scw.StringPtr(serverName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

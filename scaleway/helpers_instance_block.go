@@ -5,6 +5,8 @@ import (
 	block "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 )
 
 type InstanceBlockAPI struct {
@@ -14,11 +16,11 @@ type InstanceBlockAPI struct {
 
 // instanceAPIWithZone returns a new instance API and the zone for a Create request
 func instanceAndBlockAPIWithZone(d *schema.ResourceData, m interface{}) (*InstanceBlockAPI, scw.Zone, error) {
-	meta := m.(*Meta)
-	instanceAPI := instance.NewAPI(meta.scwClient)
-	blockAPI := block.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	instanceAPI := instance.NewAPI(meta.GetScwClient())
+	blockAPI := block.NewAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -31,11 +33,11 @@ func instanceAndBlockAPIWithZone(d *schema.ResourceData, m interface{}) (*Instan
 
 // instanceAPIWithZoneAndID returns an instance API with zone and ID extracted from the state
 func instanceAndBlockAPIWithZoneAndID(m interface{}, zonedID string) (*InstanceBlockAPI, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	instanceAPI := instance.NewAPI(meta.scwClient)
-	blockAPI := block.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	instanceAPI := instance.NewAPI(meta.GetScwClient())
+	blockAPI := block.NewAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(zonedID)
+	zone, ID, err := zonal.ParseZonedID(zonedID)
 	if err != nil {
 		return nil, "", "", err
 	}

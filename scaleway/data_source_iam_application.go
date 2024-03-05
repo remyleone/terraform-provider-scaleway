@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIamApplication() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayIamApplication() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IAM application",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUID(),
+		ValidateFunc:  verify.UUID(),
 	}
 	dsSchema["organization_id"] = &schema.Schema{
 		Type:        schema.TypeString,
@@ -44,7 +45,7 @@ func dataSourceScalewayIamApplicationRead(ctx context.Context, d *schema.Resourc
 		applicationName := d.Get("name").(string)
 		res, err := api.ListApplications(&iam.ListApplicationsRequest{
 			OrganizationID: flattenStringPtr(getOrganizationID(meta, d)).(string),
-			Name:           expandStringPtr(applicationName),
+			Name:           types.ExpandStringPtr(applicationName),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

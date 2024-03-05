@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -73,13 +76,13 @@ func resourceScalewayContainerCronCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	containerID := expandID(d.Get("container_id").(string))
+	containerID := locality.ExpandID(d.Get("container_id").(string))
 	schedule := d.Get("schedule").(string)
 	req := &container.CreateCronRequest{
 		ContainerID: containerID,
 		Region:      region,
 		Schedule:    schedule,
-		Name:        expandStringPtr(d.Get("name")),
+		Name:        types.ExpandStringPtr(d.Get("name")),
 		Args:        &jsonObj,
 	}
 
@@ -108,7 +111,7 @@ func resourceScalewayContainerCronRead(ctx context.Context, d *schema.ResourceDa
 
 	cron, err := waitForContainerCron(ctx, api, containerCronID, region, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -136,8 +139,8 @@ func resourceScalewayContainerCronUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	req := &container.UpdateCronRequest{
-		ContainerID: scw.StringPtr(expandID(d.Get("container_id"))),
-		CronID:      expandID(containerCronID),
+		ContainerID: scw.StringPtr(locality.ExpandID(d.Get("container_id"))),
+		CronID:      locality.ExpandID(containerCronID),
 		Region:      region,
 	}
 

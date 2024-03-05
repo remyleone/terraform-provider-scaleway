@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayRDBInstance() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayRDBInstance() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the RDB instance",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 
 	return &schema.Resource{
@@ -42,7 +43,7 @@ func dataSourceScalewayRDBInstanceRead(ctx context.Context, d *schema.ResourceDa
 		res, err := api.ListInstances(&rdb.ListInstancesRequest{
 			Region:    region,
 			Name:      scw.StringPtr(instanceName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

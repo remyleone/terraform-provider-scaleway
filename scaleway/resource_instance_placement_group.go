@@ -2,6 +2,14 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -63,9 +71,9 @@ func resourceScalewayInstancePlacementGroup() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the placement group",
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -78,8 +86,8 @@ func resourceScalewayInstancePlacementGroupCreate(ctx context.Context, d *schema
 
 	res, err := instanceAPI.CreatePlacementGroup(&instance.CreatePlacementGroupRequest{
 		Zone:       zone,
-		Name:       expandOrGenerateString(d.Get("name"), "pg"),
-		Project:    expandStringPtr(d.Get("project_id")),
+		Name:       types.ExpandOrGenerateString(d.Get("name"), "pg"),
+		Project:    types.ExpandStringPtr(d.Get("project_id")),
 		PolicyMode: instance.PlacementGroupPolicyMode(d.Get("policy_mode").(string)),
 		PolicyType: instance.PlacementGroupPolicyType(d.Get("policy_type").(string)),
 		Tags:       expandStrings(d.Get("tags")),
@@ -88,7 +96,7 @@ func resourceScalewayInstancePlacementGroupCreate(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.PlacementGroup.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.PlacementGroup.ID))
 	return resourceScalewayInstancePlacementGroupRead(ctx, d, meta)
 }
 
@@ -103,7 +111,7 @@ func resourceScalewayInstancePlacementGroupRead(ctx context.Context, d *schema.R
 		PlacementGroupID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -136,7 +144,7 @@ func resourceScalewayInstancePlacementGroupUpdate(ctx context.Context, d *schema
 	hasChanged := false
 
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name").(string))
+		req.Name = types.ExpandStringPtr(d.Get("name").(string))
 		hasChanged = true
 	}
 
@@ -178,7 +186,7 @@ func resourceScalewayInstancePlacementGroupDelete(ctx context.Context, d *schema
 		PlacementGroupID: ID,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

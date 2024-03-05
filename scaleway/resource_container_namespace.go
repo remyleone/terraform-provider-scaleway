@@ -2,6 +2,13 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -80,8 +87,8 @@ func resourceScalewayContainerNamespace() *schema.Resource {
 				Deprecated:  "Registry namespace is automatically destroyed with namespace",
 			},
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -93,10 +100,10 @@ func resourceScalewayContainerNamespaceCreate(ctx context.Context, d *schema.Res
 	}
 
 	ns, err := api.CreateNamespace(&container.CreateNamespaceRequest{
-		Description:                expandStringPtr(d.Get("description").(string)),
+		Description:                types.ExpandStringPtr(d.Get("description").(string)),
 		EnvironmentVariables:       expandMapPtrStringString(d.Get("environment_variables")),
 		SecretEnvironmentVariables: expandContainerSecrets(d.Get("secret_environment_variables")),
-		Name:                       expandOrGenerateString(d.Get("name").(string), "ns"),
+		Name:                       types.ExpandOrGenerateString(d.Get("name").(string), "ns"),
 		ProjectID:                  d.Get("project_id").(string),
 		Region:                     region,
 	}, scw.WithContext(ctx))
@@ -122,7 +129,7 @@ func resourceScalewayContainerNamespaceRead(ctx context.Context, d *schema.Resou
 
 	ns, err := waitForContainerNamespace(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -184,7 +191,7 @@ func resourceScalewayContainerNamespaceDelete(ctx context.Context, d *schema.Res
 
 	_, err = waitForContainerNamespace(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -195,12 +202,12 @@ func resourceScalewayContainerNamespaceDelete(ctx context.Context, d *schema.Res
 		Region:      region,
 		NamespaceID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForContainerNamespace(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -218,11 +225,11 @@ func resourceScalewayContainerNamespaceDelete(ctx context.Context, d *schema.Res
 			Region:      region,
 			NamespaceID: registryID,
 		})
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 		_, err = waitForRegistryNamespace(ctx, registryAPI, region, registryID, d.Timeout(schema.TimeoutDelete))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}

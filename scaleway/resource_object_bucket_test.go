@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -25,7 +27,7 @@ func init() {
 }
 
 func TestAccScalewayObjectBucket_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	testBucketACL := "private"
 	testBucketUpdatedACL := "public-read"
@@ -34,10 +36,10 @@ func TestAccScalewayObjectBucket_Basic(t *testing.T) {
 	bucketSecondary := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-secondary")
 	objectBucketTestMainRegion := scw.RegionFrPar
 	objectBucketTestSecondaryRegion := scw.RegionNlAms
-	objectBucketTestDefaultRegion, _ := tt.Meta.scwClient.GetDefaultRegion()
+	objectBucketTestDefaultRegion, _ := tt.meta.GetScwClient().GetDefaultRegion()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -121,12 +123,12 @@ func TestAccScalewayObjectBucket_Basic(t *testing.T) {
 }
 
 func TestAccScalewayObjectBucket_Lifecycle(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketLifecycle := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-lifecycle")
 	resourceNameLifecycle := "scaleway_object_bucket.main-bucket-lifecycle"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -349,11 +351,11 @@ func TestAccScalewayObjectBucket_Lifecycle(t *testing.T) {
 }
 
 func TestAccScalewayObjectBucket_ObjectLock(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketObjectLock := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-lock")
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -412,7 +414,7 @@ func TestAccScalewayObjectBucket_ObjectLock(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayObjectBucketDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway" {
@@ -446,7 +448,7 @@ func testAccCheckScalewayObjectBucketDestroy(tt *TestTools) resource.TestCheckFu
 }
 
 func testSweepStorageObjectBucket(_ string) error {
-	return sweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms, scw.RegionPlWaw}, func(_ *scw.Client, region scw.Region) error {
+	return SweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms, scw.RegionPlWaw}, func(_ *scw.Client, region scw.Region) error {
 		s3client, err := sharedS3ClientForRegion(region)
 		if err != nil {
 			return fmt.Errorf("error getting client: %s", err)
@@ -458,7 +460,7 @@ func testSweepStorageObjectBucket(_ string) error {
 		}
 
 		for _, bucket := range listBucketResponse.Buckets {
-			l.Debugf("Deleting %q bucket", *bucket.Name)
+			L.Debugf("Deleting %q bucket", *bucket.Name)
 			if strings.HasPrefix(*bucket.Name, "terraform-test") {
 				_, err := s3client.DeleteBucket(&s3.DeleteBucketInput{
 					Bucket: bucket.Name,
@@ -474,13 +476,13 @@ func testSweepStorageObjectBucket(_ string) error {
 }
 
 func TestAccScalewayObjectBucket_Cors_Update(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resourceName := "scaleway_object_bucket.bucket-cors-update"
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-cors-update")
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -576,13 +578,13 @@ func TestAccScalewayObjectBucket_Cors_Update(t *testing.T) {
 }
 
 func TestAccScalewayObjectBucket_Cors_Delete(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 
 	resourceName := "scaleway_object_bucket.bucket"
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-cors-delete")
-	deleteBucketCors := func(tt *TestTools, n string) resource.TestCheckFunc {
+	deleteBucketCors := func(tt *tests.TestTools, n string) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			rs, ok := s.RootModule().Resources[n]
 			if !ok {
@@ -604,7 +606,7 @@ func TestAccScalewayObjectBucket_Cors_Delete(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -633,12 +635,12 @@ func TestAccScalewayObjectBucket_Cors_Delete(t *testing.T) {
 
 func TestAccScalewayObjectBucket_Cors_EmptyOrigin(t *testing.T) {
 	t.Skip("Skipping as AllowedOrigins can be empty at the moment")
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-cors-empty-origin")
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -661,7 +663,7 @@ func TestAccScalewayObjectBucket_Cors_EmptyOrigin(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayObjectBucketCors(tt *TestTools, n string, corsRules []*s3.CORSRule) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketCors(tt *tests.TestTools, n string, corsRules []*s3.CORSRule) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ctx := context.Background()
 
@@ -701,7 +703,7 @@ func testAccCheckScalewayObjectBucketCors(tt *TestTools, n string, corsRules []*
 	}
 }
 
-func testAccCheckScalewayObjectBucketExists(tt *TestTools, n string, shouldBeAllowed bool) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketExists(tt *tests.TestTools, n string, shouldBeAllowed bool) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs := state.RootModule().Resources[n]
 		if rs == nil {
@@ -740,13 +742,13 @@ func testAccCheckScalewayObjectBucketExists(tt *TestTools, n string, shouldBeAll
 }
 
 func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resourceName := "scaleway_object_bucket.bucket"
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket-force")
 
-	addObjectToBucket := func(tt *TestTools, n string) resource.TestCheckFunc {
+	addObjectToBucket := func(tt *tests.TestTools, n string) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			rs, ok := s.RootModule().Resources[n]
 			if !ok {
@@ -776,7 +778,7 @@ func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -799,7 +801,7 @@ func TestAccScalewayObjectBucket_DestroyForce(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayObjectBucketLifecycleConfigurationExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketLifecycleConfigurationExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -819,7 +821,7 @@ func testAccCheckScalewayObjectBucketLifecycleConfigurationExists(tt *TestTools,
 		bucketRegionalID := expandRegionalID(rs.Primary.ID)
 
 		input := &s3.GetBucketLifecycleConfigurationInput{
-			Bucket: expandStringPtr(bucketRegionalID.ID),
+			Bucket: types.ExpandStringPtr(bucketRegionalID.ID),
 		}
 
 		_, err = s3Client.GetBucketLifecycleConfiguration(input)

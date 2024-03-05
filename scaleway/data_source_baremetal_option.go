@@ -3,11 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayBaremetalOption() *schema.Resource {
@@ -24,7 +25,7 @@ func dataSourceScalewayBaremetalOption() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "The ID of the option",
-				ValidateFunc:  validationUUIDorUUIDWithLocality(),
+				ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 				ConflictsWith: []string{"name"},
 			},
 			"manageable": {
@@ -32,7 +33,7 @@ func dataSourceScalewayBaremetalOption() *schema.Resource {
 				Computed:    true,
 				Description: "Is false if the option could not be added or removed",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 	}
 }

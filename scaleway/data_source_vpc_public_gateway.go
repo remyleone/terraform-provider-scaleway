@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayVPCPublicGateway() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayVPCPublicGateway() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the public gateway",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -46,9 +47,9 @@ func dataSourceScalewayVPCPublicGatewayRead(ctx context.Context, d *schema.Resou
 		gwName := d.Get("name").(string)
 		res, err := vpcgwAPI.ListGateways(
 			&vpcgw.ListGatewaysRequest{
-				Name:      expandStringPtr(gwName),
+				Name:      types.ExpandStringPtr(gwName),
 				Zone:      zone,
-				ProjectID: expandStringPtr(d.Get("project_id")),
+				ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 			}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

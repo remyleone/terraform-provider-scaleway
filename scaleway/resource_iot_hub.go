@@ -3,7 +3,14 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -79,8 +86,8 @@ func resourceScalewayIotHub() *schema.Resource {
 
 			// Computed elements
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			"created_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -132,7 +139,7 @@ func resourceScalewayIotHubCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 	req := &iot.CreateHubRequest{
 		Region:      region,
-		Name:        expandOrGenerateString(d.Get("name"), "hub"),
+		Name:        types.ExpandOrGenerateString(d.Get("name"), "hub"),
 		ProductPlan: iot.HubProductPlan(d.Get("product_plan").(string)),
 	}
 
@@ -217,7 +224,7 @@ func resourceScalewayIotHubRead(ctx context.Context, d *schema.ResourceData, met
 		HubID:  hubID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -354,12 +361,12 @@ func resourceScalewayIotHubDelete(ctx context.Context, d *schema.ResourceData, m
 		HubID:  id,
 		// Don't force delete if devices. This avoids deleting a hub by mistake
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitIotHub(ctx, iotAPI, region, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

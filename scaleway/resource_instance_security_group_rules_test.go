@@ -3,14 +3,16 @@ package scaleway
 import (
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccScalewayInstanceSecurityGroupRules_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -135,7 +137,7 @@ func TestAccScalewayInstanceSecurityGroupRules_Basic(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroupRules_IPRanges(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	config := `
 			resource scaleway_instance_security_group sg01 {
@@ -179,7 +181,7 @@ func TestAccScalewayInstanceSecurityGroupRules_IPRanges(t *testing.T) {
 		`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -206,7 +208,7 @@ func TestAccScalewayInstanceSecurityGroupRules_IPRanges(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroupRules_Basic2(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	config := `
 			resource scaleway_instance_security_group sg01 {
@@ -238,7 +240,7 @@ func TestAccScalewayInstanceSecurityGroupRules_Basic2(t *testing.T) {
 		`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{

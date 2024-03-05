@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
 )
 
 func TestAccScalewayDataSourceBaremetalOffer_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		Steps: []resource.TestStep{
 			{
@@ -58,10 +62,10 @@ func TestAccScalewayDataSourceBaremetalOffer_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceBaremetalOffer_SubscriptionPeriodHourly(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		Steps: []resource.TestStep{
 			{
@@ -109,10 +113,10 @@ func TestAccScalewayDataSourceBaremetalOffer_SubscriptionPeriodHourly(t *testing
 }
 
 func TestAccScalewayDataSourceBaremetalOffer_SubscriptionPeriodMonthly(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		Steps: []resource.TestStep{
 			{
@@ -159,7 +163,7 @@ func TestAccScalewayDataSourceBaremetalOffer_SubscriptionPeriodMonthly(t *testin
 	})
 }
 
-func testAccCheckScalewayBaremetalOfferExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayBaremetalOfferExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -167,12 +171,12 @@ func testAccCheckScalewayBaremetalOfferExists(tt *TestTools, n string) resource.
 			return fmt.Errorf("not found: %s", n)
 		}
 
-		zone, id, err := parseZonedID(rs.Primary.ID)
+		zone, id, err := zonal.ParseZonedID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		baremetalAPI := baremetal.NewAPI(tt.Meta.scwClient)
+		baremetalAPI := baremetal.NewAPI(tt.meta.GetScwClient())
 		_, err = baremetalFindOfferByID(context.Background(), baremetalAPI, zone, id)
 		if err != nil {
 			return err

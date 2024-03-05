@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 )
 
 func TestAccScalewayContainerCron_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerCronDestroy(tt),
 		Steps: []resource.TestStep{
@@ -71,11 +73,11 @@ func TestAccScalewayContainerCron_Basic(t *testing.T) {
 }
 
 func TestAccScalewayContainerCron_WithMultiArgs(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerCronDestroy(tt),
 		Steps: []resource.TestStep{
@@ -137,7 +139,7 @@ func TestAccScalewayContainerCron_WithMultiArgs(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayContainerCronExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayContainerCronExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -161,7 +163,7 @@ func testAccCheckScalewayContainerCronExists(tt *TestTools, n string) resource.T
 	}
 }
 
-func testAccCheckScalewayContainerCronDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayContainerCronDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_container_cron" {
@@ -182,7 +184,7 @@ func testAccCheckScalewayContainerCronDestroy(tt *TestTools) resource.TestCheckF
 				return fmt.Errorf("container cron (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

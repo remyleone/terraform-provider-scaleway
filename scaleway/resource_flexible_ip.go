@@ -2,6 +2,15 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -58,9 +67,9 @@ func resourceScalewayFlexibleIP() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the flexible IP",
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			"ip_address": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -97,15 +106,15 @@ func resourceScalewayFlexibleIPCreate(ctx context.Context, d *schema.ResourceDat
 		ProjectID:   d.Get("project_id").(string),
 		Description: d.Get("description").(string),
 		Tags:        expandStrings(d.Get("tags")),
-		ServerID:    expandStringPtr(expandID(d.Get("server_id"))),
-		Reverse:     expandStringPtr(d.Get("reverse")),
+		ServerID:    types.ExpandStringPtr(locality.ExpandID(d.Get("server_id"))),
+		Reverse:     types.ExpandStringPtr(d.Get("reverse")),
 		IsIPv6:      d.Get("is_ipv6").(bool),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, flexibleIP.ID))
+	d.SetId(zonal.NewZonedIDString(zone, flexibleIP.ID))
 
 	_, err = waitFlexibleIP(ctx, fipAPI, zone, flexibleIP.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -132,7 +141,7 @@ func resourceScalewayFlexibleIPRead(ctx context.Context, d *schema.ResourceData,
 	}, scw.WithContext(ctx))
 	if err != nil {
 		// We check for 403 because flexible API returns 403 for a deleted IP
-		if is404Error(err) || is403Error(err) {
+		if http_errors.Is404Error(err) || http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -150,7 +159,7 @@ func resourceScalewayFlexibleIPRead(ctx context.Context, d *schema.ResourceData,
 	_ = d.Set("status", flexibleIP.Status.String())
 
 	if flexibleIP.ServerID != nil {
-		_ = d.Set("server_id", newZonedIDString(zone, *flexibleIP.ServerID))
+		_ = d.Set("server_id", zonal.NewZonedIDString(zone, *flexibleIP.ServerID))
 	} else {
 		_ = d.Set("server_id", "")
 	}
@@ -215,7 +224,7 @@ func resourceScalewayFlexibleIPUpdate(ctx context.Context, d *schema.ResourceDat
 			_, err = fipAPI.AttachFlexibleIP(&flexibleip.AttachFlexibleIPRequest{
 				Zone:     zone,
 				FipsIDs:  []string{ID},
-				ServerID: expandID(d.Get("server_id")),
+				ServerID: locality.ExpandID(d.Get("server_id")),
 			})
 			if err != nil {
 				return diag.FromErr(err)
@@ -247,12 +256,12 @@ func resourceScalewayFlexibleIPDelete(ctx context.Context, d *schema.ResourceDat
 		Zone:  zone,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) && !is403Error(err) {
+	if err != nil && !http_errors.Is404Error(err) && !http_errors.Is403Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitFlexibleIP(ctx, fipAPI, zone, ID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) && !is403Error(err) {
+	if err != nil && !http_errors.Is404Error(err) && !http_errors.Is403Error(err) {
 		return diag.FromErr(err)
 	}
 

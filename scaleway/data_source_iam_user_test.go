@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 )
 
 func TestAccScalewayDataSourceIamUser_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		Steps: []resource.TestStep{
 			{
@@ -42,7 +44,7 @@ func TestAccScalewayDataSourceIamUser_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIamUserExists(tt *TestTools, name string) resource.TestCheckFunc {
+func testAccCheckScalewayIamUserExists(tt *tests.TestTools, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {

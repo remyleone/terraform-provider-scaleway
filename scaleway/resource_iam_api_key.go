@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -59,14 +64,14 @@ func resourceScalewayIamAPIKey() *schema.Resource {
 				ForceNew:      true,
 				Description:   "ID of the application attached to the api key",
 				ConflictsWith: []string{"user_id"},
-				ValidateFunc:  validationUUID(),
+				ValidateFunc:  verify.UUID(),
 			},
 			"user_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "ID of the user attached to the api key",
 				ConflictsWith: []string{"application_id"},
-				ValidateFunc:  validationUUID(),
+				ValidateFunc:  verify.UUID(),
 			},
 			"editable": {
 				Type:        schema.TypeBool,
@@ -78,7 +83,7 @@ func resourceScalewayIamAPIKey() *schema.Resource {
 				Computed:    true,
 				Description: "The IPv4 Address of the device which created the API key",
 			},
-			"default_project_id": projectIDSchema(),
+			"default_project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -86,10 +91,10 @@ func resourceScalewayIamAPIKey() *schema.Resource {
 func resourceScalewayIamAPIKeyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	iamAPI := iamAPI(meta)
 	res, err := iamAPI.CreateAPIKey(&iam.CreateAPIKeyRequest{
-		ApplicationID:    expandStringPtr(d.Get("application_id")),
-		UserID:           expandStringPtr(d.Get("user_id")),
+		ApplicationID:    types.ExpandStringPtr(d.Get("application_id")),
+		UserID:           types.ExpandStringPtr(d.Get("user_id")),
 		ExpiresAt:        expandTimePtr(d.Get("expires_at")),
-		DefaultProjectID: expandStringPtr(d.Get("default_project_id")),
+		DefaultProjectID: types.ExpandStringPtr(d.Get("default_project_id")),
 		Description:      d.Get("description").(string),
 	}, scw.WithContext(ctx))
 	if err != nil {
@@ -109,7 +114,7 @@ func resourceScalewayIamAPIKeyRead(ctx context.Context, d *schema.ResourceData, 
 		AccessKey: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -150,7 +155,7 @@ func resourceScalewayIamAPIKeyUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if d.HasChange("default_project_id") {
-		req.DefaultProjectID = expandStringPtr(d.Get("default_project_id"))
+		req.DefaultProjectID = types.ExpandStringPtr(d.Get("default_project_id"))
 		hasChanged = true
 	}
 
@@ -170,7 +175,7 @@ func resourceScalewayIamAPIKeyDelete(ctx context.Context, d *schema.ResourceData
 	err := api.DeleteAPIKey(&iam.DeleteAPIKeyRequest{
 		AccessKey: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

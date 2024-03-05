@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"net"
 	"sort"
 
@@ -37,7 +40,7 @@ func resourceScalewayRdbACL() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "Instance on which the ACL is applied",
 			},
 			"acl_rules": {
@@ -75,7 +78,7 @@ func resourceScalewayRdbACLCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	instanceID := d.Get("instance_id").(string)
-	_, err = waitForRDBInstance(ctx, api, region, expandID(instanceID), d.Timeout(schema.TimeoutCreate))
+	_, err = waitForRDBInstance(ctx, api, region, locality.ExpandID(instanceID), d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -86,7 +89,7 @@ func resourceScalewayRdbACLCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 	createReq := &rdb.SetInstanceACLRulesRequest{
 		Region:     region,
-		InstanceID: expandID(instanceID),
+		InstanceID: locality.ExpandID(instanceID),
 		Rules:      aclRules,
 	}
 
@@ -107,7 +110,7 @@ func resourceScalewayRdbACLRead(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, instanceID, d.Timeout(schema.TimeoutRead))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -116,7 +119,7 @@ func resourceScalewayRdbACLRead(ctx context.Context, d *schema.ResourceData, met
 		InstanceID: instanceID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -157,7 +160,7 @@ func resourceScalewayRdbACLUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, instanceID, d.Timeout(schema.TimeoutUpdate))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -201,7 +204,7 @@ func resourceScalewayRdbACLDelete(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, instanceID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -210,12 +213,12 @@ func resourceScalewayRdbACLDelete(ctx context.Context, d *schema.ResourceData, m
 		InstanceID: instanceID,
 		ACLRuleIPs: aclRuleIPs,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, instanceID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

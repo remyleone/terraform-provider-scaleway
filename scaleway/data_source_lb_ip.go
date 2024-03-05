@@ -3,11 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayLbIP() *schema.Resource {
@@ -25,7 +26,7 @@ func dataSourceScalewayLbIP() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IP address",
 		ConflictsWith: []string{"ip_address"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 	dsSchema["project_id"].Optional = true
 
@@ -49,8 +50,8 @@ func dataSourceScalewayLbIPRead(ctx context.Context, d *schema.ResourceData, met
 	if !ok { // Get IP by region and IP address.
 		res, err := api.ListIPs(&lbSDK.ZonedAPIListIPsRequest{
 			Zone:      zone,
-			IPAddress: expandStringPtr(d.Get("ip_address")),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			IPAddress: types.ExpandStringPtr(d.Get("ip_address")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

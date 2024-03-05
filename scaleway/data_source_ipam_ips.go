@@ -2,6 +2,12 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -67,10 +73,10 @@ func dataSourceScalewayIPAMIPs() *schema.Resource {
 				Optional:    true,
 				Description: "IP Type (ipv4, ipv6) to filter for",
 			},
-			"zonal":           zoneSchema(),
+			"zonal":           zonal.Schema(),
 			"region":          regionSchema(),
-			"project_id":      projectIDSchema(),
-			"organization_id": organizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			// Computed
 			"ips": {
 				Type:     schema.TypeList,
@@ -126,7 +132,7 @@ func dataSourceScalewayIPAMIPs() *schema.Resource {
 						},
 						"region":     regionComputedSchema(),
 						"zone":       zoneComputedSchema(),
-						"project_id": projectIDSchema(),
+						"project_id": project.ProjectIDSchema(),
 					},
 				},
 			},
@@ -142,15 +148,15 @@ func dataSourceScalewayIPAMIPsRead(ctx context.Context, d *schema.ResourceData, 
 
 	req := &ipam.ListIPsRequest{
 		Region:           region,
-		ProjectID:        expandStringPtr(d.Get("project_id")),
-		Zonal:            expandStringPtr(d.Get("zonal")),
-		PrivateNetworkID: expandStringPtr(d.Get("private_network_id")),
-		ResourceID:       expandStringPtr(expandLastID(d.Get("resource.0.id"))),
+		ProjectID:        types.ExpandStringPtr(d.Get("project_id")),
+		Zonal:            types.ExpandStringPtr(d.Get("zonal")),
+		PrivateNetworkID: types.ExpandStringPtr(d.Get("private_network_id")),
+		ResourceID:       types.ExpandStringPtr(expandLastID(d.Get("resource.0.id"))),
 		ResourceType:     ipam.ResourceType(d.Get("resource.0.type").(string)),
-		ResourceName:     expandStringPtr(d.Get("resource.0.name")),
-		MacAddress:       expandStringPtr(d.Get("mac_address")),
+		ResourceName:     types.ExpandStringPtr(d.Get("resource.0.name")),
+		MacAddress:       types.ExpandStringPtr(d.Get("mac_address")),
 		Tags:             expandStrings(d.Get("tags")),
-		OrganizationID:   expandStringPtr(d.Get("organization_id")),
+		OrganizationID:   types.ExpandStringPtr(d.Get("organization_id")),
 	}
 
 	attached, attachedExists := d.GetOk("attached")

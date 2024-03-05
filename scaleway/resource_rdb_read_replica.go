@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -90,7 +93,7 @@ func resourceScalewayRdbReadReplica() *schema.Resource {
 						"private_network_id": {
 							Type:             schema.TypeString,
 							Description:      "UUID of the private network to be connected to the read replica (UUID format)",
-							ValidateFunc:     validationUUIDorUUIDWithLocality(),
+							ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 							DiffSuppressFunc: diffSuppressFuncLocality,
 							Required:         true,
 						},
@@ -172,7 +175,7 @@ func resourceScalewayRdbReadReplicaCreate(ctx context.Context, d *schema.Resourc
 
 	rr, err := rdbAPI.CreateReadReplica(&rdb.CreateReadReplicaRequest{
 		Region:       region,
-		InstanceID:   expandID(d.Get("instance_id")),
+		InstanceID:   locality.ExpandID(d.Get("instance_id")),
 		EndpointSpec: endpointSpecs,
 		SameZone:     expandBoolPtr(d.Get("same_zone")),
 	}, scw.WithContext(ctx))
@@ -198,7 +201,7 @@ func resourceScalewayRdbReadReplicaRead(ctx context.Context, d *schema.ResourceD
 
 	rr, err := waitForRDBReadReplica(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -231,7 +234,7 @@ func resourceScalewayRdbReadReplicaUpdate(ctx context.Context, d *schema.Resourc
 	// verify resource is ready
 	rr, err := waitForRDBReadReplica(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -341,7 +344,7 @@ func resourceScalewayRdbReadReplicaDelete(ctx context.Context, d *schema.Resourc
 
 	// Lastly wait in case the instance is in a transient state
 	_, err = waitForRDBReadReplica(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

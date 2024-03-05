@@ -2,9 +2,9 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayLbRoute() *schema.Resource {
@@ -15,7 +15,7 @@ func dataSourceScalewayLbRoute() *schema.Resource {
 		Type:         schema.TypeString,
 		Required:     true,
 		Description:  "The ID of the route",
-		ValidateFunc: validationUUIDorUUIDWithLocality(),
+		ValidateFunc: verify.UUIDorUUIDWithLocality(),
 	}
 
 	return &schema.Resource{

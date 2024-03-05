@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 )
 
 func TestAccScalewayContainerDomain_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	testDNSZone := "container-basic." + testDomain
-	l.Debugf("TestAccScalewayContainerDomain_Basic: test dns zone: %s", testDNSZone)
+	L.Debugf("TestAccScalewayContainerDomain_Basic: test dns zone: %s", testDNSZone)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerDomainDestroy(tt),
 		Steps: []resource.TestStep{
@@ -59,7 +61,7 @@ func TestAccScalewayContainerDomain_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayContainerDomainExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayContainerDomainExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -83,7 +85,7 @@ func testAccCheckScalewayContainerDomainExists(tt *TestTools, n string) resource
 	}
 }
 
-func testAccCheckScalewayContainerDomainDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayContainerDomainDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_container_domain" {
@@ -99,7 +101,7 @@ func testAccCheckScalewayContainerDomainDestroy(tt *TestTools) resource.TestChec
 				Region:   region,
 				DomainID: id,
 			})
-			if is404Error(err) {
+			if http_errors.Is404Error(err) {
 				return nil
 			}
 

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	sns "github.com/aws/aws-sdk-go/service/sns"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -14,11 +16,11 @@ import (
 )
 
 func TestAccScalewayMNQSNSTopic_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayMNQSNSTopicDestroy(tt),
 		Steps: []resource.TestStep{
@@ -137,7 +139,7 @@ func TestAccScalewayMNQSNSTopic_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayMNQSNSTopicExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSTopicExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -165,7 +167,7 @@ func testAccCheckScalewayMNQSNSTopicExists(tt *TestTools, n string) resource.Tes
 	}
 }
 
-func testAccCheckScalewayMNQSNSTopicDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSTopicDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_mnq_sns_topic" {

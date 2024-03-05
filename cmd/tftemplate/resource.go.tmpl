@@ -68,7 +68,7 @@ func resourceScaleway{{ .Resource }}Read(ctx context.Context, d *schema.Resource
 {{if .SupportWaiters}}
 	{{ .ResourceCleanLow }}, err := waitFor{{ .Resource }}(ctx, api, {{ .Locality }}, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -96,7 +96,7 @@ func resourceScaleway{{ .Resource }}Update(ctx context.Context, d *schema.Resour
 {{if .SupportWaiters }}
 	{{ .ResourceCleanLow }}, err := waitFor{{ .Resource }}(ctx, api, {{ .Locality }}, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -140,7 +140,7 @@ func resourceScaleway{{ .Resource }}Delete(ctx context.Context, d *schema.Resour
 
 {{- if .SupportWaiters}}
 	_, err = waitFor{{ .Resource }}(ctx, api, {{ .Locality }}, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 {{- end}}

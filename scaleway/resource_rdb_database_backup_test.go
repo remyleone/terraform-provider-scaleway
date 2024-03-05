@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepRDBDatabaseBackup(_ string) error {
-	return sweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
 		rdbAPI := rdb.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the rdb database backups in (%s)", region)
+		L.Debugf("sweeper: destroying the rdb database backups in (%s)", region)
 		listBackups, err := rdbAPI.ListDatabaseBackups(&rdb.ListDatabaseBackupsRequest{
 			Region: region,
 		})
@@ -33,7 +35,7 @@ func testSweepRDBDatabaseBackup(_ string) error {
 				Region:           region,
 				DatabaseBackupID: backup.ID,
 			})
-			if err != nil && !is404Error(err) {
+			if err != nil && !http_errors.Is404Error(err) {
 				return fmt.Errorf("error deleting rdb database backup in sweeper: %s", err)
 			}
 		}
@@ -43,14 +45,14 @@ func testSweepRDBDatabaseBackup(_ string) error {
 }
 
 func TestAccScalewayRdbDatabaseBackup_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	instanceName := "TestAccScalewayRdbDatabaseBackup_Basic"
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -104,7 +106,7 @@ func TestAccScalewayRdbDatabaseBackup_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayRdbDatabaseBackupDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayRdbDatabaseBackupDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_rdb_database_backup" {
@@ -127,7 +129,7 @@ func testAccCheckScalewayRdbDatabaseBackupDestroy(tt *TestTools) resource.TestCh
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -136,7 +138,7 @@ func testAccCheckScalewayRdbDatabaseBackupDestroy(tt *TestTools) resource.TestCh
 	}
 }
 
-func testAccCheckRdbDatabaseBackupExists(tt *TestTools, databaseBackup string) resource.TestCheckFunc {
+func testAccCheckRdbDatabaseBackupExists(tt *tests.TestTools, databaseBackup string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[databaseBackup]
 		if !ok {

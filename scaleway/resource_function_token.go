@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -66,9 +69,9 @@ func resourceScalewayFunctionTokenCreate(ctx context.Context, d *schema.Resource
 
 	token, err := api.CreateToken(&function.CreateTokenRequest{
 		Region:      region,
-		FunctionID:  expandStringPtr(expandID(d.Get("function_id"))),
-		NamespaceID: expandStringPtr(expandID(d.Get("namespace_id"))),
-		Description: expandStringPtr(d.Get("description")),
+		FunctionID:  types.ExpandStringPtr(locality.ExpandID(d.Get("function_id"))),
+		NamespaceID: types.ExpandStringPtr(locality.ExpandID(d.Get("namespace_id"))),
+		Description: types.ExpandStringPtr(d.Get("description")),
 		ExpiresAt:   expandTimePtr(d.Get("expires_at")),
 	}, scw.WithContext(ctx))
 	if err != nil {
@@ -92,7 +95,7 @@ func resourceScalewayFunctionTokenRead(ctx context.Context, d *schema.ResourceDa
 		TokenID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -117,7 +120,7 @@ func resourceScalewayFunctionTokenDelete(ctx context.Context, d *schema.Resource
 		Region:  region,
 		TokenID: ID,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

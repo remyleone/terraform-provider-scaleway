@@ -2,11 +2,13 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayVPCPrivateNetwork() *schema.Resource {
@@ -21,14 +23,14 @@ func dataSourceScalewayVPCPrivateNetwork() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the vpc to which the private network belongs to",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"private_network_id"},
 	}
 	dsSchema["private_network_id"] = &schema.Schema{
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the private network",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name", "vpc_id"},
 	}
 
@@ -49,10 +51,10 @@ func dataSourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.Reso
 		pnName := d.Get("name").(string)
 		res, err := vpcAPI.ListPrivateNetworks(
 			&vpc.ListPrivateNetworksRequest{
-				Name:      expandStringPtr(pnName),
+				Name:      types.ExpandStringPtr(pnName),
 				Region:    region,
-				ProjectID: expandStringPtr(d.Get("project_id")),
-				VpcID:     expandStringPtr(expandID(d.Get("vpc_id"))),
+				ProjectID: types.ExpandStringPtr(d.Get("project_id")),
+				VpcID:     types.ExpandStringPtr(locality.ExpandID(d.Get("vpc_id"))),
 			}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

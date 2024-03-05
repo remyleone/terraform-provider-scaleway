@@ -4,7 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"io"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -147,7 +156,7 @@ func resourceScalewayRdbInstance() *schema.Resource {
 						"pn_id": {
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateFunc:     validationUUIDorUUIDWithLocality(),
+							ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 							DiffSuppressFunc: diffSuppressFuncLocality,
 							Description:      "The private network ID",
 						},
@@ -192,7 +201,7 @@ func resourceScalewayRdbInstance() *schema.Resource {
 							Computed:    true,
 							Description: "Whether or not the private network endpoint should be configured with IPAM",
 						},
-						"zone": zoneSchema(),
+						"zone": zonal.Schema(),
 					},
 				},
 			},
@@ -276,8 +285,8 @@ func resourceScalewayRdbInstance() *schema.Resource {
 			},
 			// Common
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("private_network.#.pn_id"),
 	}
@@ -291,8 +300,8 @@ func resourceScalewayRdbInstanceCreate(ctx context.Context, d *schema.ResourceDa
 
 	createReq := &rdb.CreateInstanceRequest{
 		Region:        region,
-		ProjectID:     expandStringPtr(d.Get("project_id")),
-		Name:          expandOrGenerateString(d.Get("name"), "rdb"),
+		ProjectID:     types.ExpandStringPtr(d.Get("project_id")),
+		Name:          types.ExpandOrGenerateString(d.Get("name"), "rdb"),
 		NodeType:      d.Get("node_type").(string),
 		Engine:        d.Get("engine").(string),
 		IsHaCluster:   d.Get("is_ha_cluster").(bool),
@@ -398,7 +407,7 @@ func resourceScalewayRdbInstanceRead(ctx context.Context, d *schema.ResourceData
 	// verify resource is ready
 	res, err := waitForRDBInstance(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -563,7 +572,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 				rdb.UpgradeInstanceRequest{
 					Region:     region,
 					InstanceID: ID,
-					NodeType:   expandStringPtr(d.Get("node_type")),
+					NodeType:   types.ExpandStringPtr(d.Get("node_type")),
 				})
 		} else {
 			return diag.Diagnostics{
@@ -589,7 +598,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 	// Carry out the upgrades
 	for i := range upgradeInstanceRequests {
 		_, err = waitForRDBInstance(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutUpdate))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 
@@ -599,7 +608,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 		}
 
 		_, err = waitForRDBInstance(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutUpdate))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}
@@ -613,7 +622,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name"))
+		req.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 	if d.HasChange("disable_backup") {
 		req.IsBackupScheduleDisabled = scw.BoolPtr(d.Get("disable_backup").(bool))
@@ -646,7 +655,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 	////////////////////
 	if d.HasChange("settings") {
 		_, err = waitForRDBInstance(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutUpdate))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 		_, err := rdbAPI.SetInstanceSettings(&rdb.SetInstanceSettingsRequest{
@@ -672,7 +681,7 @@ func resourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 			Region:     region,
 			InstanceID: ID,
 			Name:       d.Get("user_name").(string),
-			Password:   expandStringPtr(d.Get("password")),
+			Password:   types.ExpandStringPtr(d.Get("password")),
 		}
 
 		_, err = rdbAPI.UpdateUser(req, scw.WithContext(ctx))
@@ -791,7 +800,7 @@ func resourceScalewayRdbInstanceDelete(ctx context.Context, d *schema.ResourceDa
 
 	// Lastly wait in case the instance is in a transient state
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, ID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

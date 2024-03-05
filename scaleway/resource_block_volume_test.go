@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	block "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepBlockVolume(_ string) error {
-	return sweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
 		blockAPI := block.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the block volumes in (%s)", zone)
+		L.Debugf("sweeper: destroying the block volumes in (%s)", zone)
 		listVolumes, err := blockAPI.ListVolumes(
 			&block.ListVolumesRequest{
 				Zone: zone,
@@ -35,7 +37,7 @@ func testSweepBlockVolume(_ string) error {
 				Zone:     zone,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting volume in sweeper: %s", err)
 			}
@@ -46,11 +48,11 @@ func testSweepBlockVolume(_ string) error {
 }
 
 func TestAccScalewayBlockVolume_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayBlockVolumeDestroy(tt),
 		Steps: []resource.TestStep{
@@ -74,11 +76,11 @@ func TestAccScalewayBlockVolume_Basic(t *testing.T) {
 }
 
 func TestAccScalewayBlockVolume_FromSnapshot(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayBlockVolumeDestroy(tt),
 		Steps: []resource.TestStep{
@@ -112,7 +114,7 @@ func TestAccScalewayBlockVolume_FromSnapshot(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayBlockVolumeExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayBlockVolumeExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -136,7 +138,7 @@ func testAccCheckScalewayBlockVolumeExists(tt *TestTools, n string) resource.Tes
 	}
 }
 
-func testAccCheckScalewayBlockVolumeDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayBlockVolumeDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_block_volume" {
@@ -157,7 +159,8 @@ func testAccCheckScalewayBlockVolumeDestroy(tt *TestTools) resource.TestCheckFun
 				return fmt.Errorf("block volume (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) && !is410Error(err) {
+			if !http_errors.Is404Error(err)) && !Is410Error(err)
+			{
 				return err
 			}
 		}

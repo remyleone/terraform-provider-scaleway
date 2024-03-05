@@ -2,7 +2,13 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"strings"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -52,8 +58,8 @@ func resourceScalewayIamSSKKey() *schema.Resource {
 				Computed:    true,
 				Description: "The date and time of the last update of the iam SSH Key",
 			},
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			"disabled": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -98,7 +104,7 @@ func resourceScalewayIamSSHKeyRead(ctx context.Context, d *schema.ResourceData, 
 		SSHKeyID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -127,7 +133,7 @@ func resourceScalewayIamSSKKeyUpdate(ctx context.Context, d *schema.ResourceData
 	hasUpdated := false
 
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name"))
+		req.Name = types.ExpandStringPtr(d.Get("name"))
 		hasUpdated = true
 	}
 
@@ -167,7 +173,7 @@ func resourceScalewayIamSSKKeyDelete(ctx context.Context, d *schema.ResourceData
 	err := iamAPI.DeleteSSHKey(&iam.DeleteSSHKeyRequest{
 		SSHKeyID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

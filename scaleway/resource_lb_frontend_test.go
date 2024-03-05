@@ -3,7 +3,10 @@ package scaleway
 import (
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"testing"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -13,10 +16,10 @@ import (
 )
 
 func TestAccScalewayLbFrontend_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbFrontendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -92,11 +95,11 @@ func TestAccScalewayLbFrontend_Basic(t *testing.T) {
 // Even changing one alternative domain name is enough to count as a new certificate (which is rate limited by the 50 certificates per week limit and not the 5 duplicate certificates per week limit).
 // The only limitation is that all subdomains must resolve to the same IP address.
 func TestAccScalewayLbFrontend_Certificate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbFrontendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -142,7 +145,7 @@ func TestAccScalewayLbFrontend_Certificate(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayFrontendCertificateExist(tt *TestTools, f, c string) resource.TestCheckFunc {
+func testAccCheckScalewayFrontendCertificateExist(tt *tests.TestTools, f, c string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[f]
 		if !ok {
@@ -168,7 +171,7 @@ func testAccCheckScalewayFrontendCertificateExist(tt *TestTools, f, c string) re
 		}
 
 		for _, id := range frEnd.CertificateIDs {
-			if expandID(cs.Primary.ID) == id {
+			if locality.ExpandID(cs.Primary.ID) == id {
 				return nil
 			}
 		}
@@ -177,7 +180,7 @@ func testAccCheckScalewayFrontendCertificateExist(tt *TestTools, f, c string) re
 	}
 }
 
-func testAccCheckScalewayLbFrontendExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbFrontendExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -201,7 +204,7 @@ func testAccCheckScalewayLbFrontendExists(tt *TestTools, n string) resource.Test
 	}
 }
 
-func testAccCheckScalewayLbFrontendDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbFrontendDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_frontend" {
@@ -224,7 +227,7 @@ func testAccCheckScalewayLbFrontendDestroy(tt *TestTools) resource.TestCheckFunc
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -234,10 +237,10 @@ func testAccCheckScalewayLbFrontendDestroy(tt *TestTools) resource.TestCheckFunc
 }
 
 func TestAccScalewayLbFrontend_ACLBasic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbFrontendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -446,10 +449,10 @@ func TestAccScalewayLbFrontend_ACLBasic(t *testing.T) {
 }
 
 func TestAccScalewayLbFrontend_ACLRedirectAction(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbFrontendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -523,7 +526,7 @@ func TestAccScalewayLbFrontend_ACLRedirectAction(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayACLAreCorrect(tt *TestTools, frontendName string, expectedAcls []*lbSDK.ACL) resource.TestCheckFunc {
+func testAccCheckScalewayACLAreCorrect(tt *tests.TestTools, frontendName string, expectedAcls []*lbSDK.ACL) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// define a wrapper for acl comparison
 		testCompareAcls := func(testAcl, apiAcl lbSDK.ACL) bool {

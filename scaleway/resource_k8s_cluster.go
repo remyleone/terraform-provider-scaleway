@@ -4,8 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"strings"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -163,12 +172,12 @@ func resourceScalewayK8SCluster() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Description:      "The ID of the cluster's private network",
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 			},
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			// Computed elements
 			"created_at": {
 				Type:        schema.TypeString,
@@ -266,7 +275,7 @@ func resourceScalewayK8SCluster() *schema.Resource {
 							return nil
 						}
 						if planned != "" {
-							_, plannedPNID, err := parseLocalizedID(planned.(string))
+							_, plannedPNID, err := locality.ParseLocalizedID(planned.(string))
 							if err != nil {
 								return err
 							}
@@ -349,8 +358,8 @@ func resourceScalewayK8SClusterCreate(ctx context.Context, d *schema.ResourceDat
 
 	req := &k8s.CreateClusterRequest{
 		Region:            region,
-		ProjectID:         expandStringPtr(d.Get("project_id")),
-		Name:              expandOrGenerateString(d.Get("name"), "cluster"),
+		ProjectID:         types.ExpandStringPtr(d.Get("project_id")),
+		Name:              types.ExpandOrGenerateString(d.Get("name"), "cluster"),
 		Type:              clusterType.(string),
 		Description:       description.(string),
 		Cni:               k8s.CNI(d.Get("cni").(string)),
@@ -369,11 +378,11 @@ func resourceScalewayK8SClusterCreate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if scaleDownDelayAfterAdd, ok := d.GetOk("autoscaler_config.0.scale_down_delay_after_add"); ok {
-		autoscalerReq.ScaleDownDelayAfterAdd = expandStringPtr(scaleDownDelayAfterAdd)
+		autoscalerReq.ScaleDownDelayAfterAdd = types.ExpandStringPtr(scaleDownDelayAfterAdd)
 	}
 
 	if scaleDownUneededTime, ok := d.GetOk("autoscaler_config.0.scale_down_unneeded_time"); ok {
-		autoscalerReq.ScaleDownUnneededTime = expandStringPtr(scaleDownUneededTime)
+		autoscalerReq.ScaleDownUnneededTime = types.ExpandStringPtr(scaleDownUneededTime)
 	}
 
 	if estimator, ok := d.GetOk("autoscaler_config.0.estimator"); ok {
@@ -530,7 +539,7 @@ func resourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceData,
 	////
 	cluster, err := waitK8SCluster(ctx, k8sAPI, region, clusterID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -589,7 +598,7 @@ func resourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceData,
 	////
 	kubeconfig, err := flattenKubeconfig(ctx, k8sAPI, region, clusterID)
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			diags = append(diags, diag.Diagnostic{
 				Severity:      diag.Warning,
 				Summary:       "Cannot read kubeconfig: unauthorized",
@@ -654,11 +663,11 @@ func resourceScalewayK8SClusterUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if d.HasChange("name") {
-		updateRequest.Name = expandStringPtr(d.Get("name"))
+		updateRequest.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 
 	if d.HasChange("description") {
-		updateRequest.Description = expandStringPtr(d.Get("description"))
+		updateRequest.Description = types.ExpandStringPtr(d.Get("description"))
 	}
 
 	if d.HasChange("tags") {
@@ -744,11 +753,11 @@ func resourceScalewayK8SClusterUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if d.HasChange("autoscaler_config.0.scale_down_delay_after_add") {
-		autoscalerReq.ScaleDownDelayAfterAdd = expandStringPtr(d.Get("autoscaler_config.0.scale_down_delay_after_add"))
+		autoscalerReq.ScaleDownDelayAfterAdd = types.ExpandStringPtr(d.Get("autoscaler_config.0.scale_down_delay_after_add"))
 	}
 
 	if d.HasChange("autoscaler_config.0.scale_down_unneeded_time") {
-		autoscalerReq.ScaleDownUnneededTime = expandStringPtr(d.Get("autoscaler_config.0.scale_down_unneeded_time"))
+		autoscalerReq.ScaleDownUnneededTime = types.ExpandStringPtr(d.Get("autoscaler_config.0.scale_down_unneeded_time"))
 	}
 
 	if d.HasChange("autoscaler_config.0.estimator") {
@@ -896,7 +905,7 @@ func resourceScalewayK8SClusterDelete(ctx context.Context, d *schema.ResourceDat
 		WithAdditionalResources: deleteAdditionalResources,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return nil
 		}
 		return diag.FromErr(err)

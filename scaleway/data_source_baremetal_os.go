@@ -3,11 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayBaremetalOs() *schema.Resource {
@@ -30,10 +31,10 @@ func dataSourceScalewayBaremetalOs() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "The ID of the os",
-				ValidateFunc:  validationUUIDorUUIDWithLocality(),
+				ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 				ConflictsWith: []string{"name"},
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 	}
 }

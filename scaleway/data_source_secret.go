@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,15 +24,15 @@ func dataSourceScalewaySecret() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the secret",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
-	dsSchema["organization_id"] = organizationIDOptionalSchema()
+	dsSchema["organization_id"] = organization.OrganizationIDOptionalSchema()
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The project ID the resource is associated to",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -49,9 +52,9 @@ func dataSourceScalewaySecretRead(ctx context.Context, d *schema.ResourceData, m
 		secretName := d.Get("name").(string)
 		request := &secret.ListSecretsRequest{
 			Region:         region,
-			Name:           expandStringPtr(secretName),
-			ProjectID:      expandStringPtr(projectID),
-			OrganizationID: expandStringPtr(d.Get("organization_id")),
+			Name:           types.ExpandStringPtr(secretName),
+			ProjectID:      types.ExpandStringPtr(projectID),
+			OrganizationID: types.ExpandStringPtr(d.Get("organization_id")),
 		}
 
 		res, err := api.ListSecrets(request, scw.WithContext(ctx))

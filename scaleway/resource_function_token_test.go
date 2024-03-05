@@ -5,13 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 )
 
 func TestAccScalewayFunctionToken_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	expiresAt := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
 	if !*UpdateCassettes {
@@ -19,7 +21,7 @@ func TestAccScalewayFunctionToken_Basic(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayFunctionTokenDestroy(tt),
 		Steps: []resource.TestStep{
@@ -58,7 +60,7 @@ func TestAccScalewayFunctionToken_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayFunctionTokenExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayFunctionTokenExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -82,7 +84,7 @@ func testAccCheckScalewayFunctionTokenExists(tt *TestTools, n string) resource.T
 	}
 }
 
-func testAccCheckScalewayFunctionTokenDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayFunctionTokenDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_function_token" {
@@ -103,7 +105,7 @@ func testAccCheckScalewayFunctionTokenDestroy(tt *TestTools) resource.TestCheckF
 				return fmt.Errorf("function token (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

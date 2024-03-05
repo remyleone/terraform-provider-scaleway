@@ -1,13 +1,17 @@
 package scaleway
 
 import (
-	"errors"
 	"fmt"
+	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
 	"net"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -50,7 +54,7 @@ func TestParseLocalizedID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			locality, id, err := parseLocalizedID(tc.localityID)
+			locality, id, err := locality2.ParseLocalizedID(tc.localityID)
 			if tc.err != "" {
 				require.EqualError(t, err, tc.err)
 			} else {
@@ -104,7 +108,7 @@ func TestParseLocalizedNestedID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			locality, innerID, outerID, err := parseLocalizedNestedID(tc.localityID)
+			locality, innerID, outerID, err := locality2.ParseLocalizedNestedID(tc.localityID)
 			if tc.err != "" {
 				require.EqualError(t, err, tc.err)
 			} else {
@@ -145,7 +149,7 @@ func TestParseZonedID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			zone, id, err := parseZonedID(tc.localityID)
+			zone, id, err := zonal.ParseZonedID(tc.localityID)
 			if tc.err != "" {
 				require.EqualError(t, err, tc.err)
 			} else {
@@ -185,7 +189,7 @@ func TestParseRegionID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			region, id, err := parseRegionalID(tc.localityID)
+			region, id, err := regional.ParseRegionalID(tc.localityID)
 			if tc.err != "" {
 				require.EqualError(t, err, tc.err)
 			} else {
@@ -198,34 +202,15 @@ func TestParseRegionID(t *testing.T) {
 }
 
 func TestNewZonedId(t *testing.T) {
-	assert.Equal(t, "fr-par-1/my-id", newZonedIDString(scw.ZoneFrPar1, "my-id"))
+	assert.Equal(t, "fr-par-1/my-id", zonal.NewZonedIDString(scw.ZoneFrPar1, "my-id"))
 }
 
 func TestNewRegionalId(t *testing.T) {
 	assert.Equal(t, "fr-par/my-id", newRegionalIDString(scw.RegionFrPar, "my-id"))
 }
 
-func TestIsHTTPCodeError(t *testing.T) {
-	assert.True(t, isHTTPCodeError(&scw.ResponseError{StatusCode: http.StatusBadRequest}, http.StatusBadRequest))
-	assert.False(t, isHTTPCodeError(nil, http.StatusBadRequest))
-	assert.False(t, isHTTPCodeError(&scw.ResponseError{StatusCode: http.StatusBadRequest}, http.StatusNotFound))
-	assert.False(t, isHTTPCodeError(errors.New("not an http error"), http.StatusNotFound))
-}
-
-func TestIs404Error(t *testing.T) {
-	assert.True(t, is404Error(&scw.ResponseError{StatusCode: http.StatusNotFound}))
-	assert.False(t, is404Error(nil))
-	assert.False(t, is404Error(&scw.ResponseError{StatusCode: http.StatusBadRequest}))
-}
-
-func TestIs403Error(t *testing.T) {
-	assert.True(t, is403Error(&scw.ResponseError{StatusCode: http.StatusForbidden}))
-	assert.False(t, is403Error(nil))
-	assert.False(t, is403Error(&scw.ResponseError{StatusCode: http.StatusBadRequest}))
-}
-
 func TestGetRandomName(t *testing.T) {
-	name := newRandomName("test")
+	name := types.NewRandomName("test")
 	assert.True(t, strings.HasPrefix(name, "tf-test-"))
 }
 

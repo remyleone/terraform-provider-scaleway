@@ -2,8 +2,12 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 	"math"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -330,7 +334,7 @@ func resourceScalewayLbBackendCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 	// parse lb_id. It will be forced to a zoned lb
-	zone, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	zone, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -342,7 +346,7 @@ func resourceScalewayLbBackendCreate(ctx context.Context, d *schema.ResourceData
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -372,7 +376,7 @@ func resourceScalewayLbBackendCreate(ctx context.Context, d *schema.ResourceData
 	createReq := &lbSDK.ZonedAPICreateBackendRequest{
 		Zone:                     zone,
 		LBID:                     lbID,
-		Name:                     expandOrGenerateString(d.Get("name"), "lb-bkd"),
+		Name:                     types.ExpandOrGenerateString(d.Get("name"), "lb-bkd"),
 		ForwardProtocol:          expandLbProtocol(d.Get("forward_protocol")),
 		ForwardPort:              int32(d.Get("forward_port").(int)),
 		ForwardPortAlgorithm:     expandLbForwardPortAlgorithm(d.Get("forward_port_algorithm")),
@@ -394,7 +398,7 @@ func resourceScalewayLbBackendCreate(ctx context.Context, d *schema.ResourceData
 		TimeoutConnect:        timeoutConnect,
 		TimeoutTunnel:         timeoutTunnel,
 		OnMarkedDownAction:    expandLbBackendMarkdownAction(d.Get("on_marked_down_action")),
-		FailoverHost:          expandStringPtr(d.Get("failover_host")),
+		FailoverHost:          types.ExpandStringPtr(d.Get("failover_host")),
 		SslBridging:           expandBoolPtr(getBool(d, "ssl_bridging")),
 		IgnoreSslServerVerify: expandBoolPtr(getBool(d, "ignore_ssl_server_verify")),
 	}
@@ -433,14 +437,14 @@ func resourceScalewayLbBackendCreate(ctx context.Context, d *schema.ResourceData
 
 	_, err = waitForLB(ctx, lbAPI, zone, res.LB.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	return resourceScalewayLbBackendRead(ctx, d, meta)
 }
@@ -456,14 +460,14 @@ func resourceScalewayLbBackendRead(ctx context.Context, d *schema.ResourceData, 
 		BackendID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("lb_id", newZonedIDString(zone, backend.LB.ID))
+	_ = d.Set("lb_id", zonal.NewZonedIDString(zone, backend.LB.ID))
 	_ = d.Set("name", backend.Name)
 	_ = d.Set("forward_protocol", flattenLbProtocol(backend.ForwardProtocol))
 	_ = d.Set("forward_port", backend.ForwardPort)
@@ -498,7 +502,7 @@ func resourceScalewayLbBackendRead(ctx context.Context, d *schema.ResourceData, 
 
 	_, err = waitForLB(ctx, lbAPI, zone, backend.LB.ID, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -515,14 +519,14 @@ func resourceScalewayLbBackendUpdate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -556,7 +560,7 @@ func resourceScalewayLbBackendUpdate(ctx context.Context, d *schema.ResourceData
 		TimeoutConnect:           timeoutConnect,
 		TimeoutTunnel:            timeoutTunnel,
 		OnMarkedDownAction:       expandLbBackendMarkdownAction(d.Get("on_marked_down_action")),
-		FailoverHost:             expandStringPtr(d.Get("failover_host")),
+		FailoverHost:             types.ExpandStringPtr(d.Get("failover_host")),
 		SslBridging:              expandBoolPtr(getBool(d, "ssl_bridging")),
 		IgnoreSslServerVerify:    expandBoolPtr(getBool(d, "ignore_ssl_server_verify")),
 		MaxConnections:           expandInt32Ptr(d.Get("max_connections")),
@@ -637,7 +641,7 @@ func resourceScalewayLbBackendUpdate(ctx context.Context, d *schema.ResourceData
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -653,14 +657,14 @@ func resourceScalewayLbBackendDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -672,13 +676,13 @@ func resourceScalewayLbBackendDelete(ctx context.Context, d *schema.ResourceData
 		BackendID: ID,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForLB(ctx, lbAPI, zone, lbID, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is403Error(err) {
+		if http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}

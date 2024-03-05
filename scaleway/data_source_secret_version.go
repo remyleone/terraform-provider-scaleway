@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	secret "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewaySecretVersion() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewaySecretVersion() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the secret",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"secret_name"},
 	}
 	dsSchema["secret_name"] = &schema.Schema{
@@ -40,7 +41,7 @@ func dataSourceScalewaySecretVersion() *schema.Resource {
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The ID of the project to filter the secret version",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -94,7 +95,7 @@ func datasourceSchemaFromResourceVersionSchema(ctx context.Context, d *schema.Re
 	} else {
 		request := &secret.AccessSecretVersionRequest{
 			Region:   region,
-			SecretID: expandID(secretID),
+			SecretID: locality.ExpandID(secretID),
 			Revision: d.Get("revision").(string),
 		}
 

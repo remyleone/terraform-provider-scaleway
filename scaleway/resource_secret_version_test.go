@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	secret "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
 )
 
 func TestAccScalewaySecretVersion_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	secretName := "secretVersionNameBasic"
@@ -18,7 +20,7 @@ func TestAccScalewaySecretVersion_Basic(t *testing.T) {
 	secretVersionDescription := "secret version description"
 	secretVersionData := "my_super_secret"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewaySecretVersionDestroy(tt),
 		Steps: []resource.TestStep{
@@ -112,7 +114,7 @@ func TestAccScalewaySecretVersion_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewaySecretVersionExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewaySecretVersionExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -137,7 +139,7 @@ func testAccCheckScalewaySecretVersionExists(tt *TestTools, n string) resource.T
 	}
 }
 
-func testAccCheckScalewaySecretVersionDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewaySecretVersionDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_secret_version" {
@@ -159,7 +161,7 @@ func testAccCheckScalewaySecretVersionDestroy(tt *TestTools) resource.TestCheckF
 				return fmt.Errorf("secret version (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

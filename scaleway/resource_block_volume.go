@@ -2,6 +2,14 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -62,8 +70,8 @@ func resourceScalewayBlockVolume() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the volume",
 			},
-			"zone":       zoneSchema(),
-			"project_id": projectIDSchema(),
+			"zone":       zonal.Schema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 		CustomizeDiff: customdiff.All(
 			customDiffCannotShrink("size_in_gb"),
@@ -79,7 +87,7 @@ func resourceScalewayBlockVolumeCreate(ctx context.Context, d *schema.ResourceDa
 
 	req := &block.CreateVolumeRequest{
 		Zone:      zone,
-		Name:      expandOrGenerateString(d.Get("name").(string), "volume"),
+		Name:      types.ExpandOrGenerateString(d.Get("name").(string), "volume"),
 		ProjectID: d.Get("project_id").(string),
 		Tags:      expandStrings(d.Get("tags")),
 		PerfIops:  expandUint32Ptr(d.Get("iops")),
@@ -98,7 +106,7 @@ func resourceScalewayBlockVolumeCreate(ctx context.Context, d *schema.ResourceDa
 
 	if snapshotID, ok := d.GetOk("snapshot_id"); ok {
 		req.FromSnapshot = &block.CreateVolumeRequestFromSnapshot{
-			SnapshotID: expandID(snapshotID.(string)),
+			SnapshotID: locality.ExpandID(snapshotID.(string)),
 		}
 	}
 
@@ -107,7 +115,7 @@ func resourceScalewayBlockVolumeCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, volume.ID))
+	d.SetId(zonal.NewZonedIDString(zone, volume.ID))
 
 	_, err = waitForBlockVolume(ctx, api, zone, volume.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -125,7 +133,7 @@ func resourceScalewayBlockVolumeRead(ctx context.Context, d *schema.ResourceData
 
 	volume, err := waitForBlockVolume(ctx, api, zone, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -143,7 +151,7 @@ func resourceScalewayBlockVolumeRead(ctx context.Context, d *schema.ResourceData
 	_ = d.Set("tags", volume.Tags)
 
 	if volume.ParentSnapshotID != nil {
-		_ = d.Set("snapshot_id", newZonedIDString(zone, *volume.ParentSnapshotID))
+		_ = d.Set("snapshot_id", zonal.NewZonedIDString(zone, *volume.ParentSnapshotID))
 	} else {
 		_ = d.Set("snapshot_id", "")
 	}
@@ -159,7 +167,7 @@ func resourceScalewayBlockVolumeUpdate(ctx context.Context, d *schema.ResourceDa
 
 	volume, err := waitForBlockVolume(ctx, api, zone, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -211,7 +219,7 @@ func resourceScalewayBlockVolumeDelete(ctx context.Context, d *schema.ResourceDa
 	}
 
 	_, err = waitForBlockVolume(ctx, api, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

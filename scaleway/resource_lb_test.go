@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
@@ -22,10 +24,10 @@ func init() {
 }
 
 func testSweepLB(_ string) error {
-	return sweepZones([]scw.Zone{scw.ZoneFrPar1, scw.ZoneNlAms1, scw.ZonePlWaw1}, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones([]scw.Zone{scw.ZoneFrPar1, scw.ZoneNlAms1, scw.ZonePlWaw1}, func(scwClient *scw.Client, zone scw.Zone) error {
 		lbAPI := lbSDK.NewZonedAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the lbs in (%s)", zone)
+		L.Debugf("sweeper: destroying the lbs in (%s)", zone)
 		listLBs, err := lbAPI.ListLBs(&lbSDK.ZonedAPIListLBsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
@@ -36,8 +38,8 @@ func testSweepLB(_ string) error {
 		for _, l := range listLBs.LBs {
 			retryInterval := defaultWaitLBRetryInterval
 
-			if DefaultWaitRetryInterval != nil {
-				retryInterval = *DefaultWaitRetryInterval
+			if transport.DefaultWaitRetryInterval != nil {
+				retryInterval = *transport.DefaultWaitRetryInterval
 			}
 
 			_, err := lbAPI.WaitForLbInstances(&lbSDK.ZonedAPIWaitForLBInstancesRequest{
@@ -64,10 +66,10 @@ func testSweepLB(_ string) error {
 }
 
 func TestAccScalewayLbLb_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -122,10 +124,10 @@ func TestAccScalewayLbLb_Basic(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_Private(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -177,13 +179,13 @@ func TestAccScalewayLbLb_Private(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_Migrate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	lbID := ""
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -288,10 +290,10 @@ func TestAccScalewayLbLb_Migrate(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_WithIP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -485,10 +487,10 @@ func TestAccScalewayLbLb_WithIP(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_WithStaticIPCIDR(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -522,10 +524,10 @@ func TestAccScalewayLbLb_WithStaticIPCIDR(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_InvalidStaticConfig(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -553,10 +555,10 @@ func TestAccScalewayLbLb_InvalidStaticConfig(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_WithPrivateNetworksOnDHCPConfig(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayInstanceServerDestroy(tt),
@@ -653,10 +655,10 @@ func TestAccScalewayLbLb_WithPrivateNetworksOnDHCPConfig(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_WithoutPNConfig(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -694,10 +696,10 @@ func TestAccScalewayLbLb_WithoutPNConfig(t *testing.T) {
 }
 
 func TestAccScalewayLbLb_DifferentLocalityIPID(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbDestroy(tt),
 		Steps: []resource.TestStep{
@@ -752,7 +754,7 @@ func TestAccScalewayLbLb_DifferentLocalityIPID(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayLbExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -776,7 +778,7 @@ func testAccCheckScalewayLbExists(tt *TestTools, n string) resource.TestCheckFun
 	}
 }
 
-func testAccCheckScalewayLbDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb" {
@@ -799,7 +801,7 @@ func testAccCheckScalewayLbDestroy(tt *TestTools) resource.TestCheckFunc {
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

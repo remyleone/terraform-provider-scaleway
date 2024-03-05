@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
@@ -18,12 +20,12 @@ func init() {
 }
 
 func testSweepIotHub(_ string) error {
-	return sweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
 		iotAPI := iot.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the iot hub in (%s)", region)
+		L.Debugf("sweeper: destroying the iot hub in (%s)", region)
 		listHubs, err := iotAPI.ListHubs(&iot.ListHubsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
-			l.Debugf("sweeper: destroying the iot hub in (%s)", region)
+			L.Debugf("sweeper: destroying the iot hub in (%s)", region)
 			return fmt.Errorf("error listing hubs in (%s) in sweeper: %s", region, err)
 		}
 
@@ -44,10 +46,10 @@ func testSweepIotHub(_ string) error {
 }
 
 func TestAccScalewayIotHub_Minimal(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIotHubDestroy(tt),
 		Steps: []resource.TestStep{
@@ -93,10 +95,10 @@ func TestAccScalewayIotHub_Minimal(t *testing.T) {
 }
 
 func TestAccScalewayIotHub_Dedicated(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIotHubDestroy(tt),
 		Steps: []resource.TestStep{
@@ -138,7 +140,7 @@ func TestAccScalewayIotHub_Dedicated(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIotHubDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayIotHubDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_iot_hub" {
@@ -161,7 +163,7 @@ func testAccCheckScalewayIotHubDestroy(tt *TestTools) resource.TestCheckFunc {
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -169,7 +171,7 @@ func testAccCheckScalewayIotHubDestroy(tt *TestTools) resource.TestCheckFunc {
 	}
 }
 
-func testAccCheckScalewayIotHubExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayIotHubExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

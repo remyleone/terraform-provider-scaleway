@@ -2,6 +2,12 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -41,15 +47,15 @@ func dataSourceScalewayLbIPs() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"zone":            zoneSchema(),
-						"organization_id": organizationIDSchema(),
-						"project_id":      projectIDSchema(),
+						"zone":            zonal.Schema(),
+						"organization_id": organization.OrganizationIDSchema(),
+						"project_id":      project.ProjectIDSchema(),
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -61,7 +67,7 @@ func dataSourceScalewayLbIPsRead(ctx context.Context, d *schema.ResourceData, me
 	}
 	res, err := lbAPI.ListIPs(&lb.ZonedAPIListIPsRequest{
 		Zone:      zone,
-		ProjectID: expandStringPtr(d.Get("project_id")),
+		ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)

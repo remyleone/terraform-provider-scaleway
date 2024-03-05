@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -71,7 +73,7 @@ func resourceObjectLockConfiguration() *schema.Resource {
 				Description: "Specifies the Object Lock rule for the specified object.",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }

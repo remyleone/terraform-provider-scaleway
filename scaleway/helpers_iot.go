@@ -2,9 +2,13 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"io"
 	"net/http"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/iot/v1"
@@ -19,8 +23,8 @@ const (
 )
 
 func iotAPIWithRegion(d *schema.ResourceData, m interface{}) (*iot.API, scw.Region, error) {
-	meta := m.(*Meta)
-	iotAPI := iot.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	iotAPI := iot.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 
@@ -28,17 +32,17 @@ func iotAPIWithRegion(d *schema.ResourceData, m interface{}) (*iot.API, scw.Regi
 }
 
 func iotAPIWithRegionAndID(m interface{}, id string) (*iot.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	iotAPI := iot.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	iotAPI := iot.NewAPI(meta.GetScwClient())
 
-	region, ID, err := parseRegionalID(id)
+	region, ID, err := regional.ParseRegionalID(id)
 	return iotAPI, region, ID, err
 }
 
 func waitIotHub(ctx context.Context, api *iot.API, region scw.Region, id string, timeout time.Duration) (*iot.Hub, error) {
 	retryInterval := defaultIoTRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	hub, err := api.WaitForHub(&iot.WaitForHubRequest{
@@ -70,13 +74,13 @@ func computeIotHubCaURL(productPlan iot.HubProductPlan, region scw.Region) strin
 }
 
 func computeIotHubMQTTCa(ctx context.Context, mqttCaURL string, m interface{}) (string, error) {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 	if mqttCaURL == "" {
 		return "", nil
 	}
 	var mqttCa *http.Response
 	req, _ := http.NewRequestWithContext(ctx, "GET", mqttCaURL, nil)
-	mqttCa, err := meta.httpClient.Do(req)
+	mqttCa, err := meta.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", err
 	}

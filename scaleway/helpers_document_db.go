@@ -3,8 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
@@ -19,8 +23,8 @@ const (
 
 // documentDBAPIWithRegion returns a new documentdb API and the region for a Create request
 func documentDBAPIWithRegion(d *schema.ResourceData, m interface{}) (*documentdb.API, scw.Region, error) {
-	meta := m.(*Meta)
-	api := documentdb.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := documentdb.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -32,10 +36,10 @@ func documentDBAPIWithRegion(d *schema.ResourceData, m interface{}) (*documentdb
 
 // documentDBAPIWithRegionalAndID returns a new documentdb API with region and ID extracted from the state
 func documentDBAPIWithRegionAndID(m interface{}, regionalID string) (*documentdb.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	api := documentdb.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := documentdb.NewAPI(meta.GetScwClient())
 
-	region, ID, err := parseRegionalID(regionalID)
+	region, ID, err := regional.ParseRegionalID(regionalID)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -45,8 +49,8 @@ func documentDBAPIWithRegionAndID(m interface{}, regionalID string) (*documentdb
 
 func waitForDocumentDBInstance(ctx context.Context, api *documentdb.API, region scw.Region, id string, timeout time.Duration) (*documentdb.Instance, error) {
 	retryInterval := defaultWaitDocumentDBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	instance, err := api.WaitForInstance(&documentdb.WaitForInstanceRequest{

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
@@ -18,10 +20,10 @@ func init() {
 }
 
 func testSweepAccountProject(_ string) error {
-	return sweep(func(scwClient *scw.Client) error {
+	return tests.Sweep(func(scwClient *scw.Client) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the project")
+		L.Debugf("sweeper: destroying the project")
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -43,7 +45,7 @@ func testSweepAccountProject(_ string) error {
 }
 
 func TestAccScalewayAccountProject_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -80,7 +82,7 @@ func TestAccScalewayAccountProject_Basic(t *testing.T) {
 }
 
 func TestAccScalewayAccountProject_NoUpdate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -110,7 +112,7 @@ func TestAccScalewayAccountProject_NoUpdate(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayAccountProjectExists(tt *TestTools, name string) resource.TestCheckFunc {
+func testAccCheckScalewayAccountProjectExists(tt *tests.TestTools, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -130,7 +132,7 @@ func testAccCheckScalewayAccountProjectExists(tt *TestTools, name string) resour
 	}
 }
 
-func testAccCheckScalewayAccountProjectDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayAccountProjectDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "scaleway_account_project" {
@@ -149,7 +151,7 @@ func testAccCheckScalewayAccountProjectDestroy(tt *TestTools) resource.TestCheck
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

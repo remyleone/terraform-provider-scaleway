@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBPrivilege_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayDocumentDBInstanceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -170,7 +172,7 @@ func TestAccScalewayDocumentDBPrivilege_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckDocumentDBPrivilegeExists(tt *TestTools, instance string, database string, user string) resource.TestCheckFunc {
+func testAccCheckDocumentDBPrivilegeExists(tt *tests.TestTools, instance string, database string, user string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		instanceResource, ok := state.RootModule().Resources[instance]
 		if !ok {

@@ -2,6 +2,7 @@ package scaleway
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -11,14 +12,14 @@ import (
 )
 
 func TestAccScalewayDomainZone_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	testDNSZone := "test-zone"
-	l.Debugf("TestAccScalewayDomainZone_Basic: test dns zone: %s, with domain: %s", testDNSZone, testDomain)
+	L.Debugf("TestAccScalewayDomainZone_Basic: test dns zone: %s, with domain: %s", testDNSZone, testDomain)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayDomainZoneDestroy(tt),
 		Steps: []resource.TestStep{
@@ -40,7 +41,7 @@ func TestAccScalewayDomainZone_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayDomainZoneExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayDomainZoneExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -66,7 +67,7 @@ func testAccCheckScalewayDomainZoneExists(tt *TestTools, n string) resource.Test
 	}
 }
 
-func testAccCheckScalewayDomainZoneDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayDomainZoneDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_domain_zone" {
@@ -79,7 +80,7 @@ func testAccCheckScalewayDomainZoneDestroy(tt *TestTools) resource.TestCheckFunc
 				DNSZone: scw.StringPtr(fmt.Sprintf("%s.%s", rs.Primary.Attributes["subdomain"], rs.Primary.Attributes["domain"])),
 			})
 
-			if is403Error(err) { // forbidden: subdomain not found
+			if http_errors.Is403Error(err) { // forbidden: subdomain not found
 				return nil
 			}
 

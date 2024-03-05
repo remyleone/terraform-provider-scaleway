@@ -4,19 +4,21 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/registry/v1"
 )
 
 func TestAccScalewayDataSourceRegistryImage_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ubuntuImageID := "4b5a47c0-6fbf-4388-8783-c07c28d3c2eb"
 
 	t.Skip("It is difficult to test this datasource as we cannot create registry images with Terraform.")
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRegistryNamespaceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -56,7 +58,7 @@ func TestAccScalewayDataSourceRegistryImage_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayRegistryImageExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayRegistryImageExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {

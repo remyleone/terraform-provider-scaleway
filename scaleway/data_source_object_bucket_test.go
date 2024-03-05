@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -13,13 +15,13 @@ import (
 )
 
 func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
-	objectBucketTestDefaultRegion, _ := tt.Meta.scwClient.GetDefaultRegion()
+	objectBucketTestDefaultRegion, _ := tt.meta.GetScwClient().GetDefaultRegion()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
@@ -86,7 +88,7 @@ func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceObjectBucket_ProjectIDAllowed(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
 
@@ -96,7 +98,7 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDAllowed(t *testing.T) {
 	ctx := context.Background()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: fakeSideProjectProviders(ctx, tt, project, iamAPIKey),
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			func(_ *terraform.State) error {
@@ -135,7 +137,7 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDAllowed(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceObjectBucket_ProjectIDForbidden(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
 
@@ -145,7 +147,7 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDForbidden(t *testing.T) {
 	ctx := context.Background()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: fakeSideProjectProviders(ctx, tt, project, iamAPIKey),
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			func(_ *terraform.State) error {

@@ -3,11 +3,13 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayVPCPublicGatewayDHCPReservation() *schema.Resource {
@@ -23,7 +25,7 @@ func dataSourceScalewayVPCPublicGatewayDHCPReservation() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of dhcp entry reservation",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"mac_address", "gateway_network_id"},
 	}
 	dsSchema["wait_for_dhcp"] = &schema.Schema{
@@ -51,7 +53,7 @@ func dataSourceScalewayVPCPublicGatewayDHCPReservationRead(ctx context.Context, 
 	reservationIDRaw, ok := d.GetOk("reservation_id")
 	if !ok {
 		var res *vpcgw.ListDHCPEntriesResponse
-		gatewayNetworkID := expandID(d.Get("gateway_network_id").(string))
+		gatewayNetworkID := locality.ExpandID(d.Get("gateway_network_id").(string))
 		macAddress := d.Get("mac_address").(string)
 
 		if d.Get("wait_for_dhcp").(bool) {
@@ -59,8 +61,8 @@ func dataSourceScalewayVPCPublicGatewayDHCPReservationRead(ctx context.Context, 
 		} else {
 			res, err = vpcgwAPI.ListDHCPEntries(
 				&vpcgw.ListDHCPEntriesRequest{
-					GatewayNetworkID: expandStringPtr(gatewayNetworkID),
-					MacAddress:       expandStringPtr(macAddress),
+					GatewayNetworkID: types.ExpandStringPtr(gatewayNetworkID),
+					MacAddress:       types.ExpandStringPtr(macAddress),
 				}, scw.WithContext(ctx))
 		}
 		if err != nil {

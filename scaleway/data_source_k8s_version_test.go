@@ -2,7 +2,10 @@ package scaleway
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
 	"testing"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -10,11 +13,11 @@ import (
 )
 
 func TestAccScalewayDataSourceK8SVersion_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayK8SClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -46,11 +49,11 @@ func TestAccScalewayDataSourceK8SVersion_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceK8SVersion_Latest(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayK8SClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -70,7 +73,7 @@ func TestAccScalewayDataSourceK8SVersion_Latest(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayK8SVersionExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayK8SVersionExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -78,12 +81,12 @@ func testAccCheckScalewayK8SVersionExists(tt *TestTools, n string) resource.Test
 			return fmt.Errorf("not found: %s", n)
 		}
 
-		region, name, err := parseRegionalID(rs.Primary.ID)
+		region, name, err := regional.ParseRegionalID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		k8sAPI := k8s.NewAPI(tt.Meta.scwClient)
+		k8sAPI := k8s.NewAPI(tt.meta.GetScwClient())
 		_, err = k8sAPI.GetVersion(&k8s.GetVersionRequest{
 			Region:      region,
 			VersionName: name,

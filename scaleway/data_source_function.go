@@ -2,6 +2,8 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -39,9 +41,9 @@ func dataSourceScalewayFunctionRead(ctx context.Context, d *schema.ResourceData,
 		functionName := d.Get("name").(string)
 		res, err := api.ListFunctions(&function.ListFunctionsRequest{
 			Region:      region,
-			NamespaceID: expandID(d.Get("namespace_id").(string)),
-			Name:        expandStringPtr(functionName),
-			ProjectID:   expandStringPtr(d.Get("project_id")),
+			NamespaceID: locality.ExpandID(d.Get("namespace_id").(string)),
+			Name:        types.ExpandStringPtr(functionName),
+			ProjectID:   types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

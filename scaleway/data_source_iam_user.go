@@ -3,11 +3,11 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIamUser() *schema.Resource {
@@ -18,14 +18,14 @@ func dataSourceScalewayIamUser() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "The ID of the IAM user",
-				ValidateFunc:  validationUUID(),
+				ValidateFunc:  verify.UUID(),
 				ConflictsWith: []string{"email"},
 			},
 			"email": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Description:   "The email address of the IAM user",
-				ValidateFunc:  validationEmail(),
+				ValidateFunc:  verify.Email(),
 				ConflictsWith: []string{"user_id"},
 			},
 			"organization_id": {

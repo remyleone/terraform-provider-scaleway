@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	serverless_sqldb "github.com/scaleway/scaleway-sdk-go/api/serverless_sqldb/v1alpha1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepServerlessSQLDBDatabase(_ string) error {
-	return sweepRegions((&serverless_sqldb.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions((&serverless_sqldb.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		sdbAPI := serverless_sqldb.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the serverless sql database in (%s)", region)
+		L.Debugf("sweeper: destroying the serverless sql database in (%s)", region)
 		listServerlessSQLDBDatabases, err := sdbAPI.ListDatabases(
 			&serverless_sqldb.ListDatabasesRequest{
 				Region: region,
@@ -35,7 +37,7 @@ func testSweepServerlessSQLDBDatabase(_ string) error {
 				Region:     region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting database in sweeper: %s", err)
 			}
@@ -46,11 +48,11 @@ func testSweepServerlessSQLDBDatabase(_ string) error {
 }
 
 func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayServerlessSQLDBDatabaseDestroy(tt),
 		Steps: []resource.TestStep{
@@ -116,7 +118,7 @@ func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayServerlessSQLDBDatabaseExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayServerlessSQLDBDatabaseExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -140,7 +142,7 @@ func testAccCheckScalewayServerlessSQLDBDatabaseExists(tt *TestTools, n string) 
 	}
 }
 
-func testAccCheckScalewayServerlessSQLDBDatabaseDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayServerlessSQLDBDatabaseDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_sdb_sql_database" {
@@ -161,7 +163,7 @@ func testAccCheckScalewayServerlessSQLDBDatabaseDestroy(tt *TestTools) resource.
 				return fmt.Errorf("serverless_sql database (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is403Error(err) {
+			if !http_errors.Is403Error(err) {
 				return err
 			}
 		}

@@ -2,6 +2,18 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -152,18 +164,18 @@ func resourceScalewayVPCPrivateNetwork() *schema.Resource {
 				ForceNew:    true,
 				Description: "The VPC in which to create the private network",
 			},
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 			"zone": {
 				Type:             schema.TypeString,
 				Description:      "The zone you want to attach the resource to",
 				Optional:         true,
 				Computed:         true,
 				Deprecated:       "This field is deprecated and will be removed in the next major version, please use `region` instead",
-				ValidateDiagFunc: validateStringInSliceWithWarning(allZones(), "zone"),
+				ValidateDiagFunc: verify.StringInSliceWithWarning(zonal.All(), "zone"),
 			},
 			"region": regionSchema(),
 			// Computed elements
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			"created_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -190,7 +202,7 @@ func resourceScalewayVPCPrivateNetworkCreate(ctx context.Context, d *schema.Reso
 	}
 
 	req := &vpc.CreatePrivateNetworkRequest{
-		Name:      expandOrGenerateString(d.Get("name"), "pn"),
+		Name:      types.ExpandOrGenerateString(d.Get("name"), "pn"),
 		Tags:      expandStrings(d.Get("tags")),
 		ProjectID: d.Get("project_id").(string),
 		Region:    region,
@@ -230,14 +242,14 @@ func resourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.Resour
 		Region:           region,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	zone, err := extractZone(d, meta.(*Meta))
+	zone, err := zonal.ExtractZone(d, meta.(*meta2.Meta))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -291,9 +303,9 @@ func resourceScalewayVPCPrivateNetworkDelete(ctx context.Context, d *schema.Reso
 			Region:           region,
 		}, scw.WithContext(ctx))
 		if err != nil {
-			if is412Error(err) {
+			if http_errors.Is412Error(err) {
 				return retry.RetryableError(err)
-			} else if !is404Error(err) {
+			} else if !http_errors.Is404Error(err) {
 				return retry.NonRetryableError(err)
 			}
 		}

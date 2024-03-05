@@ -2,6 +2,12 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -31,7 +37,7 @@ func resourceScalewayFlexibleIPMACAddress() *schema.Resource {
 			"flexible_ip_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The ID of the flexible IP for which to generate a virtual MAC",
 			},
 			"type": {
@@ -75,7 +81,7 @@ func resourceScalewayFlexibleIPMACAddress() *schema.Resource {
 				Computed:    true,
 				Description: "The date and time of the last update of the virtual MAC (Format ISO 8601)",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("flexible_ip_id"),
 	}
@@ -87,7 +93,7 @@ func resourceScalewayFlexibleIPMACCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	fipID := expandID(d.Get("flexible_ip_id"))
+	fipID := locality.ExpandID(d.Get("flexible_ip_id"))
 	_, err = waitFlexibleIP(ctx, fipAPI, zone, fipID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
@@ -103,7 +109,7 @@ func resourceScalewayFlexibleIPMACCreate(ctx context.Context, d *schema.Resource
 	}
 
 	if res.MacAddress != nil {
-		d.SetId(newZonedIDString(zone, res.MacAddress.ID))
+		d.SetId(zonal.NewZonedIDString(zone, res.MacAddress.ID))
 	}
 
 	fip, err := waitFlexibleIP(ctx, fipAPI, zone, res.ID, d.Timeout(schema.TimeoutCreate))
@@ -117,13 +123,13 @@ func resourceScalewayFlexibleIPMACCreate(ctx context.Context, d *schema.Resource
 		for _, dupID := range dupIDs {
 			_, err := fipAPI.DuplicateMACAddr(&flexibleip.DuplicateMACAddrRequest{
 				Zone:               zone,
-				FipID:              expandID(dupID),
+				FipID:              locality.ExpandID(dupID),
 				DuplicateFromFipID: fip.ID,
 			}, scw.WithContext(ctx))
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			_, err = waitFlexibleIP(ctx, fipAPI, zone, expandID(dupID), d.Timeout(schema.TimeoutCreate))
+			_, err = waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(dupID), d.Timeout(schema.TimeoutCreate))
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -141,18 +147,18 @@ func resourceScalewayFlexibleIPMACRead(ctx context.Context, d *schema.ResourceDa
 
 	fip, err := fipAPI.GetFlexibleIP(&flexibleip.GetFlexibleIPRequest{
 		Zone:  zone,
-		FipID: expandID(d.Get("flexible_ip_id")),
+		FipID: locality.ExpandID(d.Get("flexible_ip_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		// We check for 403 because flexible API returns 403 for a deleted IP
-		if is404Error(err) || is403Error(err) {
+		if http_errors.Is404Error(err) || http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("flexible_ip_id", newZonedIDString(zone, fip.ID))
+	_ = d.Set("flexible_ip_id", zonal.NewZonedIDString(zone, fip.ID))
 	if fip.MacAddress != nil {
 		_ = d.Set("type", fip.MacAddress.MacType.String())
 		_ = d.Set("address", fip.MacAddress.MacAddress)
@@ -172,15 +178,15 @@ func resourceScalewayFlexibleIPMACUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	flexibleIP, err := waitFlexibleIP(ctx, fipAPI, zone, expandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
+	flexibleIP, err := waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if d.HasChange("flexible_ip_id") {
 		oldFipInterface, newFipInterface := d.GetChange("flexible_ip_id")
-		oldFipID := expandID(oldFipInterface.(string))
-		newFipID := expandID(newFipInterface.(string))
+		oldFipID := locality.ExpandID(oldFipInterface.(string))
+		newFipID := locality.ExpandID(newFipInterface.(string))
 
 		res, err := fipAPI.MoveMACAddr(&flexibleip.MoveMACAddrRequest{
 			Zone:     zone,
@@ -205,19 +211,19 @@ func resourceScalewayFlexibleIPMACUpdate(ctx context.Context, d *schema.Resource
 		// Handle added flexible IPs
 		for _, newID := range newIDs {
 			if !sliceContainsString(oldIDs, newID) {
-				_, err = waitFlexibleIP(ctx, fipAPI, zone, expandID(newID), d.Timeout(schema.TimeoutUpdate))
+				_, err = waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(newID), d.Timeout(schema.TimeoutUpdate))
 				if err != nil {
 					return diag.FromErr(err)
 				}
 				_, err := fipAPI.DuplicateMACAddr(&flexibleip.DuplicateMACAddrRequest{
 					Zone:               zone,
-					FipID:              expandID(newID),
+					FipID:              locality.ExpandID(newID),
 					DuplicateFromFipID: flexibleIP.ID,
 				}, scw.WithContext(ctx))
 				if err != nil {
 					return diag.FromErr(err)
 				}
-				_, err = waitFlexibleIP(ctx, fipAPI, zone, expandID(newID), d.Timeout(schema.TimeoutUpdate))
+				_, err = waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(newID), d.Timeout(schema.TimeoutUpdate))
 				if err != nil {
 					return diag.FromErr(err)
 				}
@@ -228,12 +234,12 @@ func resourceScalewayFlexibleIPMACUpdate(ctx context.Context, d *schema.Resource
 			if !sliceContainsString(newIDs, oldID) {
 				err = fipAPI.DeleteMACAddr(&flexibleip.DeleteMACAddrRequest{
 					Zone:  zone,
-					FipID: expandID(oldID),
+					FipID: locality.ExpandID(oldID),
 				}, scw.WithContext(ctx))
 				if err != nil {
 					return diag.FromErr(err)
 				}
-				_, err = waitFlexibleIP(ctx, fipAPI, zone, expandID(oldID), d.Timeout(schema.TimeoutUpdate))
+				_, err = waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(oldID), d.Timeout(schema.TimeoutUpdate))
 				if err != nil {
 					return diag.FromErr(err)
 				}
@@ -255,7 +261,7 @@ func resourceScalewayFlexibleIPMACDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	flexibleIP, err := waitFlexibleIP(ctx, fipAPI, zone, expandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
+	flexibleIP, err := waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -264,11 +270,11 @@ func resourceScalewayFlexibleIPMACDelete(ctx context.Context, d *schema.Resource
 		FipID: flexibleIP.MacAddress.ID,
 		Zone:  zone,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) && !is403Error(err) {
+	if err != nil && !http_errors.Is404Error(err) && !http_errors.Is403Error(err) {
 		return diag.FromErr(err)
 	}
 
-	_, err = waitFlexibleIP(ctx, fipAPI, zone, expandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
+	_, err = waitFlexibleIP(ctx, fipAPI, zone, locality.ExpandID(d.Get("flexible_ip_id")), d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return diag.FromErr(err)
 	}

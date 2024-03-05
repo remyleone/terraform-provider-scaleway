@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
@@ -104,7 +108,7 @@ func resourceScalewayMNQSQSQueue() *schema.Resource {
 				Description:  "The maximum size of a message. Should be in bytes.",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 
 			// Computed
 
@@ -131,7 +135,7 @@ func resourceScalewayMNQSQSQueueCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	projectID, _, err := extractProjectID(d, meta.(*Meta))
+	projectID, _, err := extractProjectID(d, meta.(*meta2.Meta))
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -2,6 +2,7 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -24,7 +25,7 @@ func dataSourceScalewayMarketplaceImage() *schema.Resource {
 				Default:     "DEV1-S",
 				Description: "The instance commercial type of the desired image",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 	}
 }

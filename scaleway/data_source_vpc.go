@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,15 +22,15 @@ func dataSourceScalewayVPC() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the VPC",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
-	dsSchema["organization_id"] = organizationIDOptionalSchema()
+	dsSchema["organization_id"] = organization.OrganizationIDOptionalSchema()
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The project ID the resource is associated to",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -49,7 +52,7 @@ func dataSourceScalewayVPCRead(ctx context.Context, d *schema.ResourceData, meta
 		request := &vpc.ListVPCsRequest{
 			IsDefault: expandBoolPtr(d.Get("is_default").(bool)),
 			Region:    region,
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}
 
 		res, err := vpcAPI.ListVPCs(request, scw.WithContext(ctx))
@@ -63,10 +66,10 @@ func dataSourceScalewayVPCRead(ctx context.Context, d *schema.ResourceData, meta
 		if !ok {
 			vpcName := d.Get("name").(string)
 			request := &vpc.ListVPCsRequest{
-				Name:           expandStringPtr(vpcName),
+				Name:           types.ExpandStringPtr(vpcName),
 				Region:         region,
-				ProjectID:      expandStringPtr(d.Get("project_id")),
-				OrganizationID: expandStringPtr(d.Get("organization_id")),
+				ProjectID:      types.ExpandStringPtr(d.Get("project_id")),
+				OrganizationID: types.ExpandStringPtr(d.Get("organization_id")),
 			}
 
 			res, err := vpcAPI.ListVPCs(request, scw.WithContext(ctx))

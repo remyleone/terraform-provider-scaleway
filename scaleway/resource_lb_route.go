@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -30,13 +35,13 @@ func resourceScalewayLbRoute() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The frontend ID origin of redirection",
 			},
 			"backend_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The backend ID destination of redirection",
 			},
 			"match_sni": {
@@ -71,12 +76,12 @@ func resourceScalewayLbRouteCreate(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	frontZone, frontID, err := parseZonedID(d.Get("frontend_id").(string))
+	frontZone, frontID, err := zonal.ParseZonedID(d.Get("frontend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	backZone, backID, err := parseZonedID(d.Get("backend_id").(string))
+	backZone, backID, err := zonal.ParseZonedID(d.Get("backend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -90,8 +95,8 @@ func resourceScalewayLbRouteCreate(ctx context.Context, d *schema.ResourceData, 
 		FrontendID: frontID,
 		BackendID:  backID,
 		Match: &lbSDK.RouteMatch{
-			Sni:        expandStringPtr(d.Get("match_sni")),
-			HostHeader: expandStringPtr(d.Get("match_host_header")),
+			Sni:        types.ExpandStringPtr(d.Get("match_sni")),
+			HostHeader: types.ExpandStringPtr(d.Get("match_host_header")),
 		},
 	}
 
@@ -100,7 +105,7 @@ func resourceScalewayLbRouteCreate(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(frontZone, route.ID))
+	d.SetId(zonal.NewZonedIDString(frontZone, route.ID))
 
 	return resourceScalewayLbRouteRead(ctx, d, meta)
 }
@@ -116,15 +121,15 @@ func resourceScalewayLbRouteRead(ctx context.Context, d *schema.ResourceData, me
 		RouteID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("frontend_id", newZonedIDString(zone, route.FrontendID))
-	_ = d.Set("backend_id", newZonedIDString(zone, route.BackendID))
+	_ = d.Set("frontend_id", zonal.NewZonedIDString(zone, route.FrontendID))
+	_ = d.Set("backend_id", zonal.NewZonedIDString(zone, route.BackendID))
 	_ = d.Set("match_sni", flattenStringPtr(route.Match.Sni))
 	_ = d.Set("match_host_header", flattenStringPtr(route.Match.HostHeader))
 	_ = d.Set("created_at", flattenTime(route.CreatedAt))
@@ -139,7 +144,7 @@ func resourceScalewayLbRouteUpdate(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	backZone, backID, err := parseZonedID(d.Get("backend_id").(string))
+	backZone, backID, err := zonal.ParseZonedID(d.Get("backend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -153,8 +158,8 @@ func resourceScalewayLbRouteUpdate(ctx context.Context, d *schema.ResourceData, 
 		RouteID:   ID,
 		BackendID: backID,
 		Match: &lbSDK.RouteMatch{
-			Sni:        expandStringPtr(d.Get("match_sni")),
-			HostHeader: expandStringPtr(d.Get("match_host_header")),
+			Sni:        types.ExpandStringPtr(d.Get("match_sni")),
+			HostHeader: types.ExpandStringPtr(d.Get("match_host_header")),
 		},
 	}
 
@@ -177,7 +182,7 @@ func resourceScalewayLbRouteDelete(ctx context.Context, d *schema.ResourceData, 
 		RouteID: ID,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

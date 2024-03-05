@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayVPCPublicGatewayPATRule() *schema.Resource {
@@ -17,7 +18,7 @@ func dataSourceScalewayVPCPublicGatewayPATRule() *schema.Resource {
 		Type:         schema.TypeString,
 		Required:     true,
 		Description:  "The ID of the public gateway PAT rule",
-		ValidateFunc: validationUUIDorUUIDWithLocality(),
+		ValidateFunc: verify.UUIDorUUIDWithLocality(),
 	}
 
 	// Set 'Optional' schema elements
@@ -43,7 +44,7 @@ func dataSourceScalewayVPCPublicGatewayPATRuleRead(ctx context.Context, d *schem
 
 	// check if pat rule exist
 	_, err = vpcgwAPI.GetPATRule(&vpcgw.GetPATRuleRequest{
-		PatRuleID: expandID(patRuleIDRaw),
+		PatRuleID: locality.ExpandID(patRuleIDRaw),
 		Zone:      zone,
 	}, scw.WithContext(ctx))
 	if err != nil {

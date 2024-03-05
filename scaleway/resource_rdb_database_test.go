@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
@@ -14,14 +16,14 @@ import (
 )
 
 func TestAccScalewayRdbDatabase_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	instanceName := "TestAccScalewayRdbDatabase_Basic"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -49,13 +51,13 @@ func TestAccScalewayRdbDatabase_Basic(t *testing.T) {
 }
 
 func TestAccScalewayRdbDatabase_ManualDelete(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -102,7 +104,7 @@ func TestAccScalewayRdbDatabase_ManualDelete(t *testing.T) {
 	})
 }
 
-func testAccCheckRdbDatabaseExists(tt *TestTools, instance string, database string) resource.TestCheckFunc {
+func testAccCheckRdbDatabaseExists(tt *tests.TestTools, instance string, database string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		instanceResource, ok := state.RootModule().Resources[instance]
 		if !ok {

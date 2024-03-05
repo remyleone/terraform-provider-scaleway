@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 )
 
 func TestAccScalewayMNQNatsCredentials_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayMNQNatsCredentialsDestroy(tt),
 		Steps: []resource.TestStep{
@@ -37,7 +39,7 @@ func TestAccScalewayMNQNatsCredentials_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayMNQNatsCredentialsExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayMNQNatsCredentialsExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -61,7 +63,7 @@ func testAccCheckScalewayMNQNatsCredentialsExists(tt *TestTools, n string) resou
 	}
 }
 
-func testAccCheckScalewayMNQNatsCredentialsDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayMNQNatsCredentialsDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_mnq_nats_credentials" {
@@ -82,7 +84,7 @@ func testAccCheckScalewayMNQNatsCredentialsDestroy(tt *TestTools) resource.TestC
 				return fmt.Errorf("mnq nats credentials (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	block "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepBlockSnapshot(_ string) error {
-	return sweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
 		blockAPI := block.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the block snapshots in (%s)", zone)
+		L.Debugf("sweeper: destroying the block snapshots in (%s)", zone)
 		listSnapshots, err := blockAPI.ListSnapshots(
 			&block.ListSnapshotsRequest{
 				Zone: zone,
@@ -35,7 +37,7 @@ func testSweepBlockSnapshot(_ string) error {
 				Zone:       zone,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting snapshot in sweeper: %s", err)
 			}
@@ -46,11 +48,11 @@ func testSweepBlockSnapshot(_ string) error {
 }
 
 func TestAccScalewayBlockSnapshot_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayBlockSnapshotDestroy(tt),
 		Steps: []resource.TestStep{
@@ -76,7 +78,7 @@ func TestAccScalewayBlockSnapshot_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayBlockSnapshotExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayBlockSnapshotExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -100,7 +102,7 @@ func testAccCheckScalewayBlockSnapshotExists(tt *TestTools, n string) resource.T
 	}
 }
 
-func testAccCheckScalewayBlockSnapshotDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayBlockSnapshotDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_block_snapshot" {
@@ -121,7 +123,7 @@ func testAccCheckScalewayBlockSnapshotDestroy(tt *TestTools) resource.TestCheckF
 				return fmt.Errorf("block snapshot (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

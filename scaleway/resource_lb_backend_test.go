@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -11,10 +13,10 @@ import (
 )
 
 func TestAccScalewayLbBackend_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbBackendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -127,10 +129,10 @@ func TestAccScalewayLbBackend_Basic(t *testing.T) {
 }
 
 func TestAccScalewayLbBackend_HealthCheck(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbBackendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -232,10 +234,10 @@ func TestAccScalewayLbBackend_WithFailoverHost(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix("tf-acc-test")
 	resourceName := "scaleway_object_bucket_website_configuration.test"
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayLbBackendDestroy(tt),
@@ -378,10 +380,10 @@ func TestAccScalewayLbBackend_WithFailoverHost(t *testing.T) {
 }
 
 func TestAccScalewayLbBackend_HealthCheck_Port(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayLbBackendDestroy(tt),
 		Steps: []resource.TestStep{
@@ -479,7 +481,7 @@ func TestAccScalewayLbBackend_HealthCheck_Port(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayLbBackendExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayLbBackendExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -503,7 +505,7 @@ func testAccCheckScalewayLbBackendExists(tt *TestTools, n string) resource.TestC
 	}
 }
 
-func testAccCheckScalewayLbBackendDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayLbBackendDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_lb_backend" {
@@ -526,7 +528,7 @@ func testAccCheckScalewayLbBackendDestroy(tt *TestTools) resource.TestCheckFunc 
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

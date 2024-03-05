@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -20,8 +24,8 @@ const defaultVPCPrivateNetworkRetryInterval = 30 * time.Second
 
 // vpcAPIWithRegion returns a new VPC API and the region for a Create request
 func vpcAPIWithRegion(d *schema.ResourceData, m interface{}) (*vpc.API, scw.Region, error) {
-	meta := m.(*Meta)
-	vpcAPI := vpc.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	vpcAPI := vpc.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -32,10 +36,10 @@ func vpcAPIWithRegion(d *schema.ResourceData, m interface{}) (*vpc.API, scw.Regi
 
 // vpcAPIWithRegionAndID returns a new VPC API with locality and ID extracted from the state
 func vpcAPIWithRegionAndID(m interface{}, id string) (*vpc.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	vpcAPI := vpc.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	vpcAPI := vpc.NewAPI(meta.GetScwClient())
 
-	region, ID, err := parseRegionalID(id)
+	region, ID, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -43,12 +47,12 @@ func vpcAPIWithRegionAndID(m interface{}, id string) (*vpc.API, scw.Region, stri
 }
 
 func vpcAPI(m interface{}) (*vpc.API, error) {
-	meta, ok := m.(*Meta)
+	meta, ok := m.(*meta2.Meta)
 	if !ok {
 		return nil, fmt.Errorf("wrong type: %T", m)
 	}
 
-	return vpc.NewAPI(meta.scwClient), nil
+	return vpc.NewAPI(meta.GetScwClient()), nil
 }
 
 func expandSubnets(d *schema.ResourceData) (ipv4Subnets []scw.IPNet, ipv6Subnets []scw.IPNet, err error) {
@@ -208,7 +212,7 @@ func vpcPrivateNetworkV1SUpgradeFunc(_ context.Context, rawState map[string]inte
 }
 
 func vpcPrivateNetworkUpgradeV1ZonalToRegionalID(element string) (string, error) {
-	locality, id, err := parseLocalizedID(element)
+	locality, id, err := locality2.ParseLocalizedID(element)
 	// return error if can't parse
 	if err != nil {
 		return "", fmt.Errorf("upgrade: could not retrieve the locality from `%s`", element)

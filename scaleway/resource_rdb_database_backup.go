@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -32,7 +37,7 @@ func resourceScalewayRdbDatabaseBackup() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "Instance on which the user is created",
 			},
 			"database_name": {
@@ -90,9 +95,9 @@ func resourceScalewayRdbDatabaseBackupCreate(ctx context.Context, d *schema.Reso
 
 	createReq := &rdb.CreateDatabaseBackupRequest{
 		Region:       region,
-		InstanceID:   expandID(instanceID),
+		InstanceID:   locality.ExpandID(instanceID),
 		DatabaseName: d.Get("database_name").(string),
-		Name:         expandOrGenerateString(d.Get("name"), "backup"),
+		Name:         types.ExpandOrGenerateString(d.Get("name"), "backup"),
 		ExpiresAt:    expandTimePtr(d.Get("expires_at")),
 	}
 
@@ -119,7 +124,7 @@ func resourceScalewayRdbDatabaseBackupRead(ctx context.Context, d *schema.Resour
 
 	dbBackup, err := waitForRDBDatabaseBackup(ctx, rdbAPI, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -161,7 +166,7 @@ func resourceScalewayRdbDatabaseBackupUpdate(ctx context.Context, d *schema.Reso
 	req := &rdb.UpdateDatabaseBackupRequest{
 		Region:           region,
 		DatabaseBackupID: id,
-		Name:             expandStringPtr(d.Get("name")),
+		Name:             types.ExpandStringPtr(d.Get("name")),
 		ExpiresAt:        expandTimePtr(d.Get("expires_at")),
 	}
 
@@ -193,12 +198,12 @@ func resourceScalewayRdbDatabaseBackupDelete(ctx context.Context, d *schema.Reso
 		DatabaseBackupID: id,
 		Region:           region,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForRDBDatabaseBackup(ctx, rdbAPI, region, id, d.Timeout(schema.TimeoutUpdate))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

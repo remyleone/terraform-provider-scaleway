@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
@@ -20,10 +22,10 @@ func init() {
 }
 
 func testSweepIamSSHKey(_ string) error {
-	return sweep(func(scwClient *scw.Client) error {
+	return tests.Sweep(func(scwClient *scw.Client) error {
 		iamAPI := iam.NewAPI(scwClient)
 
-		l.Debugf("sweeper: destroying the SSH keys")
+		L.Debugf("sweeper: destroying the SSH keys")
 
 		listSSHKeys, err := iamAPI.ListSSHKeys(&iam.ListSSHKeysRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -48,11 +50,11 @@ func testSweepIamSSHKey(_ string) error {
 
 func TestAccScalewayIamSSHKey_basic(t *testing.T) {
 	name := "tf-test-iam-ssh-key-basic"
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
@@ -88,11 +90,11 @@ func TestAccScalewayIamSSHKey_basic(t *testing.T) {
 
 func TestAccScalewayIamSSHKey_WithNewLine(t *testing.T) {
 	name := "tf-test-iam-ssh-key-newline"
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
@@ -115,11 +117,11 @@ func TestAccScalewayIamSSHKey_WithNewLine(t *testing.T) {
 
 func TestAccScalewayIamSSHKey_ChangeResourceName(t *testing.T) {
 	name := "tf-test-iam-ssh-key-change-resource-name"
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
@@ -155,11 +157,11 @@ func TestAccScalewayIamSSHKey_ChangeResourceName(t *testing.T) {
 
 func TestAccScalewayIamSSHKey_Disabled(t *testing.T) {
 	name := "tf-test-iam-ssh-key-disabled"
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
@@ -211,7 +213,7 @@ func TestAccScalewayIamSSHKey_Disabled(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIamSSHKeyDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayIamSSHKeyDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_iam_ssh_key" {
@@ -230,7 +232,7 @@ func testAccCheckScalewayIamSSHKeyDestroy(tt *TestTools) resource.TestCheckFunc 
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -239,7 +241,7 @@ func testAccCheckScalewayIamSSHKeyDestroy(tt *TestTools) resource.TestCheckFunc 
 	}
 }
 
-func testAccCheckScalewayIamSSHKeyExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayIamSSHKeyExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

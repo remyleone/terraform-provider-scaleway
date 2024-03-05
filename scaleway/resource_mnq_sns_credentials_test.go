@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepMNQSNSCredentials(_ string) error {
-	return sweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		mnqAPI := mnq.NewSnsAPI(scwClient)
-		l.Debugf("sweeper: destroying the mnq sns credentials in (%s)", region)
+		L.Debugf("sweeper: destroying the mnq sns credentials in (%s)", region)
 		listSnsCredentials, err := mnqAPI.ListSnsCredentials(
 			&mnq.SnsAPIListSnsCredentialsRequest{
 				Region: region,
@@ -35,7 +37,7 @@ func testSweepMNQSNSCredentials(_ string) error {
 				Region:           region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting sns credentials in sweeper: %s", err)
 			}
@@ -46,11 +48,11 @@ func testSweepMNQSNSCredentials(_ string) error {
 }
 
 func TestAccScalewayMNQSNSCredentials_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayMNQSNSCredentialsDestroy(tt),
 		Steps: []resource.TestStep{
@@ -135,7 +137,7 @@ func TestAccScalewayMNQSNSCredentials_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayMNQSNSCredentialsExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSCredentialsExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -159,7 +161,7 @@ func testAccCheckScalewayMNQSNSCredentialsExists(tt *TestTools, n string) resour
 	}
 }
 
-func testAccCheckScalewayMNQSNSCredentialsDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayMNQSNSCredentialsDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_mnq_sns_credentials" {
@@ -180,7 +182,7 @@ func testAccCheckScalewayMNQSNSCredentialsDestroy(tt *TestTools) resource.TestCh
 				return fmt.Errorf("mnq sns credentials (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

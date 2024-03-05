@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
@@ -18,9 +20,9 @@ func init() {
 }
 
 func testSweepVPCPublicGateway(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		vpcgwAPI := vpcgw.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the public gateways in (%+v)", zone)
+		L.Debugf("sweeper: destroying the public gateways in (%+v)", zone)
 
 		listGatewayResponse, err := vpcgwAPI.ListGateways(&vpcgw.ListGatewaysRequest{
 			Zone: zone,
@@ -43,11 +45,11 @@ func testSweepVPCPublicGateway(_ string) error {
 }
 
 func TestAccScalewayVPCPublicGateway_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	publicGatewayName := "public-gateway-test"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDestroy(tt),
 		Steps: []resource.TestStep{
@@ -122,11 +124,11 @@ func TestAccScalewayVPCPublicGateway_Basic(t *testing.T) {
 }
 
 func TestAccScalewayVPCPublicGateway_Bastion(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	publicGatewayName := "public-gateway-bastion-test"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDestroy(tt),
 		Steps: []resource.TestStep{
@@ -170,11 +172,11 @@ func TestAccScalewayVPCPublicGateway_Bastion(t *testing.T) {
 }
 
 func TestAccScalewayVPCPublicGateway_AttachToIP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			testAccCheckScalewayVPCPublicGatewayIPDestroy(tt),
@@ -204,7 +206,7 @@ func TestAccScalewayVPCPublicGateway_AttachToIP(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayVPCPublicGatewayExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -228,7 +230,7 @@ func testAccCheckScalewayVPCPublicGatewayExists(tt *TestTools, n string) resourc
 	}
 }
 
-func testAccCheckScalewayVPCPublicGatewayDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_vpc_public_gateway" {
@@ -253,7 +255,7 @@ func testAccCheckScalewayVPCPublicGatewayDestroy(tt *TestTools) resource.TestChe
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

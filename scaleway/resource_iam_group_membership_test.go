@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 )
 
 func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayIamGroupDestroy(tt),
@@ -101,11 +103,11 @@ func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
 }
 
 func TestAccScalewayIamGroupMembership_User(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayIamGroupDestroy(tt),
@@ -136,7 +138,7 @@ func TestAccScalewayIamGroupMembership_User(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt *TestTools, n string, appN string) resource.TestCheckFunc {
+func testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt *tests.TestTools, n string, appN string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -183,7 +185,7 @@ func testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt *TestTools, n s
 	}
 }
 
-func testAccCheckScalewayIamGroupMembershipUserInGroup(tt *TestTools, n string, appN string) resource.TestCheckFunc {
+func testAccCheckScalewayIamGroupMembershipUserInGroup(tt *tests.TestTools, n string, appN string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {

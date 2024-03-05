@@ -4,26 +4,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 )
 
 // instanceAPIWithZone returns a new iam API for a Create request
 func iamAPI(m interface{}) *iam.API {
-	meta := m.(*Meta)
-	return iam.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	return iam.NewAPI(meta.GetScwClient())
 }
 
 func getOrganizationID(m interface{}, d *schema.ResourceData) *string {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 
 	orgID, orgIDExist := d.GetOk("organization_id")
 
 	if orgIDExist {
-		return expandStringPtr(orgID)
+		return types.ExpandStringPtr(orgID)
 	}
 
-	defaultOrgID, defaultOrgIDExists := meta.scwClient.GetDefaultOrganizationID()
+	defaultOrgID, defaultOrgIDExists := meta.GetScwClient().GetDefaultOrganizationID()
 	if defaultOrgIDExists {
-		return expandStringPtr(defaultOrgID)
+		return types.ExpandStringPtr(defaultOrgID)
 	}
 
 	return nil

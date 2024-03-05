@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
@@ -20,9 +22,9 @@ func init() {
 }
 
 func testSweepTemDomain(_ string) error {
-	return sweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
 		temAPI := tem.NewAPI(scwClient)
-		l.Debugf("sweeper: revoking the tem domains in (%s)", region)
+		L.Debugf("sweeper: revoking the tem domains in (%s)", region)
 
 		listDomains, err := temAPI.ListDomains(&tem.ListDomainsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
@@ -31,7 +33,7 @@ func testSweepTemDomain(_ string) error {
 
 		for _, ns := range listDomains.Domains {
 			if ns.Name == "test.scaleway-terraform.com" {
-				l.Debugf("sweeper: skipping deletion of domain %s", ns.Name)
+				L.Debugf("sweeper: skipping deletion of domain %s", ns.Name)
 				continue
 			}
 			_, err := temAPI.RevokeDomain(&tem.RevokeDomainRequest{
@@ -39,7 +41,7 @@ func testSweepTemDomain(_ string) error {
 				Region:   region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error revoking domain in sweeper: %s", err)
 			}
@@ -50,13 +52,13 @@ func testSweepTemDomain(_ string) error {
 }
 
 func TestAccScalewayTemDomain_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	domainName := "terraform-rs.test.local"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayTemDomainDestroy(tt),
 		Steps: []resource.TestStep{
@@ -78,13 +80,13 @@ func TestAccScalewayTemDomain_Basic(t *testing.T) {
 }
 
 func TestAccScalewayTemDomain_Tos(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	domainName := "terraform-rs.test.local"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayTemDomainDestroy(tt),
 		Steps: []resource.TestStep{
@@ -101,7 +103,7 @@ func TestAccScalewayTemDomain_Tos(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayTemDomainExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayTemDomainExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -125,7 +127,7 @@ func testAccCheckScalewayTemDomainExists(tt *TestTools, n string) resource.TestC
 	}
 }
 
-func testAccCheckScalewayTemDomainDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayTemDomainDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_tem_domain" {
@@ -146,7 +148,7 @@ func testAccCheckScalewayTemDomainDestroy(tt *TestTools) resource.TestCheckFunc 
 			}
 
 			_, err = waitForTemDomain(context.Background(), api, region, id, defaultTemDomainTimeout)
-			if err != nil && !is404Error(err) {
+			if err != nil && !http_errors.Is404Error(err) {
 				return err
 			}
 		}

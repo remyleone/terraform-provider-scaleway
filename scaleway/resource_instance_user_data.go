@@ -3,6 +3,10 @@ package scaleway
 import (
 	"bytes"
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"io"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -33,7 +37,7 @@ func resourceScalewayInstanceUserData() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				Description:  "The ID of the server",
-				ValidateFunc: validationUUIDWithLocality(),
+				ValidateFunc: verify.UUIDWithLocality(),
 			},
 			"key": {
 				Type:        schema.TypeString,
@@ -45,7 +49,7 @@ func resourceScalewayInstanceUserData() *schema.Resource {
 				Required:    true,
 				Description: "The value of the user data to set.",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("server_id"),
 	}
@@ -57,7 +61,7 @@ func resourceScalewayInstanceUserDataCreate(ctx context.Context, d *schema.Resou
 		return diag.FromErr(err)
 	}
 
-	serverID := expandID(d.Get("server_id").(string))
+	serverID := locality.ExpandID(d.Get("server_id").(string))
 	server, err := waitForInstanceServer(ctx, instanceAPI, zone, serverID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
@@ -82,7 +86,7 @@ func resourceScalewayInstanceUserDataCreate(ctx context.Context, d *schema.Resou
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedNestedIDString(zone, key, server.ID))
+	d.SetId(NewZonedNestedIDString(zone, key, server.ID))
 
 	return resourceScalewayInstanceUserDataRead(ctx, d, meta)
 }
@@ -111,7 +115,7 @@ func resourceScalewayInstanceUserDataRead(ctx context.Context, d *schema.Resourc
 
 	serverUserDataRawValue, err := instanceAPI.GetServerUserData(requestGetUserData, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -176,7 +180,7 @@ func resourceScalewayInstanceUserDataDelete(ctx context.Context, d *schema.Resou
 	}
 
 	deleteUserData := &instance.DeleteServerUserDataRequest{
-		ServerID: expandID(id),
+		ServerID: locality.ExpandID(id),
 		Key:      key,
 		Zone:     zone,
 	}
@@ -187,7 +191,7 @@ func resourceScalewayInstanceUserDataDelete(ctx context.Context, d *schema.Resou
 
 	err = instanceAPI.DeleteServerUserData(deleteUserData, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

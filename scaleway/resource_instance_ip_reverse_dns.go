@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -37,7 +40,7 @@ func resourceScalewayInstanceIPReverseDNS() *schema.Resource {
 				Required:    true,
 				Description: "The reverse DNS for this IP",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 		CustomizeDiff: customizeDiffLocalityCheck("ip_id"),
 	}
@@ -50,13 +53,13 @@ func resourceScalewayInstanceIPReverseDNSCreate(ctx context.Context, d *schema.R
 	}
 
 	res, err := instanceAPI.GetIP(&instance.GetIPRequest{
-		IP:   expandID(d.Get("ip_id")),
+		IP:   locality.ExpandID(d.Get("ip_id")),
 		Zone: zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	d.SetId(newZonedIDString(zone, res.IP.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.IP.ID))
 
 	if _, ok := d.GetOk("reverse"); ok {
 		tflog.Debug(ctx, fmt.Sprintf("updating IP %q reverse to %q\n", d.Id(), d.Get("reverse")))
@@ -93,7 +96,7 @@ func resourceScalewayInstanceIPReverseDNSRead(ctx context.Context, d *schema.Res
 	}, scw.WithContext(ctx))
 	if err != nil {
 		// We check for 403 because instance API returns 403 for a deleted IP
-		if is404Error(err) || is403Error(err) {
+		if http_errors.Is404Error(err) || http_errors.Is403Error(err) {
 			d.SetId("")
 			return nil
 		}

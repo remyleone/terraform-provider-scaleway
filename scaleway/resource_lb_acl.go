@@ -2,6 +2,10 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -28,7 +32,7 @@ func resourceScalewayLbACL() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDorUUIDWithLocality(),
+				ValidateFunc: verify.UUIDorUUIDWithLocality(),
 				Description:  "The frontend ID on which the ACL is applied",
 			},
 			"name": {
@@ -167,7 +171,7 @@ func resourceScalewayLbACLCreate(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	frontZone, frontID, err := parseZonedID(d.Get("frontend_id").(string))
+	frontZone, frontID, err := zonal.ParseZonedID(d.Get("frontend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -187,7 +191,7 @@ func resourceScalewayLbACLCreate(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(frontZone, res.ID))
+	d.SetId(zonal.NewZonedIDString(frontZone, res.ID))
 
 	return resourceScalewayLbACLRead(ctx, d, meta)
 }
@@ -203,14 +207,14 @@ func resourceScalewayLbACLRead(ctx context.Context, d *schema.ResourceData, meta
 		ACLID: ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("frontend_id", newZonedIDString(zone, acl.Frontend.ID))
+	_ = d.Set("frontend_id", zonal.NewZonedIDString(zone, acl.Frontend.ID))
 	_ = d.Set("name", acl.Name)
 	_ = d.Set("description", acl.Description)
 	_ = d.Set("index", int(acl.Index))

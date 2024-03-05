@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/ipam/v1"
@@ -18,10 +20,10 @@ func init() {
 }
 
 func testSweepIPAMIP(_ string) error {
-	return sweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
 		ipamAPI := ipam.NewAPI(scwClient)
 
-		l.Debugf("sweeper: deleting the IPs in (%s)", region)
+		L.Debugf("sweeper: deleting the IPs in (%s)", region)
 
 		listIPs, err := ipamAPI.ListIPs(&ipam.ListIPsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +36,7 @@ func testSweepIPAMIP(_ string) error {
 				Region: region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error releasing IP in sweeper: %s", err)
 			}
@@ -45,10 +47,10 @@ func testSweepIPAMIP(_ string) error {
 }
 
 func TestAccScalewayIPAMIP_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
 		Steps: []resource.TestStep{
@@ -86,10 +88,10 @@ func TestAccScalewayIPAMIP_Basic(t *testing.T) {
 }
 
 func TestAccScalewayIPAMIP_WithStandaloneAddress(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
 		Steps: []resource.TestStep{
@@ -123,10 +125,10 @@ func TestAccScalewayIPAMIP_WithStandaloneAddress(t *testing.T) {
 }
 
 func TestAccScalewayIPAMIP_WithTags(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
 		Steps: []resource.TestStep{
@@ -189,7 +191,7 @@ func TestAccScalewayIPAMIP_WithTags(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIPAMIPExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayIPAMIPExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -213,7 +215,7 @@ func testAccCheckScalewayIPAMIPExists(tt *TestTools, n string) resource.TestChec
 	}
 }
 
-func testAccCheckScalewayIPAMIPDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayIPAMIPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_ipam_ip" {
@@ -234,7 +236,7 @@ func testAccCheckScalewayIPAMIPDestroy(tt *TestTools) resource.TestCheckFunc {
 				return fmt.Errorf("IP (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

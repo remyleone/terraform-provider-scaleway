@@ -2,7 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
@@ -16,8 +20,8 @@ const (
 
 // temAPIWithRegion returns a new Tem API and the region for a Create request
 func temAPIWithRegion(d *schema.ResourceData, m interface{}) (*tem.API, scw.Region, error) {
-	meta := m.(*Meta)
-	api := tem.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := tem.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -28,10 +32,10 @@ func temAPIWithRegion(d *schema.ResourceData, m interface{}) (*tem.API, scw.Regi
 
 // temAPIWithRegionAndID returns a Tem API with zone and ID extracted from the state
 func temAPIWithRegionAndID(m interface{}, id string) (*tem.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	api := tem.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := tem.NewAPI(meta.GetScwClient())
 
-	region, id, err := parseRegionalID(id)
+	region, id, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -40,8 +44,8 @@ func temAPIWithRegionAndID(m interface{}, id string) (*tem.API, scw.Region, stri
 
 func waitForTemDomain(ctx context.Context, api *tem.API, region scw.Region, id string, timeout time.Duration) (*tem.Domain, error) {
 	retryInterval := defaultTemDomainRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	domain, err := api.WaitForDomain(&tem.WaitForDomainRequest{

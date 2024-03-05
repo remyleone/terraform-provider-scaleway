@@ -2,6 +2,8 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -31,7 +33,7 @@ func resourceScalewayFunctionDomain() *schema.Resource {
 				Description:      "The ID of the function",
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 			},
 			"hostname": {
@@ -94,7 +96,7 @@ func resourceScalewayFunctionDomainRead(ctx context.Context, d *schema.ResourceD
 
 	domain, err := waitForFunctionDomain(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -117,7 +119,7 @@ func resourceScalewayFunctionDomainDelete(ctx context.Context, d *schema.Resourc
 
 	_, err = waitForFunctionDomain(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -133,7 +135,7 @@ func resourceScalewayFunctionDomainDelete(ctx context.Context, d *schema.Resourc
 	}
 
 	_, err = waitForFunctionDomain(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

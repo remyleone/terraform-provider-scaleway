@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -32,7 +37,7 @@ func resourceScalewayMNQNatsAccount() *schema.Resource {
 				Description: "The endpoint for interact with Nats",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -46,7 +51,7 @@ func resourceScalewayMNQNatsAccountCreate(ctx context.Context, d *schema.Resourc
 	account, err := api.CreateNatsAccount(&mnq.NatsAPICreateNatsAccountRequest{
 		Region:    region,
 		ProjectID: d.Get("project_id").(string),
-		Name:      expandOrGenerateString(d.Get("name").(string), "nats-account"),
+		Name:      types.ExpandOrGenerateString(d.Get("name").(string), "nats-account"),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -68,7 +73,7 @@ func resourceScalewayMNQNatsAccountRead(ctx context.Context, d *schema.ResourceD
 		NatsAccountID: id,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -115,7 +120,7 @@ func resourceScalewayMNQNatsAccountDelete(ctx context.Context, d *schema.Resourc
 		Region:        region,
 		NatsAccountID: id,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

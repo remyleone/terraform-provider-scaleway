@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
@@ -23,11 +25,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Basic(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(ResourcePrefix)
 	resourceName := resourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -76,11 +78,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithPolicy(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(ResourcePrefix)
 	resourceName := resourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -152,11 +154,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Update(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(ResourcePrefix)
 	resourceName := resourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -232,11 +234,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithBucketName(t *testing.T
 	rName := sdkacctest.RandomWithPrefix(ResourcePrefix)
 	resourceName := resourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -286,7 +288,7 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithBucketName(t *testing.T
 	})
 }
 
-func testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "scaleway_object_bucket_website_configuration" {
@@ -325,7 +327,7 @@ func testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt *TestTools) 
 	}
 }
 
-func testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt *TestTools, resourceName string) resource.TestCheckFunc {
+func testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt *tests.TestTools, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs := s.RootModule().Resources[resourceName]
 		if rs == nil {

@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"regexp"
 	"strings"
 
@@ -33,7 +36,7 @@ func resourceScalewayRdbDatabase() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validationUUIDWithLocality(),
+				ValidateFunc: verify.UUIDWithLocality(),
 				Description:  "Instance on which the database is created",
 			},
 			"name": {
@@ -80,7 +83,7 @@ func resourceScalewayRdbDatabase() *schema.Resource {
 
 func resourceScalewayRdbDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	rdbAPI := newRdbAPI(meta)
-	region, instanceID, err := parseRegionalID(d.Get("instance_id").(string))
+	region, instanceID, err := regional.ParseRegionalID(d.Get("instance_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -102,7 +105,7 @@ func resourceScalewayRdbDatabaseCreate(ctx context.Context, d *schema.ResourceDa
 		currentDB, errCreateDB := rdbAPI.CreateDatabase(createReq, scw.WithContext(ctx))
 		if errCreateDB != nil {
 			// WIP: Issue on creation/write database. Need a database stable status
-			if is409Error(errCreateDB) {
+			if http_errors.Is409Error(errCreateDB) {
 				return retry.RetryableError(errCreateDB)
 			}
 			return retry.NonRetryableError(errCreateDB)
@@ -152,7 +155,7 @@ func resourceScalewayRdbDatabaseRead(ctx context.Context, d *schema.ResourceData
 
 	database, err := getDatabase(ctx, rdbAPI, region, instanceID, databaseName)
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -192,7 +195,7 @@ func resourceScalewayRdbDatabaseDelete(ctx context.Context, d *schema.ResourceDa
 	}
 
 	_, err = waitForRDBInstance(ctx, rdbAPI, region, instanceID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

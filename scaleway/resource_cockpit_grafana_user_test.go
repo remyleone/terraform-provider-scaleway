@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
@@ -21,7 +23,7 @@ func init() {
 }
 
 func testSweepCockpitGrafanaUser(_ string) error {
-	return sweep(func(scwClient *scw.Client) error {
+	return tests.Sweep(func(scwClient *scw.Client) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
 		cockpitAPI := cockpit.NewAPI(scwClient)
 
@@ -39,7 +41,7 @@ func testSweepCockpitGrafanaUser(_ string) error {
 				ProjectID: project.ID,
 			}, scw.WithAllPages())
 			if err != nil {
-				if is404Error(err) {
+				if http_errors.Is404Error(err) {
 					return nil
 				}
 
@@ -52,7 +54,7 @@ func testSweepCockpitGrafanaUser(_ string) error {
 					GrafanaUserID: grafanaUser.ID,
 				})
 				if err != nil {
-					if !is404Error(err) {
+					if !http_errors.Is404Error(err) {
 						return fmt.Errorf("failed to delete grafana user: %w", err)
 					}
 				}
@@ -64,14 +66,14 @@ func testSweepCockpitGrafanaUser(_ string) error {
 }
 
 func TestAccScalewayCockpitGrafanaUser_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	projectName := "tf_tests_cockpit_grafana_user_basic"
 	grafanaTestUsername := "testuserbasic"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayCockpitGrafanaUserDestroy(tt),
 		Steps: []resource.TestStep{
@@ -104,14 +106,14 @@ func TestAccScalewayCockpitGrafanaUser_Basic(t *testing.T) {
 }
 
 func TestAccScalewayCockpitGrafanaUser_Update(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	projectName := "tf_tests_cockpit_grafana_user_update"
 	grafanaTestUsername := "testuserupdate"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayCockpitGrafanaUserDestroy(tt),
 		Steps: []resource.TestStep{
@@ -168,14 +170,14 @@ func TestAccScalewayCockpitGrafanaUser_Update(t *testing.T) {
 }
 
 func TestAccScalewayCockpitGrafanaUser_NonExistentCockpit(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	projectName := "tf_tests_cockpit_grafana_user_non_existent_cockpit"
 	grafanaTestUsername := "testnonexistentuser"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayCockpitGrafanaUserDestroy(tt),
 		Steps: []resource.TestStep{
@@ -197,7 +199,7 @@ func TestAccScalewayCockpitGrafanaUser_NonExistentCockpit(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayCockpitGrafanaUserExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayCockpitGrafanaUserExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -232,7 +234,7 @@ func testAccCheckScalewayCockpitGrafanaUserExists(tt *TestTools, n string) resou
 	}
 }
 
-func testAccCheckScalewayCockpitGrafanaUserDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayCockpitGrafanaUserDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_cockpit_grafana_user" {
@@ -252,7 +254,7 @@ func testAccCheckScalewayCockpitGrafanaUserDestroy(tt *TestTools) resource.TestC
 				return fmt.Errorf("cockpit grafana user (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

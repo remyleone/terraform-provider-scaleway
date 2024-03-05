@@ -3,6 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -47,26 +53,26 @@ func resourceScalewayIamPolicy() *schema.Resource {
 				Computed:    true,
 				Description: "Whether or not the policy is editable.",
 			},
-			"organization_id": organizationIDOptionalSchema(),
+			"organization_id": organization.OrganizationIDOptionalSchema(),
 			"user_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Description:  "User id",
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 				ExactlyOneOf: []string{"group_id", "application_id", "no_principal"},
 			},
 			"group_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Description:  "Group id",
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 				ExactlyOneOf: []string{"user_id", "application_id", "no_principal"},
 			},
 			"application_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Description:  "Application id",
-				ValidateFunc: validationUUID(),
+				ValidateFunc: verify.UUID(),
 				ExactlyOneOf: []string{"user_id", "group_id", "no_principal"},
 			},
 			"no_principal": {
@@ -85,7 +91,7 @@ func resourceScalewayIamPolicy() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Description:  "ID of organization scoped to the rule. Only one of project_ids and organization_id may be set.",
-							ValidateFunc: validationUUID(),
+							ValidateFunc: verify.UUID(),
 						},
 						"project_ids": {
 							Type:        schema.TypeList,
@@ -93,7 +99,7 @@ func resourceScalewayIamPolicy() *schema.Resource {
 							Description: "List of project IDs scoped to the rule. Only one of project_ids and organization_id may be set.",
 							Elem: &schema.Schema{
 								Type:         schema.TypeString,
-								ValidateFunc: validationUUID(),
+								ValidateFunc: verify.UUID(),
 							},
 						},
 						"permission_set_names": {
@@ -123,12 +129,12 @@ func resourceScalewayIamPolicyCreate(ctx context.Context, d *schema.ResourceData
 	api := iamAPI(meta)
 
 	pol, err := api.CreatePolicy(&iam.CreatePolicyRequest{
-		Name:           expandOrGenerateString(d.Get("name"), "policy"),
+		Name:           types.ExpandOrGenerateString(d.Get("name"), "policy"),
 		Description:    d.Get("description").(string),
 		Rules:          expandPolicyRuleSpecs(d.Get("rule")),
-		UserID:         expandStringPtr(d.Get("user_id")),
-		GroupID:        expandStringPtr(d.Get("group_id")),
-		ApplicationID:  expandStringPtr(d.Get("application_id")),
+		UserID:         types.ExpandStringPtr(d.Get("user_id")),
+		GroupID:        types.ExpandStringPtr(d.Get("group_id")),
+		ApplicationID:  types.ExpandStringPtr(d.Get("application_id")),
 		NoPrincipal:    expandBoolPtr(getBool(d, "no_principal")),
 		OrganizationID: d.Get("organization_id").(string),
 		Tags:           expandStrings(d.Get("tags")),
@@ -148,7 +154,7 @@ func resourceScalewayIamPolicyRead(ctx context.Context, d *schema.ResourceData, 
 		PolicyID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -197,7 +203,7 @@ func resourceScalewayIamPolicyUpdate(ctx context.Context, d *schema.ResourceData
 
 	if d.HasChange("name") {
 		hasUpdated = true
-		req.Name = expandStringPtr(d.Get("name"))
+		req.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 	if d.HasChange("description") {
 		hasUpdated = true
@@ -209,15 +215,15 @@ func resourceScalewayIamPolicyUpdate(ctx context.Context, d *schema.ResourceData
 	}
 	if d.HasChange("user_id") {
 		hasUpdated = true
-		req.UserID = expandStringPtr(d.Get("user_id"))
+		req.UserID = types.ExpandStringPtr(d.Get("user_id"))
 	}
 	if d.HasChange("group_id") {
 		hasUpdated = true
-		req.GroupID = expandStringPtr(d.Get("group_id"))
+		req.GroupID = types.ExpandStringPtr(d.Get("group_id"))
 	}
 	if d.HasChange("application_id") {
 		hasUpdated = true
-		req.ApplicationID = expandStringPtr(d.Get("application_id"))
+		req.ApplicationID = types.ExpandStringPtr(d.Get("application_id"))
 	}
 	if noPrincipal := d.Get("no_principal"); d.HasChange("no_principal") && noPrincipal.(bool) {
 		hasUpdated = true
@@ -250,7 +256,7 @@ func resourceScalewayIamPolicyDelete(ctx context.Context, d *schema.ResourceData
 		PolicyID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}

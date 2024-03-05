@@ -3,7 +3,17 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"sort"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -96,9 +106,9 @@ func resourceScalewayInstanceSecurityGroup() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the security group",
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -110,9 +120,9 @@ func resourceScalewayInstanceSecurityGroupCreate(ctx context.Context, d *schema.
 	}
 
 	req := &instance.CreateSecurityGroupRequest{
-		Name:                  expandOrGenerateString(d.Get("name"), "sg"),
+		Name:                  types.ExpandOrGenerateString(d.Get("name"), "sg"),
 		Zone:                  zone,
-		Project:               expandStringPtr(d.Get("project_id")),
+		Project:               types.ExpandStringPtr(d.Get("project_id")),
 		Description:           d.Get("description").(string),
 		Stateful:              d.Get("stateful").(bool),
 		InboundDefaultPolicy:  instance.SecurityGroupPolicy(d.Get("inbound_default_policy").(string)),
@@ -128,7 +138,7 @@ func resourceScalewayInstanceSecurityGroupCreate(ctx context.Context, d *schema.
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.SecurityGroup.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.SecurityGroup.ID))
 
 	if d.Get("external_rules").(bool) {
 		return resourceScalewayInstanceSecurityGroupRead(ctx, d, meta)
@@ -148,7 +158,7 @@ func resourceScalewayInstanceSecurityGroupRead(ctx context.Context, d *schema.Re
 		Zone:            zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -180,7 +190,7 @@ func resourceScalewayInstanceSecurityGroupRead(ctx context.Context, d *schema.Re
 func getSecurityGroupRules(ctx context.Context, instanceAPI *instance.API, zone scw.Zone, securityGroupID string, d *schema.ResourceData) ([]interface{}, []interface{}, error) {
 	resRules, err := instanceAPI.ListSecurityGroupRules(&instance.ListSecurityGroupRulesRequest{
 		Zone:            zone,
-		SecurityGroupID: expandID(securityGroupID),
+		SecurityGroupID: locality.ExpandID(securityGroupID),
 	}, scw.WithAllPages(), scw.WithContext(ctx))
 	if err != nil {
 		return nil, nil, err
@@ -242,7 +252,7 @@ func resourceScalewayInstanceSecurityGroupUpdate(ctx context.Context, d *schema.
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	zone, ID, err := parseZonedID(d.Id())
+	zone, ID, err := zonal.ParseZonedID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -264,7 +274,7 @@ func resourceScalewayInstanceSecurityGroupUpdate(ctx context.Context, d *schema.
 		Zone:                  zone,
 		SecurityGroupID:       ID,
 		Stateful:              scw.BoolPtr(d.Get("stateful").(bool)),
-		Description:           expandStringPtr(description),
+		Description:           types.ExpandStringPtr(description),
 		InboundDefaultPolicy:  inboundDefaultPolicy,
 		OutboundDefaultPolicy: outboundDefaultPolicy,
 		Tags:                  scw.StringsPtr([]string{}),
@@ -281,7 +291,7 @@ func resourceScalewayInstanceSecurityGroupUpdate(ctx context.Context, d *schema.
 
 	// Only update name if one is provided in the state
 	if d.Get("name") != nil && d.Get("name").(string) != "" {
-		updateReq.Name = expandStringPtr(d.Get("name"))
+		updateReq.Name = types.ExpandStringPtr(d.Get("name"))
 	}
 
 	_, err = instanceAPI.UpdateSecurityGroup(updateReq, scw.WithContext(ctx))
@@ -345,7 +355,7 @@ func resourceScalewayInstanceSecurityGroupDelete(ctx context.Context, d *schema.
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	zone, ID, err := parseZonedID(d.Id())
+	zone, ID, err := zonal.ParseZonedID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -355,7 +365,7 @@ func resourceScalewayInstanceSecurityGroupDelete(ctx context.Context, d *schema.
 		Zone:            zone,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

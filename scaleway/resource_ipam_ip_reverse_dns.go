@@ -2,6 +2,8 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"net"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -56,7 +58,7 @@ func resourceScalewayIPAMIPReverseDNSCreate(ctx context.Context, d *schema.Resou
 
 	res, err := ipamAPI.GetIP(&ipam.GetIPRequest{
 		Region: region,
-		IPID:   expandID(d.Get("ipam_ip_id")),
+		IPID:   locality.ExpandID(d.Get("ipam_ip_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -95,7 +97,7 @@ func resourceScalewayIPAMIPReverseDNSRead(ctx context.Context, d *schema.Resourc
 		IPID:   ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}

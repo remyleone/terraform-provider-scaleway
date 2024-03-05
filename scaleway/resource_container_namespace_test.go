@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
@@ -20,9 +22,9 @@ func init() {
 }
 
 func testSweepContainerNamespace(_ string) error {
-	return sweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
+	return SweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
 		containerAPI := container.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the container namespaces in (%s)", region)
+		L.Debugf("sweeper: destroying the container namespaces in (%s)", region)
 		listNamespaces, err := containerAPI.ListNamespaces(
 			&container.ListNamespacesRequest{
 				Region: region,
@@ -37,7 +39,7 @@ func testSweepContainerNamespace(_ string) error {
 				Region:      region,
 			})
 			if err != nil {
-				l.Debugf("sweeper: error (%s)", err)
+				L.Debugf("sweeper: error (%s)", err)
 
 				return fmt.Errorf("error deleting namespace in sweeper: %s", err)
 			}
@@ -48,11 +50,11 @@ func testSweepContainerNamespace(_ string) error {
 }
 
 func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayContainerNamespaceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -162,11 +164,11 @@ func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
 }
 
 func TestAccScalewayContainerNamespace_DestroyRegistry(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayContainerNamespaceDestroy(tt),
@@ -190,7 +192,7 @@ func TestAccScalewayContainerNamespace_DestroyRegistry(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayContainerNamespaceExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayContainerNamespaceExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
@@ -214,7 +216,7 @@ func testAccCheckScalewayContainerNamespaceExists(tt *TestTools, n string) resou
 	}
 }
 
-func testAccCheckScalewayContainerNamespaceDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayContainerNamespaceDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_container_namespace" { //nolint:goconst
@@ -235,7 +237,7 @@ func testAccCheckScalewayContainerNamespaceDestroy(tt *TestTools) resource.TestC
 				return fmt.Errorf("container namespace (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -244,7 +246,7 @@ func testAccCheckScalewayContainerNamespaceDestroy(tt *TestTools) resource.TestC
 	}
 }
 
-func testAccCheckScalewayContainerRegistryDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayContainerRegistryDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_container_namespace" {
@@ -265,7 +267,7 @@ func testAccCheckScalewayContainerRegistryDestroy(tt *TestTools) resource.TestCh
 				return fmt.Errorf("registry namespace (%s) still exists", rs.Primary.Attributes["registry_namespace_id"])
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

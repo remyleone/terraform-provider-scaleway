@@ -3,11 +3,12 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayTemDomain() *schema.Resource {
@@ -22,7 +23,7 @@ func dataSourceScalewayTemDomain() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the tem domain",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -43,8 +44,8 @@ func dataSourceScalewayTemDomainRead(ctx context.Context, d *schema.ResourceData
 	if !ok {
 		res, err := api.ListDomains(&tem.ListDomainsRequest{
 			Region:    region,
-			Name:      expandStringPtr(d.Get("name")),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(d.Get("name")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

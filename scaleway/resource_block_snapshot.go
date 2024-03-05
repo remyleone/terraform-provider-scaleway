@@ -2,6 +2,14 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -35,7 +43,7 @@ func resourceScalewayBlockSnapshot() *schema.Resource {
 			"volume_id": {
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				Description:      "ID of the volume from which creates a snapshot",
 				DiffSuppressFunc: diffSuppressFuncLocality,
 			},
@@ -47,8 +55,8 @@ func resourceScalewayBlockSnapshot() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the snapshot",
 			},
-			"zone":       zoneSchema(),
-			"project_id": projectIDSchema(),
+			"zone":       zonal.Schema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -62,15 +70,15 @@ func resourceScalewayBlockSnapshotCreate(ctx context.Context, d *schema.Resource
 	snapshot, err := api.CreateSnapshot(&block.CreateSnapshotRequest{
 		Zone:      zone,
 		ProjectID: d.Get("project_id").(string),
-		Name:      expandOrGenerateString(d.Get("name").(string), "snapshot"),
-		VolumeID:  expandID(d.Get("volume_id")),
+		Name:      types.ExpandOrGenerateString(d.Get("name").(string), "snapshot"),
+		VolumeID:  locality.ExpandID(d.Get("volume_id")),
 		Tags:      expandStrings(d.Get("tags")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, snapshot.ID))
+	d.SetId(zonal.NewZonedIDString(zone, snapshot.ID))
 
 	_, err = waitForBlockSnapshot(ctx, api, zone, snapshot.ID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -88,7 +96,7 @@ func resourceScalewayBlockSnapshotRead(ctx context.Context, d *schema.ResourceDa
 
 	snapshot, err := waitForBlockSnapshot(ctx, api, zone, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -116,7 +124,7 @@ func resourceScalewayBlockSnapshotUpdate(ctx context.Context, d *schema.Resource
 
 	snapshot, err := waitForBlockSnapshot(ctx, api, zone, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -163,7 +171,7 @@ func resourceScalewayBlockSnapshotDelete(ctx context.Context, d *schema.Resource
 	}
 
 	_, err = waitForBlockSnapshot(ctx, api, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

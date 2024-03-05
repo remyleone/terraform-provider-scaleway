@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"errors"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -205,7 +208,7 @@ func resourceScalewayIotRouteCreate(ctx context.Context, d *schema.ResourceData,
 
 	req := &iot.CreateRouteRequest{
 		Region: region,
-		Name:   expandOrGenerateString(d.Get("name"), "route"),
+		Name:   types.ExpandOrGenerateString(d.Get("name"), "route"),
 		HubID:  expandZonedID(d.Get("hub_id")).ID,
 		Topic:  d.Get("topic").(string),
 	}
@@ -265,7 +268,7 @@ func resourceScalewayIotRouteRead(ctx context.Context, d *schema.ResourceData, m
 		RouteID: routeID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -327,14 +330,14 @@ func resourceScalewayIotRouteDelete(ctx context.Context, d *schema.ResourceData,
 		RouteID: routeID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
 	_, err = waitIotHub(ctx, iotAPI, region, hubID, d.Timeout(schema.TimeoutCreate))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

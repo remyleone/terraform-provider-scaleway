@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -54,7 +59,7 @@ func resourceScalewayIamApplication() *schema.Resource {
 				Optional:    true,
 				Description: "The tags associated with the application",
 			},
-			"organization_id": organizationIDOptionalSchema(),
+			"organization_id": organization.OrganizationIDOptionalSchema(),
 		},
 	}
 }
@@ -62,7 +67,7 @@ func resourceScalewayIamApplication() *schema.Resource {
 func resourceScalewayIamApplicationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := iamAPI(meta)
 	app, err := api.CreateApplication(&iam.CreateApplicationRequest{
-		Name:           expandOrGenerateString(d.Get("name"), "application"),
+		Name:           types.ExpandOrGenerateString(d.Get("name"), "application"),
 		Description:    d.Get("description").(string),
 		OrganizationID: d.Get("organization_id").(string),
 		Tags:           expandStrings(d.Get("tags")),
@@ -82,7 +87,7 @@ func resourceScalewayIamApplicationRead(ctx context.Context, d *schema.ResourceD
 		ApplicationID: d.Id(),
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -109,7 +114,7 @@ func resourceScalewayIamApplicationUpdate(ctx context.Context, d *schema.Resourc
 	hasChanged := false
 
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name"))
+		req.Name = types.ExpandStringPtr(d.Get("name"))
 		hasChanged = true
 	}
 	if d.HasChange("description") {
@@ -137,7 +142,7 @@ func resourceScalewayIamApplicationDelete(ctx context.Context, d *schema.Resourc
 	err := api.DeleteApplication(&iam.DeleteApplicationRequest{
 		ApplicationID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

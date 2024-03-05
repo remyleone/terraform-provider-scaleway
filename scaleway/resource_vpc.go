@@ -2,6 +2,13 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -34,10 +41,10 @@ func resourceScalewayVPC() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 			"region":     regionSchema(),
 			// Computed elements
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			"is_default": {
 				Type:        schema.TypeBool,
 				Computed:    true,
@@ -64,7 +71,7 @@ func resourceScalewayVPCCreate(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	res, err := vpcAPI.CreateVPC(&vpc.CreateVPCRequest{
-		Name:      expandOrGenerateString(d.Get("name"), "vpc"),
+		Name:      types.ExpandOrGenerateString(d.Get("name"), "vpc"),
 		Tags:      expandStrings(d.Get("tags")),
 		ProjectID: d.Get("project_id").(string),
 		Region:    region,
@@ -89,7 +96,7 @@ func resourceScalewayVPCRead(ctx context.Context, d *schema.ResourceData, meta i
 		VpcID:  ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}

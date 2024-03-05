@@ -3,6 +3,14 @@ package scaleway
 import (
 	"context"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/lb/v1"
@@ -185,9 +193,9 @@ func dataSourceScalewayLbBackends() *schema.Resource {
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -198,7 +206,7 @@ func dataSourceScalewayLbBackendsRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	_, lbID, err := parseZonedID(d.Get("lb_id").(string))
+	_, lbID, err := zonal.ParseZonedID(d.Get("lb_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -206,7 +214,7 @@ func dataSourceScalewayLbBackendsRead(ctx context.Context, d *schema.ResourceDat
 	res, err := lbAPI.ListBackends(&lb.ZonedAPIListBackendsRequest{
 		Zone: zone,
 		LBID: lbID,
-		Name: expandStringPtr(d.Get("name")),
+		Name: types.ExpandStringPtr(d.Get("name")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -217,7 +225,7 @@ func dataSourceScalewayLbBackendsRead(ctx context.Context, d *schema.ResourceDat
 		rawBackend := make(map[string]interface{})
 		rawBackend["id"] = newZonedID(zone, backend.ID).String()
 		rawBackend["name"] = backend.Name
-		rawBackend["lb_id"] = newZonedIDString(zone, backend.LB.ID)
+		rawBackend["lb_id"] = zonal.NewZonedIDString(zone, backend.LB.ID)
 		rawBackend["created_at"] = flattenTime(backend.CreatedAt)
 		rawBackend["update_at"] = flattenTime(backend.UpdatedAt)
 		rawBackend["forward_protocol"] = backend.ForwardProtocol

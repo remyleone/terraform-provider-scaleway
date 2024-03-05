@@ -3,6 +3,11 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/hashicorp/go-cty/cty"
@@ -80,7 +85,7 @@ func resourceScalewayMNQSNSTopicSubscription() *schema.Resource {
 				Description: "ARN of the topic, should have format 'arn:scw:sns:project-${project_id}:${topic_name}:${subscription_id}'",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 		},
 	}
 }
@@ -91,7 +96,7 @@ func resourceScalewayMNQSNSTopicSubscriptionCreate(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 
-	projectID, _, err := extractProjectID(d, meta.(*Meta))
+	projectID, _, err := extractProjectID(d, meta.(*meta2.Meta))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -134,8 +139,8 @@ func resourceScalewayMNQSNSTopicSubscriptionCreate(ctx context.Context, d *schem
 
 	input := &sns.SubscribeInput{
 		Attributes:            attributes,
-		Endpoint:              expandStringPtr(d.Get("endpoint")),
-		Protocol:              expandStringPtr(d.Get("protocol")),
+		Endpoint:              types.ExpandStringPtr(d.Get("endpoint")),
+		Protocol:              types.ExpandStringPtr(d.Get("protocol")),
 		ReturnSubscriptionArn: scw.BoolPtr(true),
 		TopicArn:              &topicARN,
 	}

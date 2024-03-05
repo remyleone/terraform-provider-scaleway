@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/redis/v1"
@@ -21,9 +23,9 @@ func init() {
 }
 
 func testSweepRedisCluster(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		redisAPI := redis.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the redis cluster in (%s)", zone)
+		L.Debugf("sweeper: destroying the redis cluster in (%s)", zone)
 		listClusters, err := redisAPI.ListClusters(&redis.ListClustersRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
@@ -46,12 +48,12 @@ func testSweepRedisCluster(_ string) error {
 }
 
 func TestAccScalewayRedisCluster_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -115,11 +117,11 @@ func TestAccScalewayRedisCluster_Basic(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_Migrate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -178,12 +180,12 @@ func TestAccScalewayRedisCluster_Migrate(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_MigrateClusterSizeWithIPAMEndpoint(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	clusterID := ""
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -282,12 +284,12 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithIPAMEndpoint(t *testing.T
 }
 
 func TestAccScalewayRedisCluster_MigrateClusterSizeWithStaticEndpoint(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	clusterID := ""
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -426,11 +428,11 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithStaticEndpoint(t *testing
 }
 
 func TestAccScalewayRedisCluster_ACL(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -502,11 +504,11 @@ func TestAccScalewayRedisCluster_ACL(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_Settings(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -569,11 +571,11 @@ func TestAccScalewayRedisCluster_Settings(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_Endpoints_Standalone(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -753,11 +755,11 @@ func TestAccScalewayRedisCluster_Endpoints_Standalone(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_Endpoints_ClusterMode(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -817,11 +819,11 @@ func TestAccScalewayRedisCluster_Endpoints_ClusterMode(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_Certificate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -858,11 +860,11 @@ func TestAccScalewayRedisCluster_Certificate(t *testing.T) {
 }
 
 func TestAccScalewayRedisCluster_NoCertificate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	latestRedisVersion := testAccScalewayRedisClusterGetLatestVersion(tt)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRedisClusterDestroy(tt),
 		Steps: []resource.TestStep{
@@ -898,7 +900,7 @@ func TestAccScalewayRedisCluster_NoCertificate(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayRedisClusterDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayRedisClusterDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_redis_cluster" {
@@ -919,7 +921,7 @@ func testAccCheckScalewayRedisClusterDestroy(tt *TestTools) resource.TestCheckFu
 				return fmt.Errorf("cluster (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -927,7 +929,7 @@ func testAccCheckScalewayRedisClusterDestroy(tt *TestTools) resource.TestCheckFu
 	}
 }
 
-func testAccCheckScalewayRedisExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayRedisExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -1029,8 +1031,8 @@ func testAccCheckScalewayRedisCertificateIsValid(name string) resource.TestCheck
 	}
 }
 
-func testAccScalewayRedisClusterGetLatestVersion(tt *TestTools) string {
-	api := redis.NewAPI(tt.Meta.scwClient)
+func testAccScalewayRedisClusterGetLatestVersion(tt *tests.TestTools) string {
+	api := redis.NewAPI(tt.meta.GetScwClient())
 
 	versions, err := api.ListClusterVersions(&redis.ListClusterVersionsRequest{})
 	if err != nil {

@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/registry/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayRegistryNamespace() *schema.Resource {
@@ -20,7 +21,7 @@ func dataSourceScalewayRegistryNamespace() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the registry namespace",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -42,8 +43,8 @@ func dataSourceScalewayRegistryNamespaceRead(ctx context.Context, d *schema.Reso
 		namespaceName := d.Get("name").(string)
 		res, err := api.ListNamespaces(&registry.ListNamespacesRequest{
 			Region:    region,
-			Name:      expandStringPtr(namespaceName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(namespaceName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

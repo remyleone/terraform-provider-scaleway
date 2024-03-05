@@ -4,19 +4,21 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 )
 
 func TestAccScalewayRdbReadReplica_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -53,13 +55,13 @@ func TestAccScalewayRdbReadReplica_Basic(t *testing.T) {
 }
 
 func TestAccScalewayRdbReadReplica_PrivateNetwork(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -101,13 +103,13 @@ func TestAccScalewayRdbReadReplica_PrivateNetwork(t *testing.T) {
 }
 
 func TestAccScalewayRdbReadReplica_Update(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -318,13 +320,13 @@ func TestAccScalewayRdbReadReplica_Update(t *testing.T) {
 }
 
 func TestAccScalewayRdbReadReplica_MultipleEndpoints(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -370,13 +372,13 @@ func TestAccScalewayRdbReadReplica_MultipleEndpoints(t *testing.T) {
 }
 
 func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	readReplicaID := ""
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -489,11 +491,11 @@ func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
 }
 
 func TestAccScalewayRdbReadReplica_WithInstanceAlsoInPrivateNetwork(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayRdbInstanceDestroy(tt),
@@ -586,7 +588,7 @@ func TestAccScalewayRdbReadReplica_WithInstanceAlsoInPrivateNetwork(t *testing.T
 	})
 }
 
-func testAccCheckRdbReadReplicaExists(tt *TestTools, readReplica string) resource.TestCheckFunc {
+func testAccCheckRdbReadReplicaExists(tt *tests.TestTools, readReplica string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		readReplicaResource, ok := state.RootModule().Resources[readReplica]
 		if !ok {
@@ -610,7 +612,7 @@ func testAccCheckRdbReadReplicaExists(tt *TestTools, readReplica string) resourc
 	}
 }
 
-func testAccCheckScalewayRdbReadReplicaDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayRdbReadReplicaDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_rdb_read_replica" {
@@ -633,7 +635,7 @@ func testAccCheckScalewayRdbReadReplicaDestroy(tt *TestTools) resource.TestCheck
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

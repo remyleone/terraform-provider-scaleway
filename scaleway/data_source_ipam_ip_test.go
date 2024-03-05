@@ -3,14 +3,16 @@ package scaleway
 import (
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccScalewayDataSourceIPAMIP_Instance(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -60,10 +62,10 @@ func TestAccScalewayDataSourceIPAMIP_Instance(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceIPAMIP_InstanceLB(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -117,10 +119,10 @@ func TestAccScalewayDataSourceIPAMIP_InstanceLB(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceIPAMIP_RDB(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
@@ -172,10 +174,10 @@ func TestAccScalewayDataSourceIPAMIP_RDB(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceIPAMIP_ID(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
 		Steps: []resource.TestStep{

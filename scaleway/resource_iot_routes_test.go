@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -11,13 +13,13 @@ import (
 )
 
 func TestAccScalewayIotRoute_RDB(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -78,12 +80,12 @@ func TestAccScalewayIotRoute_S3(t *testing.T) {
 	if !*UpdateCassettes {
 		t.Skip("Skipping ObjectStorage test as this kind of resource can't be deleted before 24h")
 	}
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iot-route-s3")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
@@ -135,10 +137,10 @@ func TestAccScalewayIotRoute_S3(t *testing.T) {
 }
 
 func TestAccScalewayIotRoute_REST(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		// Destruction is done via the hub destruction.
 		CheckDestroy: testAccCheckScalewayIotHubDestroy(tt),
@@ -179,7 +181,7 @@ func TestAccScalewayIotRoute_REST(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIotRouteExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayIotRouteExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

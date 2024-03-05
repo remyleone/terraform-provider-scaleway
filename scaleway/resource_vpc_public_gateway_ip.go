@@ -2,7 +2,14 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -34,10 +41,10 @@ func resourceScalewayVPCPublicGatewayIP() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"project_id": projectIDSchema(),
-			"zone":       zoneSchema(),
+			"project_id": project.ProjectIDSchema(),
+			"zone":       zonal.Schema(),
 			// Computed elements
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			"reverse": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -75,7 +82,7 @@ func resourceScalewayVPCPublicGatewayIPCreate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	reverse := d.Get("reverse")
 	if len(reverse.(string)) > 0 {
@@ -83,7 +90,7 @@ func resourceScalewayVPCPublicGatewayIPCreate(ctx context.Context, d *schema.Res
 			IPID:    res.ID,
 			Zone:    zone,
 			Tags:    scw.StringsPtr(expandStrings(d.Get("tags"))),
-			Reverse: expandStringPtr(reverse.(string)),
+			Reverse: types.ExpandStringPtr(reverse.(string)),
 		}
 		_, err = vpcgwAPI.UpdateIP(updateRequest, scw.WithContext(ctx))
 		if err != nil {
@@ -105,7 +112,7 @@ func resourceScalewayVPCPublicGatewayIPRead(ctx context.Context, d *schema.Resou
 		Zone: zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -143,7 +150,7 @@ func resourceScalewayVPCPublicGatewayIPUpdate(ctx context.Context, d *schema.Res
 	}
 
 	if d.HasChange("reverse") {
-		updateRequest.Reverse = expandStringPtr(d.Get("reverse").(string))
+		updateRequest.Reverse = types.ExpandStringPtr(d.Get("reverse").(string))
 		hasChanged = true
 	}
 
@@ -169,7 +176,7 @@ func resourceScalewayVPCPublicGatewayIPDelete(ctx context.Context, d *schema.Res
 		Zone: zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is409Error(err) || is412Error(err) || is404Error(err) {
+		if http_errors.Is409Error(err) || http_errors.Is412Error(err) || http_errors.Is404Error(err) {
 			return append(warnings, diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  err.Error(),

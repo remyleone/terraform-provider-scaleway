@@ -3,6 +3,9 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -77,7 +80,7 @@ func resourceScalewaySecretVersionCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	secretID := expandID(d.Get("secret_id").(string))
+	secretID := locality.ExpandID(d.Get("secret_id").(string))
 	payloadSecretRaw := []byte(d.Get("data").(string))
 	if err != nil {
 		return diag.FromErr(err)
@@ -86,7 +89,7 @@ func resourceScalewaySecretVersionCreate(ctx context.Context, d *schema.Resource
 		Region:      region,
 		SecretID:    secretID,
 		Data:        payloadSecretRaw,
-		Description: expandStringPtr(d.Get("description")),
+		Description: types.ExpandStringPtr(d.Get("description")),
 	}
 
 	secretResponse, err := api.CreateSecretVersion(secretCreateVersionRequest, scw.WithContext(ctx))
@@ -113,7 +116,7 @@ func resourceScalewaySecretVersionRead(ctx context.Context, d *schema.ResourceDa
 		Revision: revision,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -172,7 +175,7 @@ func resourceScalewaySecretVersionDelete(ctx context.Context, d *schema.Resource
 		SecretID: id,
 		Revision: revision,
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

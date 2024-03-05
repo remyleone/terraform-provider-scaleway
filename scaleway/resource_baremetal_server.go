@@ -3,6 +3,16 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -50,7 +60,7 @@ func resourceScalewayBaremetalServer() *schema.Resource {
 				Description: "ID or name of the server offer",
 				DiffSuppressFunc: func(_, oldValue, newValue string, d *schema.ResourceData) bool {
 					// remove the locality from the IDs when checking diff
-					if expandID(newValue) == expandID(oldValue) {
+					if locality.ExpandID(newValue) == locality.ExpandID(oldValue) {
 						return true
 					}
 					// if the offer was provided by name
@@ -73,7 +83,7 @@ func resourceScalewayBaremetalServer() *schema.Resource {
 				Optional:         true,
 				Description:      "The base image of the server",
 				DiffSuppressFunc: diffSuppressFuncLocality,
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 			},
 			"os_name": {
 				Type:        schema.TypeString,
@@ -84,7 +94,7 @@ func resourceScalewayBaremetalServer() *schema.Resource {
 				Type: schema.TypeList,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validationUUID(),
+					ValidateFunc: verify.UUID(),
 				},
 				Optional: true,
 				Description: `Array of SSH key IDs allowed to SSH to the server
@@ -143,9 +153,9 @@ If this behaviour is wanted, please set 'reinstall_on_ssh_key_changes' argument 
 				Computed:    true,
 				Description: "Array of tags to associate with the server",
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			"ips": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -207,9 +217,9 @@ If this behaviour is wanted, please set 'reinstall_on_ssh_key_changes' argument 
 							Type:         schema.TypeString,
 							Description:  "The private network ID",
 							Required:     true,
-							ValidateFunc: validationUUIDorUUIDWithLocality(),
+							ValidateFunc: verify.UUIDorUUIDWithLocality(),
 							StateFunc: func(i interface{}) string {
-								return expandID(i.(string))
+								return locality.ExpandID(i.(string))
 							},
 						},
 						// computed
@@ -302,8 +312,8 @@ func resourceScalewayBaremetalServerCreate(ctx context.Context, d *schema.Resour
 
 	server, err := baremetalAPI.CreateServer(&baremetal.CreateServerRequest{
 		Zone:        zone,
-		Name:        expandOrGenerateString(d.Get("name"), "bm"),
-		ProjectID:   expandStringPtr(d.Get("project_id")),
+		Name:        types.ExpandOrGenerateString(d.Get("name"), "bm"),
+		ProjectID:   types.ExpandStringPtr(d.Get("project_id")),
 		Description: d.Get("description").(string),
 		OfferID:     offerID.ID,
 		Tags:        expandStrings(d.Get("tags")),
@@ -326,10 +336,10 @@ func resourceScalewayBaremetalServerCreate(ctx context.Context, d *schema.Resour
 			OsID:            expandZonedID(d.Get("os")).ID,
 			Hostname:        expandStringWithDefault(d.Get("hostname"), server.Name),
 			SSHKeyIDs:       expandStrings(d.Get("ssh_key_ids")),
-			User:            expandStringPtr(d.Get("user")),
-			Password:        expandStringPtr(d.Get("password")),
-			ServiceUser:     expandStringPtr(d.Get("service_user")),
-			ServicePassword: expandStringPtr(d.Get("service_password")),
+			User:            types.ExpandStringPtr(d.Get("user")),
+			Password:        types.ExpandStringPtr(d.Get("password")),
+			ServiceUser:     types.ExpandStringPtr(d.Get("service_user")),
+			ServicePassword: types.ExpandStringPtr(d.Get("service_password")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
@@ -377,7 +387,7 @@ func resourceScalewayBaremetalServerCreate(ctx context.Context, d *schema.Resour
 		}
 
 		_, err = waitForBaremetalServerPrivateNetwork(ctx, baremetalPrivateNetworkAPI, zone, baremetalPrivateNetwork.ServerPrivateNetworks[0].ServerID, d.Timeout(schema.TimeoutCreate))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}
@@ -401,7 +411,7 @@ func resourceScalewayBaremetalServerRead(ctx context.Context, d *schema.Resource
 		ServerID: zonedID.ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -431,16 +441,16 @@ func resourceScalewayBaremetalServerRead(ctx context.Context, d *schema.Resource
 	_ = d.Set("zone", server.Zone.String())
 	_ = d.Set("organization_id", server.OrganizationID)
 	_ = d.Set("project_id", server.ProjectID)
-	_ = d.Set("offer_id", newZonedIDString(server.Zone, offer.ID))
+	_ = d.Set("offer_id", zonal.NewZonedIDString(server.Zone, offer.ID))
 	_ = d.Set("offer_name", offer.Name)
-	_ = d.Set("offer", newZonedIDString(server.Zone, offer.ID))
+	_ = d.Set("offer", zonal.NewZonedIDString(server.Zone, offer.ID))
 	_ = d.Set("tags", server.Tags)
 	_ = d.Set("domain", server.Domain)
 	_ = d.Set("ips", flattenBaremetalIPs(server.IPs))
 	_ = d.Set("ipv4", flattenBaremetalIPv4s(server.IPs))
 	_ = d.Set("ipv6", flattenBaremetalIPv6s(server.IPs))
 	if server.Install != nil {
-		_ = d.Set("os", newZonedIDString(server.Zone, os.ID))
+		_ = d.Set("os", zonal.NewZonedIDString(server.Zone, os.ID))
 		_ = d.Set("os_name", os.Name)
 		_ = d.Set("ssh_key_ids", server.Install.SSHKeyIDs)
 		_ = d.Set("user", server.Install.User)
@@ -506,7 +516,7 @@ func resourceScalewayBaremetalServerUpdate(ctx context.Context, d *schema.Resour
 		}
 
 		_, err = waitForBaremetalServerOptions(ctx, baremetalAPI, zonedID.Zone, zonedID.ID, d.Timeout(schema.TimeoutDelete))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 
@@ -542,7 +552,7 @@ func resourceScalewayBaremetalServerUpdate(ctx context.Context, d *schema.Resour
 		}
 
 		_, err = waitForBaremetalServerPrivateNetwork(ctx, baremetalPrivateNetworkAPI, zone, baremetalPrivateNetwork.ServerPrivateNetworks[0].ServerID, d.Timeout(schema.TimeoutUpdate))
-		if err != nil && !is404Error(err) {
+		if err != nil && !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}
@@ -581,10 +591,10 @@ func resourceScalewayBaremetalServerUpdate(ctx context.Context, d *schema.Resour
 		ServerID:        zonedID.ID,
 		Hostname:        expandStringWithDefault(d.Get("hostname"), d.Get("name").(string)),
 		SSHKeyIDs:       expandStrings(d.Get("ssh_key_ids")),
-		User:            expandStringPtr(d.Get("user")),
-		Password:        expandStringPtr(d.Get("password")),
-		ServiceUser:     expandStringPtr(d.Get("service_user")),
-		ServicePassword: expandStringPtr(d.Get("service_password")),
+		User:            types.ExpandStringPtr(d.Get("user")),
+		Password:        types.ExpandStringPtr(d.Get("password")),
+		ServiceUser:     types.ExpandStringPtr(d.Get("service_user")),
+		ServicePassword: types.ExpandStringPtr(d.Get("service_password")),
 	}
 
 	if d.HasChange("os") {
@@ -647,14 +657,14 @@ func resourceScalewayBaremetalServerDelete(ctx context.Context, d *schema.Resour
 		ServerID: zonedID.ID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			return nil
 		}
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForBaremetalServer(ctx, baremetalAPI, zonedID.Zone, zonedID.ID, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
@@ -679,7 +689,7 @@ func validateInstallConfig(ctx context.Context, d *schema.ResourceData, meta int
 
 	os, err := baremetalAPI.GetOS(&baremetal.GetOSRequest{
 		Zone: zone,
-		OsID: expandID(d.Get("os")),
+		OsID: locality.ExpandID(d.Get("os")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)

@@ -5,6 +5,10 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
@@ -20,7 +24,7 @@ func init() {
 }
 
 func TestAccScalewayInstanceSecurityGroup_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ipnetZero, err := expandIPNet("0.0.0.0/0")
 	require.NoError(t, err)
@@ -29,7 +33,7 @@ func TestAccScalewayInstanceSecurityGroup_Basic(t *testing.T) {
 	ipnetTest, err := expandIPNet("8.8.8.8")
 	require.NoError(t, err)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -171,7 +175,7 @@ func TestAccScalewayInstanceSecurityGroup_Basic(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_ICMP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	ipnetZero, err := expandIPNet("0.0.0.0/0")
@@ -179,7 +183,7 @@ func TestAccScalewayInstanceSecurityGroup_ICMP(t *testing.T) {
 	ipnetTest, err := expandIPNet("8.8.8.8")
 	require.NoError(t, err)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -240,10 +244,10 @@ func TestAccScalewayInstanceSecurityGroup_ICMP(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_ANY(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -285,12 +289,12 @@ func TestAccScalewayInstanceSecurityGroup_ANY(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_WithNoPort(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ipnetZero, err := expandIPNet("0.0.0.0/0")
 	require.NoError(t, err)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -320,12 +324,12 @@ func TestAccScalewayInstanceSecurityGroup_WithNoPort(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_RemovePort(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ipnetZero, err := expandIPNet("0.0.0.0/0")
 	require.NoError(t, err)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -379,10 +383,10 @@ func TestAccScalewayInstanceSecurityGroup_RemovePort(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_WithPortRange(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -436,10 +440,10 @@ func TestAccScalewayInstanceSecurityGroup_WithPortRange(t *testing.T) {
 }
 
 func TestAccScalewayInstanceSecurityGroup_Tags(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{
@@ -478,7 +482,7 @@ func TestAccScalewayInstanceSecurityGroup_Tags(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayInstanceSecurityGroupRuleMatch(tt *TestTools, name string, index int, expected *instance.SecurityGroupRule) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceSecurityGroupRuleMatch(tt *tests.TestTools, name string, index int, expected *instance.SecurityGroupRule) resource.TestCheckFunc {
 	return testAccCheckScalewayInstanceSecurityGroupRuleIs(tt, name, expected.Direction, index, func(actual *instance.SecurityGroupRule) error {
 		if ok, _ := securityGroupRuleEquals(expected, actual); !ok {
 			return fmt.Errorf("security group does not match %v, %v", actual, expected)
@@ -487,7 +491,7 @@ func testAccCheckScalewayInstanceSecurityGroupRuleMatch(tt *TestTools, name stri
 	})
 }
 
-func testAccCheckScalewayInstanceSecurityGroupRuleIs(tt *TestTools, name string, direction instance.SecurityGroupRuleDirection, index int, test func(rule *instance.SecurityGroupRule) error) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceSecurityGroupRuleIs(tt *tests.TestTools, name string, direction instance.SecurityGroupRuleDirection, index int, test func(rule *instance.SecurityGroupRule) error) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -525,7 +529,7 @@ func testAccCheckScalewayInstanceSecurityGroupRuleIs(tt *TestTools, name string,
 	}
 }
 
-func testAccCheckScalewayInstanceSecurityGroupExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceSecurityGroupExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -533,12 +537,12 @@ func testAccCheckScalewayInstanceSecurityGroupExists(tt *TestTools, n string) re
 			return fmt.Errorf("not found: %s", n)
 		}
 
-		zone, ID, err := parseZonedID(rs.Primary.ID)
+		zone, ID, err := zonal.ParseZonedID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		instanceAPI := instance.NewAPI(tt.Meta.scwClient)
+		instanceAPI := instance.NewAPI(tt.meta.GetScwClient())
 		_, err = instanceAPI.GetSecurityGroup(&instance.GetSecurityGroupRequest{
 			SecurityGroupID: ID,
 			Zone:            zone,
@@ -551,15 +555,15 @@ func testAccCheckScalewayInstanceSecurityGroupExists(tt *TestTools, n string) re
 	}
 }
 
-func testAccCheckScalewayInstanceSecurityGroupDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceSecurityGroupDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		instanceAPI := instance.NewAPI(tt.Meta.scwClient)
+		instanceAPI := instance.NewAPI(tt.meta.GetScwClient())
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_instance_security_group" {
 				continue
 			}
 
-			zone, ID, err := parseZonedID(rs.Primary.ID)
+			zone, ID, err := zonal.ParseZonedID(rs.Primary.ID)
 			if err != nil {
 				return err
 			}
@@ -575,7 +579,7 @@ func testAccCheckScalewayInstanceSecurityGroupDestroy(tt *TestTools) resource.Te
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -585,15 +589,15 @@ func testAccCheckScalewayInstanceSecurityGroupDestroy(tt *TestTools) resource.Te
 }
 
 func testSweepComputeInstanceSecurityGroup(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		instanceAPI := instance.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the security groups in (%s)", zone)
+		L.Debugf("sweeper: destroying the security groups in (%s)", zone)
 
 		listResp, err := instanceAPI.ListSecurityGroups(&instance.ListSecurityGroupsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
-			l.Warningf("error listing security groups in sweeper: %s", err)
+			L.Warningf("error listing security groups in sweeper: %s", err)
 			return nil
 		}
 
@@ -616,10 +620,10 @@ func testSweepComputeInstanceSecurityGroup(_ string) error {
 }
 
 func TestAccScalewayInstanceSecurityGroup_EnableDefaultSecurity(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceSecurityGroupDestroy(tt),
 		Steps: []resource.TestStep{

@@ -116,7 +116,7 @@ func testAccCheckScaleway{{.Resource}}Destroy(tt *TestTools) resource.TestCheckF
 				return fmt.Errorf("{{.API}} {{.ResourceCleanLow}} (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

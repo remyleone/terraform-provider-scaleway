@@ -4,8 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -22,13 +28,13 @@ const (
 
 // newRdbAPI returns a new RDB API
 func newRdbAPI(m interface{}) *rdb.API {
-	meta := m.(*Meta)
-	return rdb.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	return rdb.NewAPI(meta.GetScwClient())
 }
 
 // rdbAPIWithRegion returns a new lb API and the region for a Create request
 func rdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*rdb.API, scw.Region, error) {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -39,7 +45,7 @@ func rdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*rdb.API, scw.Regi
 
 // rdbAPIWithRegionAndID returns an lb API with region and ID extracted from the state
 func rdbAPIWithRegionAndID(m interface{}, id string) (*rdb.API, scw.Region, string, error) {
-	region, ID, err := parseRegionalID(id)
+	region, ID, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -70,8 +76,8 @@ func expandInstanceSettings(i interface{}) []*rdb.InstanceSetting {
 
 func waitForRDBInstance(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.Instance, error) {
 	retryInterval := defaultWaitRDBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForInstance(&rdb.WaitForInstanceRequest{
@@ -84,8 +90,8 @@ func waitForRDBInstance(ctx context.Context, api *rdb.API, region scw.Region, id
 
 func waitForRDBDatabaseBackup(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.DatabaseBackup, error) {
 	retryInterval := defaultWaitRDBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForDatabaseBackup(&rdb.WaitForDatabaseBackupRequest{
@@ -98,8 +104,8 @@ func waitForRDBDatabaseBackup(ctx context.Context, api *rdb.API, region scw.Regi
 
 func waitForRDBReadReplica(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.ReadReplica, error) {
 	retryInterval := defaultWaitRDBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForReadReplica(&rdb.WaitForReadReplicaRequest{
@@ -121,7 +127,7 @@ func expandPrivateNetwork(data interface{}, exist bool, ipamConfig *bool, static
 		r := pn.(map[string]interface{})
 		spec := &rdb.EndpointSpec{
 			PrivateNetwork: &rdb.EndpointSpecPrivateNetwork{
-				PrivateNetworkID: expandID(r["pn_id"].(string)),
+				PrivateNetworkID: locality.ExpandID(r["pn_id"].(string)),
 				IpamConfig:       &rdb.EndpointSpecPrivateNetworkIpamConfig{},
 			},
 		}
@@ -206,7 +212,7 @@ func flattenLoadBalancer(endpoints []*rdb.Endpoint) (interface{}, bool) {
 // expandTimePtr returns a time pointer for an RFC3339 time.
 // It returns nil if time is not valid, you should use validateDate to validate field.
 func expandTimePtr(i interface{}) *time.Time {
-	rawTime := expandStringPtr(i)
+	rawTime := types.ExpandStringPtr(i)
 	if rawTime == nil {
 		return nil
 	}
@@ -240,7 +246,7 @@ func expandReadReplicaEndpointsSpecPrivateNetwork(data interface{}, ipamConfig *
 
 	endpoint := &rdb.ReadReplicaEndpointSpec{
 		PrivateNetwork: &rdb.ReadReplicaEndpointSpecPrivateNetwork{
-			PrivateNetworkID: expandID(rawEndpoint["private_network_id"]),
+			PrivateNetworkID: locality.ExpandID(rawEndpoint["private_network_id"]),
 			IpamConfig:       &rdb.ReadReplicaEndpointSpecPrivateNetworkIpamConfig{},
 		},
 	}
@@ -316,11 +322,11 @@ func rdbPrivilegeV1SchemaUpgradeFunc(_ context.Context, rawState map[string]inte
 		return rawState, nil
 	}
 
-	region, idStr, err := parseRegionalID(idRaw.(string))
+	region, idStr, err := regional.ParseRegionalID(idRaw.(string))
 	if err != nil {
 		// force the default region
-		meta := m.(*Meta)
-		defaultRegion, exist := meta.scwClient.GetDefaultRegion()
+		meta := m.(*meta2.Meta)
+		defaultRegion, exist := meta.GetScwClient().GetDefaultRegion()
 		if exist {
 			region = defaultRegion
 		}
@@ -347,7 +353,7 @@ func getIPConfigCreate(d *schema.ResourceData, ipFieldName string) (ipamConfig *
 	}
 	customIP, customIPSet := d.GetOk("private_network.0." + ipFieldName)
 	if customIPSet {
-		staticConfig = expandStringPtr(customIP)
+		staticConfig = types.ExpandStringPtr(customIP)
 	}
 	return ipamConfig, staticConfig
 }
@@ -372,7 +378,7 @@ func getIPConfigUpdate(d *schema.ResourceData, ipFieldName string) (ipamConfig *
 }
 
 func getIPAMConfigRead(resource interface{}, meta interface{}) (bool, error) {
-	ipamAPI := ipam.NewAPI(meta.(*Meta).scwClient)
+	ipamAPI := ipam.NewAPI(meta.(*meta2.Meta).GetScwClient())
 	request := &ipam.ListIPsRequest{
 		ResourceType: "rdb_instance",
 		IsIPv6:       scw.BoolPtr(false),

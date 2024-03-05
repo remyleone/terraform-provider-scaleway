@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt),
 		Steps: []resource.TestStep{
@@ -155,11 +157,11 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Migration(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt),
 		Steps: []resource.TestStep{
@@ -217,7 +219,7 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Migration(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_documentdb_private_network_endpoint" {
@@ -238,7 +240,7 @@ func testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt *TestTools) resour
 				return fmt.Errorf("documentdb instance endpoint (%s) still exists", rs.Primary.ID)
 			}
 
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -247,7 +249,7 @@ func testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt *TestTools) resour
 	}
 }
 
-func testAccCheckScalewayDocumentDBInstanceEndpointExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayDocumentDBInstanceEndpointExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {

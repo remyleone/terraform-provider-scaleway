@@ -4,11 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -26,8 +31,8 @@ const (
 
 // functionAPIWithRegion returns a new container registry API and the region.
 func functionAPIWithRegion(d *schema.ResourceData, m interface{}) (*function.API, scw.Region, error) {
-	meta := m.(*Meta)
-	api := function.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := function.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -38,10 +43,10 @@ func functionAPIWithRegion(d *schema.ResourceData, m interface{}) (*function.API
 
 // functionAPIWithRegionAndID returns a new container registry API, region and ID.
 func functionAPIWithRegionAndID(m interface{}, id string) (*function.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	api := function.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := function.NewAPI(meta.GetScwClient())
 
-	region, id, err := parseRegionalID(id)
+	region, id, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -50,8 +55,8 @@ func functionAPIWithRegionAndID(m interface{}, id string) (*function.API, scw.Re
 
 func waitForFunctionNamespace(ctx context.Context, functionAPI *function.API, region scw.Region, id string, timeout time.Duration) (*function.Namespace, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	ns, err := functionAPI.WaitForNamespace(&function.WaitForNamespaceRequest{
@@ -66,8 +71,8 @@ func waitForFunctionNamespace(ctx context.Context, functionAPI *function.API, re
 
 func waitForFunction(ctx context.Context, functionAPI *function.API, region scw.Region, id string, timeout time.Duration) (*function.Function, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	f, err := functionAPI.WaitForFunction(&function.WaitForFunctionRequest{
@@ -82,8 +87,8 @@ func waitForFunction(ctx context.Context, functionAPI *function.API, region scw.
 
 func waitForFunctionCron(ctx context.Context, functionAPI *function.API, region scw.Region, cronID string, timeout time.Duration) (*function.Cron, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return functionAPI.WaitForCron(&function.WaitForCronRequest{
@@ -96,8 +101,8 @@ func waitForFunctionCron(ctx context.Context, functionAPI *function.API, region 
 
 func waitForFunctionDomain(ctx context.Context, functionAPI *function.API, region scw.Region, id string, timeout time.Duration) (*function.Domain, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	domain, err := functionAPI.WaitForDomain(&function.WaitForDomainRequest{
@@ -112,8 +117,8 @@ func waitForFunctionDomain(ctx context.Context, functionAPI *function.API, regio
 
 func waitForFunctionTrigger(ctx context.Context, functionAPI *function.API, region scw.Region, id string, timeout time.Duration) (*function.Trigger, error) {
 	retryInterval := defaultFunctionRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	trigger, err := functionAPI.WaitForTrigger(&function.WaitForTriggerRequest{
@@ -127,7 +132,7 @@ func waitForFunctionTrigger(ctx context.Context, functionAPI *function.API, regi
 }
 
 func functionUpload(ctx context.Context, m interface{}, functionAPI *function.API, region scw.Region, functionID string, zipFile string) error {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 	zipStat, err := os.Stat(zipFile)
 	if err != nil {
 		return fmt.Errorf("failed to stat zip file: %w", err)
@@ -161,10 +166,10 @@ func functionUpload(ctx context.Context, m interface{}, functionAPI *function.AP
 		}
 	}
 
-	secretKey, _ := meta.scwClient.GetSecretKey()
+	secretKey, _ := meta.GetScwClient().GetSecretKey()
 	req.Header.Add("X-Auth-Token", secretKey)
 
-	resp, err := meta.httpClient.Do(req)
+	resp, err := meta.GetHTTPClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
@@ -210,7 +215,7 @@ func expandFunctionsSecrets(secretsRawMap interface{}) []*function.Secret {
 	for k, v := range secretsMap {
 		secrets = append(secrets, &function.Secret{
 			Key:   k,
-			Value: expandStringPtr(v),
+			Value: types.ExpandStringPtr(v),
 		})
 	}
 

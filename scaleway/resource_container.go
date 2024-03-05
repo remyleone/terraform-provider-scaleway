@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -195,7 +198,7 @@ func resourceScalewayContainerCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	namespaceID := expandID(d.Get("namespace_id").(string))
+	namespaceID := locality.ExpandID(d.Get("namespace_id").(string))
 	// verify name space state
 	_, err = waitForContainerNamespace(ctx, api, region, namespaceID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -249,7 +252,7 @@ func resourceScalewayContainerRead(ctx context.Context, d *schema.ResourceData, 
 
 	co, err := waitForContainer(ctx, api, containerID, region, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -289,7 +292,7 @@ func resourceScalewayContainerUpdate(ctx context.Context, d *schema.ResourceData
 
 	namespaceID := d.Get("namespace_id")
 	// verify name space state
-	_, err = waitForContainerNamespace(ctx, api, region, expandID(namespaceID), d.Timeout(schema.TimeoutUpdate))
+	_, err = waitForContainerNamespace(ctx, api, region, locality.ExpandID(namespaceID), d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return diag.Errorf("unexpected namespace error: %s", err)
 	}
@@ -336,7 +339,7 @@ func resourceScalewayContainerUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if d.HasChanges("privacy") {
-		req.Privacy = container.ContainerPrivacy(*expandStringPtr(d.Get("privacy")))
+		req.Privacy = container.ContainerPrivacy(*types.ExpandStringPtr(d.Get("privacy")))
 	}
 
 	if d.HasChanges("description") {
@@ -344,7 +347,7 @@ func resourceScalewayContainerUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if d.HasChanges("registry_image") {
-		req.RegistryImage = expandStringPtr(d.Get("registry_image"))
+		req.RegistryImage = types.ExpandStringPtr(d.Get("registry_image"))
 	}
 
 	if d.HasChanges("max_concurrency") {
@@ -352,7 +355,7 @@ func resourceScalewayContainerUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if d.HasChanges("protocol") {
-		req.Protocol = container.ContainerProtocol(*expandStringPtr(d.Get("protocol")))
+		req.Protocol = container.ContainerProtocol(*types.ExpandStringPtr(d.Get("protocol")))
 	}
 
 	if d.HasChanges("port") {

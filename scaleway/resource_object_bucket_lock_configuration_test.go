@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -22,11 +24,11 @@ func TestAccScalewayObjectBucketLockConfiguration_Basic(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(LockResourcePrefix)
 	resourceName := lockResourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -121,11 +123,11 @@ func TestAccScalewayObjectBucketLockConfiguration_Update(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(LockResourcePrefix)
 	resourceName := lockResourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -215,11 +217,11 @@ func TestAccScalewayObjectBucketLockConfiguration_WithBucketName(t *testing.T) {
 	rName := sdkacctest.RandomWithPrefix(LockResourcePrefix)
 	resourceName := lockResourceTestName
 
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ErrorCheck:        ErrorCheck(t, EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
@@ -294,7 +296,7 @@ func TestAccScalewayObjectBucketLockConfiguration_WithBucketName(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayBucketLockConfigurationDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayBucketLockConfigurationDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "scaleway_object_bucket_lock_configuration" {
@@ -332,7 +334,7 @@ func testAccCheckScalewayBucketLockConfigurationDestroy(tt *TestTools) resource.
 	}
 }
 
-func testAccCheckBucketLockConfigurationExists(tt *TestTools, resourceName string) resource.TestCheckFunc {
+func testAccCheckBucketLockConfigurationExists(tt *tests.TestTools, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs := s.RootModule().Resources[resourceName]
 		if rs == nil {

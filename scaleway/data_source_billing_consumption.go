@@ -4,6 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -15,8 +20,8 @@ func dataSourceScalewayBillingConsumptions() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceScalewayBillingConsumptionsRead,
 		Schema: map[string]*schema.Schema{
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 			"consumptions": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -72,10 +77,10 @@ func dataSourceScalewayBillingConsumptionsRead(ctx context.Context, d *schema.Re
 	api := billingAPI(meta)
 
 	res, err := api.ListConsumptions(&billing.ListConsumptionsRequest{
-		CategoryName:   expandStringPtr(d.Get("category_name")),
-		BillingPeriod:  expandStringPtr(d.Get("billing_period")),
-		OrganizationID: expandStringPtr(d.Get("organization_id")),
-		ProjectID:      expandStringPtr(d.Get("project_id")),
+		CategoryName:   types.ExpandStringPtr(d.Get("category_name")),
+		BillingPeriod:  types.ExpandStringPtr(d.Get("billing_period")),
+		OrganizationID: types.ExpandStringPtr(d.Get("organization_id")),
+		ProjectID:      types.ExpandStringPtr(d.Get("project_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)

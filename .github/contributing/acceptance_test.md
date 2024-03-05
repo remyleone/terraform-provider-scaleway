@@ -206,7 +206,7 @@ When executing the test, the following steps are taken for each `TestStep`:
                 }
         
                 // Unexpected api error we return it
-                if !is404Error(err) {
+                if !http_errors.Is404Error(err) {
                     return err
                 }
             } 

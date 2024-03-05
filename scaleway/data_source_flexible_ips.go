@@ -2,6 +2,12 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -97,7 +103,7 @@ func dataSourceScalewayFlexibleIPs() *schema.Resource {
 										Computed:    true,
 										Description: "The date on which the virtual MAC was last updated (RFC 3339 format)",
 									},
-									"zone": zoneSchema(),
+									"zone": zonal.Schema(),
 								},
 							},
 						},
@@ -110,14 +116,14 @@ func dataSourceScalewayFlexibleIPs() *schema.Resource {
 							Type:     schema.TypeString,
 						},
 						"zone":            zoneComputedSchema(),
-						"organization_id": organizationIDSchema(),
-						"project_id":      projectIDSchema(),
+						"organization_id": organization.OrganizationIDSchema(),
+						"project_id":      project.ProjectIDSchema(),
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -131,7 +137,7 @@ func dataSourceScalewayFlexibleIPsRead(ctx context.Context, d *schema.ResourceDa
 	res, err := fipAPI.ListFlexibleIPs(&flexibleip.ListFlexibleIPsRequest{
 		Zone:      zone,
 		ServerIDs: expandServerIDs(d.Get("server_ids")),
-		ProjectID: expandStringPtr(d.Get("project_id")),
+		ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		Tags:      expandStrings(d.Get("tags")),
 	}, scw.WithContext(ctx))
 	if err != nil {

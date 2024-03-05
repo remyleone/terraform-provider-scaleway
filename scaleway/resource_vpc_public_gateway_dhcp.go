@@ -2,8 +2,15 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"net"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -23,8 +30,8 @@ func resourceScalewayVPCPublicGatewayDHCP() *schema.Resource {
 		},
 		SchemaVersion: 0,
 		Schema: map[string]*schema.Schema{
-			"project_id": projectIDSchema(),
-			"zone":       zoneSchema(),
+			"project_id": project.ProjectIDSchema(),
+			"zone":       zonal.Schema(),
 			"subnet": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.IsCIDR,
@@ -111,7 +118,7 @@ func resourceScalewayVPCPublicGatewayDHCP() *schema.Resource {
 				Computed:    true,
 				Description: "TLD given to hostnames in the Private Network. Allowed characters are `a-z0-9-.`. Defaults to the slugified Private Network name if created along a GatewayNetwork, or else to `priv`.",
 			},
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			"created_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -155,7 +162,7 @@ func resourceScalewayVPCPublicGatewayDHCPCreate(ctx context.Context, d *schema.R
 	}
 
 	if dsnLocalName, ok := d.GetOk("dns_local_name"); ok {
-		req.DNSLocalName = expandStringPtr(dsnLocalName)
+		req.DNSLocalName = types.ExpandStringPtr(dsnLocalName)
 	}
 
 	if address, ok := d.GetOk("address"); ok {
@@ -187,7 +194,7 @@ func resourceScalewayVPCPublicGatewayDHCPCreate(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	return resourceScalewayVPCPublicGatewayDHCPRead(ctx, d, meta)
 }
@@ -203,7 +210,7 @@ func resourceScalewayVPCPublicGatewayDHCPRead(ctx context.Context, d *schema.Res
 		Zone:   zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -268,7 +275,7 @@ func resourceScalewayVPCPublicGatewayDHCPUpdate(ctx context.Context, d *schema.R
 	}
 
 	if ok := d.HasChange("dns_local_name"); ok {
-		req.DNSLocalName = expandStringPtr(d.Get("dns_local_name"))
+		req.DNSLocalName = types.ExpandStringPtr(d.Get("dns_local_name"))
 	}
 
 	if ok := d.HasChange("renew_timer"); ok {
@@ -322,7 +329,7 @@ func resourceScalewayVPCPublicGatewayDHCPDelete(ctx context.Context, d *schema.R
 		Zone:   zone,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

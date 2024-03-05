@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 )
 
 func TestAccScalewayVPCPublicGatewayPATRule_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt),
 		Steps: []resource.TestStep{
@@ -85,11 +87,11 @@ func TestAccScalewayVPCPublicGatewayPATRule_Basic(t *testing.T) {
 }
 
 func TestAccScalewayVPCPublicGatewayPATRule_WithInstance(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt),
 		Steps: []resource.TestStep{
@@ -180,7 +182,7 @@ func TestAccScalewayVPCPublicGatewayPATRule_WithInstance(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayVPCPublicGatewayPATRuleExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayPATRuleExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -204,7 +206,7 @@ func testAccCheckScalewayVPCPublicGatewayPATRuleExists(tt *TestTools, n string) 
 	}
 }
 
-func testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_vpc_public_gateway_pat_rules" {
@@ -229,7 +231,7 @@ func testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt *TestTools) resource.
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

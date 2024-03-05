@@ -4,9 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"regexp"
 	"strings"
 	"testing"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -24,12 +29,12 @@ func init() {
 }
 
 func testSweepInstanceServer(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		instanceAPI := instance.NewAPI(scwClient)
-		l.Debugf("sweeper: destroying the instance server in (%s)", zone)
+		L.Debugf("sweeper: destroying the instance server in (%s)", zone)
 		listServers, err := instanceAPI.ListServers(&instance.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
-			l.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
+			L.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
@@ -59,10 +64,10 @@ func testSweepInstanceServer(_ string) error {
 }
 
 func TestAccScalewayInstanceServer_Minimal1(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -115,10 +120,10 @@ func TestAccScalewayInstanceServer_Minimal1(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_Minimal2(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -185,10 +190,10 @@ func TestAccScalewayInstanceServer_Minimal2(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_RootVolume1(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -213,10 +218,10 @@ func TestAccScalewayInstanceServer_RootVolume1(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_RootVolume_Boot(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -261,10 +266,10 @@ func TestAccScalewayInstanceServer_RootVolume_Boot(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_RootVolume_ID(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -297,10 +302,10 @@ func TestAccScalewayInstanceServer_RootVolume_ID(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -358,10 +363,10 @@ func TestAccScalewayInstanceServer_Basic(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_State1(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -427,10 +432,10 @@ func TestAccScalewayInstanceServer_State1(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_State2(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -477,10 +482,10 @@ func TestAccScalewayInstanceServer_State2(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_UserData_WithCloudInitAtStart(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -510,10 +515,10 @@ EOF
 }
 
 func TestAccScalewayInstanceServer_UserData_WithoutCloudInitAtStart(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -561,10 +566,10 @@ EOF
 }
 
 func TestAccScalewayInstanceServer_AdditionalVolumes(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -637,10 +642,10 @@ func TestAccScalewayInstanceServer_AdditionalVolumes(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_AdditionalVolumesDetach(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayInstanceVolumeDestroy(tt),
@@ -704,10 +709,10 @@ func TestAccScalewayInstanceServer_AdditionalVolumesDetach(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_WithPlacementGroup(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -740,10 +745,10 @@ func TestAccScalewayInstanceServer_WithPlacementGroup(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_Ipv6(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -782,10 +787,10 @@ func TestAccScalewayInstanceServer_Ipv6(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_Basic2(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -812,10 +817,10 @@ func TestAccScalewayInstanceServer_Basic2(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_WithReservedIP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -892,7 +897,7 @@ func TestAccScalewayInstanceServer_WithReservedIP(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayInstanceServerExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceServerExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -913,7 +918,7 @@ func testAccCheckScalewayInstanceServerExists(tt *TestTools, n string) resource.
 	}
 }
 
-func testAccCheckScalewayInstancePrivateNICsExists(tt *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayInstancePrivateNICsExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -940,7 +945,7 @@ func testAccCheckScalewayInstancePrivateNICsExists(tt *TestTools, n string) reso
 		// build terraform private networks
 		for key, value := range rs.Primary.Attributes {
 			if strings.Contains(key, "pn_id") {
-				privateNetworksToCheckOnSchema[expandID(value)] = struct{}{}
+				privateNetworksToCheckOnSchema[locality.ExpandID(value)] = struct{}{}
 			}
 		}
 
@@ -955,7 +960,7 @@ func testAccCheckScalewayInstancePrivateNICsExists(tt *TestTools, n string) reso
 	}
 }
 
-func testAccCheckScalewayInstanceServerDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceServerDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_instance_server" {
@@ -978,7 +983,7 @@ func testAccCheckScalewayInstanceServerDestroy(tt *TestTools) resource.TestCheck
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -989,7 +994,7 @@ func testAccCheckScalewayInstanceServerDestroy(tt *TestTools) resource.TestCheck
 
 // testAccCheckScalewayInstanceServerHasNewVolume tests if volume name is generated by terraform
 // It is useful as volume should not be set in request when creating an instance from an image
-func testAccCheckScalewayInstanceServerHasNewVolume(_ *TestTools, n string) resource.TestCheckFunc {
+func testAccCheckScalewayInstanceServerHasNewVolume(_ *tests.TestTools, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -1010,13 +1015,13 @@ func testAccCheckScalewayInstanceServerHasNewVolume(_ *TestTools, n string) reso
 }
 
 func TestAccScalewayInstanceServer_Bootscript(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	// Quick tip to get all the different bootscript:
 	// curl -sH "X-Auth-Token: $(scw config get secret-key)" https://api.scaleway.com/instance/v1/zones/fr-par-1/bootscripts | jq -r '.bootscripts[] | [.id, .architecture, .title] | @tsv'
 	bootscript := "7decf961-d3e9-4711-93c7-b16c254e99b9"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1039,10 +1044,10 @@ func TestAccScalewayInstanceServer_Bootscript(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_AlterTags(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1080,10 +1085,10 @@ func TestAccScalewayInstanceServer_AlterTags(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_WithDefaultRootVolumeAndAdditionalVolume(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1112,10 +1117,10 @@ func TestAccScalewayInstanceServer_WithDefaultRootVolumeAndAdditionalVolume(t *t
 }
 
 func TestAccScalewayInstanceServer_Enterprise(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1136,10 +1141,10 @@ func TestAccScalewayInstanceServer_Enterprise(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_ServerWithBlockNonDefaultZone(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1172,10 +1177,10 @@ func TestAccScalewayInstanceServer_ServerWithBlockNonDefaultZone(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_PrivateNetwork(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1324,10 +1329,10 @@ func TestAccScalewayInstanceServer_PrivateNetwork(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_Migrate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1372,10 +1377,10 @@ func TestAccScalewayInstanceServer_Migrate(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_MigrateInvalidLocalVolumeSize(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1410,10 +1415,10 @@ func TestAccScalewayInstanceServer_MigrateInvalidLocalVolumeSize(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_CustomDiffImage(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1540,10 +1545,10 @@ func testAccCheckScalewayInstanceServerIDsAreDifferent(nameFirst, nameSecond str
 }
 
 func TestAccScalewayInstanceServer_RoutedIPEnable(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1579,10 +1584,10 @@ func TestAccScalewayInstanceServer_RoutedIPEnable(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_RoutedIPEnableWithIP(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1626,10 +1631,10 @@ func TestAccScalewayInstanceServer_RoutedIPEnableWithIP(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_IPs(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1707,10 +1712,10 @@ func TestAccScalewayInstanceServer_IPs(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_IPRemoved(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1753,10 +1758,10 @@ func TestAccScalewayInstanceServer_IPRemoved(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_IPsRemoved(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{
@@ -1804,7 +1809,7 @@ func TestAccScalewayInstanceServer_IPsRemoved(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	ctx := context.Background()
@@ -1822,7 +1827,7 @@ func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
 	temporarySecretKey := ""
 	customProviderFactory := map[string]func() (*schema.Provider, error){
 		"scaleway": func() (*schema.Provider, error) {
-			meta, err := buildMeta(context.Background(), &metaConfig{
+			meta, err := buildMeta(context.Background(), &meta2.metaConfig{
 				providerSchema:   nil,
 				terraformVersion: "terraform-tests",
 				httpClient:       tt.Meta.httpClient,
@@ -1837,7 +1842,7 @@ func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
+		PreCheck: func() { tests.TestAccPreCheck(t) },
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			func(_ *terraform.State) error {
 				return terminateFakeSideProject()
@@ -1973,10 +1978,10 @@ func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
 }
 
 func TestAccScalewayInstanceServer_BlockExternal(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
 		Steps: []resource.TestStep{

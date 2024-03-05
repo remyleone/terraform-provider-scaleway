@@ -2,6 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -59,14 +64,14 @@ func dataSourceScalewayVPCs() *schema.Resource {
 							Type:     schema.TypeBool,
 						},
 						"region":          regionSchema(),
-						"organization_id": organizationIDSchema(),
-						"project_id":      projectIDSchema(),
+						"organization_id": organization.OrganizationIDSchema(),
+						"project_id":      project.ProjectIDSchema(),
 					},
 				},
 			},
 			"region":          regionSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -80,8 +85,8 @@ func dataSourceScalewayVPCsRead(ctx context.Context, d *schema.ResourceData, met
 	res, err := vpcAPI.ListVPCs(&vpc.ListVPCsRequest{
 		Region:    region,
 		Tags:      expandStrings(d.Get("tags")),
-		Name:      expandStringPtr(d.Get("name")),
-		ProjectID: expandStringPtr(d.Get("project_id")),
+		Name:      types.ExpandStringPtr(d.Get("name")),
+		ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)

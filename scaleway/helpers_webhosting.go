@@ -2,7 +2,11 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/regional"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	webhosting "github.com/scaleway/scaleway-sdk-go/api/webhosting/v1alpha1"
@@ -16,8 +20,8 @@ const (
 
 // webhostingAPIWithRegion returns a new Webhosting API and the region for a Create request
 func webhostingAPIWithRegion(d *schema.ResourceData, m interface{}) (*webhosting.API, scw.Region, error) {
-	meta := m.(*Meta)
-	api := webhosting.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := webhosting.NewAPI(meta.GetScwClient())
 
 	region, err := extractRegion(d, meta)
 	if err != nil {
@@ -28,10 +32,10 @@ func webhostingAPIWithRegion(d *schema.ResourceData, m interface{}) (*webhosting
 
 // webhostingAPIWithRegionAndID returns a Webhosting API with region and ID extracted from the state
 func webhostingAPIWithRegionAndID(m interface{}, id string) (*webhosting.API, scw.Region, string, error) {
-	meta := m.(*Meta)
-	api := webhosting.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	api := webhosting.NewAPI(meta.GetScwClient())
 
-	region, id, err := parseRegionalID(id)
+	region, id, err := regional.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -83,8 +87,8 @@ func flattenHostingOptions(options []*webhosting.HostingOption) []map[string]int
 
 func waitForHosting(ctx context.Context, api *webhosting.API, region scw.Region, hostingID string, timeout time.Duration) (*webhosting.Hosting, error) {
 	retryInterval := hostingRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForHosting(&webhosting.WaitForHostingRequest{

@@ -2,11 +2,13 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayContainer() *schema.Resource {
@@ -20,20 +22,20 @@ func dataSourceScalewayContainer() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the Container",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 	dsSchema["namespace_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Required:     true,
 		Description:  "The ID of the Container namespace",
-		ValidateFunc: validationUUIDorUUIDWithLocality(),
+		ValidateFunc: verify.UUIDorUUIDWithLocality(),
 	}
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The ID of the project to filter the Container",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -54,9 +56,9 @@ func dataSourceScalewayContainerRead(ctx context.Context, d *schema.ResourceData
 		containerName := d.Get("name").(string)
 		res, err := api.ListContainers(&container.ListContainersRequest{
 			Region:      region,
-			Name:        expandStringPtr(containerName),
-			NamespaceID: expandID(namespaceID),
-			ProjectID:   expandStringPtr(d.Get("project_id")),
+			Name:        types.ExpandStringPtr(containerName),
+			NamespaceID: locality.ExpandID(namespaceID),
+			ProjectID:   types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

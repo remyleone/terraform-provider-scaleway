@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -25,7 +28,7 @@ func resourceScalewayCockpit() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 			"plan": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -149,7 +152,7 @@ func resourceScalewayCockpitRead(ctx context.Context, d *schema.ResourceData, me
 
 	res, err := waitForCockpit(ctx, api, d.Id(), d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -219,7 +222,7 @@ func resourceScalewayCockpitDelete(ctx context.Context, d *schema.ResourceData, 
 
 	_, err = waitForCockpit(ctx, api, d.Id(), d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -229,12 +232,12 @@ func resourceScalewayCockpitDelete(ctx context.Context, d *schema.ResourceData, 
 	_, err = api.DeactivateCockpit(&cockpit.DeactivateCockpitRequest{
 		ProjectID: d.Id(),
 	}, scw.WithContext(ctx))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 
 	_, err = waitForCockpit(ctx, api, d.Id(), d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

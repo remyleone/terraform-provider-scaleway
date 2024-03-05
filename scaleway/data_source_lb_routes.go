@@ -2,6 +2,13 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -54,9 +61,9 @@ func dataSourceScalewayLbRoutes() *schema.Resource {
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -67,14 +74,14 @@ func dataSourceScalewayLbRoutesRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	_, frontID, err := parseZonedID(d.Get("frontend_id").(string))
+	_, frontID, err := zonal.ParseZonedID(d.Get("frontend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	res, err := lbAPI.ListRoutes(&lb.ZonedAPIListRoutesRequest{
 		Zone:       zone,
-		FrontendID: expandStringPtr(frontID),
+		FrontendID: types.ExpandStringPtr(frontID),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)

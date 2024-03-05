@@ -2,9 +2,9 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayCockpit() *schema.Resource {
@@ -15,7 +15,7 @@ func dataSourceScalewayCockpit() *schema.Resource {
 		Type:         schema.TypeString,
 		Description:  "The project_id you want to attach the resource to",
 		Optional:     true,
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 	delete(dsSchema, "plan")
 

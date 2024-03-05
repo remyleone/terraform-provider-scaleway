@@ -3,6 +3,7 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/object"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -51,7 +52,7 @@ func dataSourceScalewayObjectBucketPolicyRead(ctx context.Context, d *schema.Res
 		Bucket: aws.String(bucket),
 	})
 	if err != nil {
-		if tfawserr.ErrCodeEquals(err, ErrCodeNoSuchBucketPolicy, s3.ErrCodeNoSuchBucket) {
+		if tfawserr.ErrCodeEquals(err, object.ErrCodeNoSuchBucketPolicy, s3.ErrCodeNoSuchBucket) {
 			return diag.FromErr(fmt.Errorf("bucket %s doesn't exist or has no policy", bucket))
 		}
 

@@ -2,6 +2,7 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -29,7 +30,7 @@ func dataSourceScalewayRDBACLRead(ctx context.Context, d *schema.ResourceData, m
 	}
 	instanceID, _ := d.GetOk("instance_id")
 
-	_, _, err = parseLocalizedID(instanceID.(string))
+	_, _, err = locality.ParseLocalizedID(instanceID.(string))
 	regionalID := instanceID
 	if err != nil {
 		regionalID = datasourceNewRegionalID(instanceID, region)

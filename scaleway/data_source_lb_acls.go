@@ -2,6 +2,13 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -125,9 +132,9 @@ func dataSourceScalewayLbACLs() *schema.Resource {
 					},
 				},
 			},
-			"zone":            zoneSchema(),
-			"organization_id": organizationIDSchema(),
-			"project_id":      projectIDSchema(),
+			"zone":            zonal.Schema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
 		},
 	}
 }
@@ -138,7 +145,7 @@ func dataSourceScalewayLbACLsRead(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
-	_, frontID, err := parseZonedID(d.Get("frontend_id").(string))
+	_, frontID, err := zonal.ParseZonedID(d.Get("frontend_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -146,7 +153,7 @@ func dataSourceScalewayLbACLsRead(ctx context.Context, d *schema.ResourceData, m
 	res, err := lbAPI.ListACLs(&lb.ZonedAPIListACLsRequest{
 		Zone:       zone,
 		FrontendID: frontID,
-		Name:       expandStringPtr(d.Get("name")),
+		Name:       types.ExpandStringPtr(d.Get("name")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -155,9 +162,9 @@ func dataSourceScalewayLbACLsRead(ctx context.Context, d *schema.ResourceData, m
 	acls := []interface{}(nil)
 	for _, acl := range res.ACLs {
 		rawACL := make(map[string]interface{})
-		rawACL["id"] = newZonedIDString(zone, acl.ID)
+		rawACL["id"] = zonal.NewZonedIDString(zone, acl.ID)
 		rawACL["name"] = acl.Name
-		rawACL["frontend_id"] = newZonedIDString(zone, acl.Frontend.ID)
+		rawACL["frontend_id"] = zonal.NewZonedIDString(zone, acl.Frontend.ID)
 		rawACL["created_at"] = flattenTime(acl.CreatedAt)
 		rawACL["update_at"] = flattenTime(acl.UpdatedAt)
 		rawACL["index"] = acl.Index

@@ -3,11 +3,13 @@ package scaleway
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/redis/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayRedisCluster() *schema.Resource {
@@ -22,7 +24,7 @@ func dataSourceScalewayRedisCluster() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the Redis cluster",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 
 	return &schema.Resource{
@@ -42,8 +44,8 @@ func dataSourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceD
 		clusterName := d.Get("name").(string)
 		res, err := api.ListClusters(&redis.ListClustersRequest{
 			Zone:      zone,
-			Name:      expandStringPtr(clusterName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(clusterName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)
@@ -72,7 +74,7 @@ func dataSourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceD
 	// clusterID may be zoned if using name in data source
 	getReq := &redis.GetClusterRequest{
 		Zone:      zone,
-		ClusterID: expandID(clusterID.(string)),
+		ClusterID: locality.ExpandID(clusterID.(string)),
 	}
 	_, err = api.GetCluster(getReq, scw.WithContext(ctx))
 	if err != nil {

@@ -1,23 +1,24 @@
-package scaleway
+package verify
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"net"
 
 	"github.com/scaleway/scaleway-sdk-go/validation"
 )
 
-// validationUUID validates the schema is a UUID or the combination of a locality and a UUID
+// UUID validates the schema is a UUID or the combination of a locality and a UUID
 // e.g. "6ba7b810-9dad-11d1-80b4-00c04fd430c8" or "fr-par-1/6ba7b810-9dad-11d1-80b4-00c04fd430c8".
-func validationUUIDorUUIDWithLocality() func(interface{}, string) ([]string, []error) {
+func UUIDorUUIDWithLocality() func(interface{}, string) ([]string, []error) {
 	return func(v interface{}, key string) ([]string, []error) {
-		return validationUUID()(expandID(v), key)
+		return UUID()(locality.ExpandID(v), key)
 	}
 }
 
-// validationUUID validates the schema following the canonical UUID format
+// UUID validates the schema following the canonical UUID format
 // "6ba7b810-9dad-11d1-80b4-00c04fd430c8".
-func validationUUID() func(interface{}, string) ([]string, []error) {
+func UUID() func(interface{}, string) ([]string, []error) {
 	return func(v interface{}, key string) (warnings []string, errors []error) {
 		uuid, isString := v.(string)
 		if !isString {
@@ -32,23 +33,23 @@ func validationUUID() func(interface{}, string) ([]string, []error) {
 	}
 }
 
-func validationUUIDWithLocality() func(interface{}, string) ([]string, []error) {
+func UUIDWithLocality() func(interface{}, string) ([]string, []error) {
 	return func(v interface{}, key string) (warnings []string, errors []error) {
 		uuid, isString := v.(string)
 		if !isString {
 			errors = []error{fmt.Errorf("invalid UUID for key '%s': not a string", key)}
 			return
 		}
-		_, subUUID, err := parseLocalizedID(uuid)
+		_, subUUID, err := locality.ParseLocalizedID(uuid)
 		if err != nil {
 			errors = []error{fmt.Errorf("invalid UUID with locality for key  '%s': '%s' (%d): format should be 'locality/uuid'", key, uuid, len(uuid))}
 			return
 		}
-		return validationUUID()(subUUID, key)
+		return UUID()(subUUID, key)
 	}
 }
 
-func validationEmail() func(interface{}, string) ([]string, []error) {
+func Email() func(interface{}, string) ([]string, []error) {
 	return func(v interface{}, key string) (warnings []string, errors []error) {
 		email, isString := v.(string)
 		if !isString {
@@ -63,7 +64,7 @@ func validationEmail() func(interface{}, string) ([]string, []error) {
 	}
 }
 
-func validateStandaloneIPorCIDR() func(interface{}, string) ([]string, []error) {
+func StandaloneIPorCIDR() func(interface{}, string) ([]string, []error) {
 	return func(val interface{}, key string) (warns []string, errs []error) {
 		ip, isString := val.(string)
 		if !isString {

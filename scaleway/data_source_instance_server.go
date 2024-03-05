@@ -2,6 +2,8 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,7 +23,7 @@ func dataSourceScalewayInstanceServer() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the server",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 
@@ -43,8 +45,8 @@ func dataSourceScalewayInstanceServerRead(ctx context.Context, d *schema.Resourc
 		serverName := d.Get("name").(string)
 		res, err := instanceAPI.ListServers(&instance.ListServersRequest{
 			Zone:    zone,
-			Name:    expandStringPtr(serverName),
-			Project: expandStringPtr(d.Get("project_id")),
+			Name:    types.ExpandStringPtr(serverName),
+			Project: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

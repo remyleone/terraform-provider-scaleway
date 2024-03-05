@@ -2,7 +2,13 @@ package scaleway
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	flexibleip "github.com/scaleway/scaleway-sdk-go/api/flexibleip/v1alpha1"
@@ -16,10 +22,10 @@ const (
 
 // fipAPIWithZone returns an lb API WITH zone for a Create request
 func fipAPIWithZone(d *schema.ResourceData, m interface{}) (*flexibleip.API, scw.Zone, error) {
-	meta := m.(*Meta)
-	flexibleipAPI := flexibleip.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	flexibleipAPI := flexibleip.NewAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -28,10 +34,10 @@ func fipAPIWithZone(d *schema.ResourceData, m interface{}) (*flexibleip.API, scw
 
 // fipAPIWithZoneAndID returns an flexibleip API with zone and ID extracted from the state
 func fipAPIWithZoneAndID(m interface{}, id string) (*flexibleip.API, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	fipAPI := flexibleip.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	fipAPI := flexibleip.NewAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(id)
+	zone, ID, err := zonal.ParseZonedID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -40,8 +46,8 @@ func fipAPIWithZoneAndID(m interface{}, id string) (*flexibleip.API, scw.Zone, s
 
 func waitFlexibleIP(ctx context.Context, api *flexibleip.API, zone scw.Zone, id string, timeout time.Duration) (*flexibleip.FlexibleIP, error) {
 	retryInterval := retryFlexibleIPInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForFlexibleIP(&flexibleip.WaitForFlexibleIPRequest{
@@ -75,7 +81,7 @@ func expandServerIDs(data interface{}) []string {
 		if s == nil {
 			s = ""
 		}
-		expandedID := expandID(s.(string))
+		expandedID := locality.ExpandID(s.(string))
 		expandedIDs = append(expandedIDs, expandedID)
 	}
 	return expandedIDs

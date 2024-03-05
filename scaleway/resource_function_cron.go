@@ -2,6 +2,9 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -66,7 +69,7 @@ func resourceScalewayFunctionCronCreate(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	functionID := expandID(d.Get("function_id").(string))
+	functionID := locality.ExpandID(d.Get("function_id").(string))
 	f, err := waitForFunction(ctx, api, region, functionID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
@@ -76,7 +79,7 @@ func resourceScalewayFunctionCronCreate(ctx context.Context, d *schema.ResourceD
 		FunctionID: f.ID,
 		Schedule:   d.Get("schedule").(string),
 		Region:     region,
-		Name:       expandStringPtr(d.Get("name")),
+		Name:       types.ExpandStringPtr(d.Get("name")),
 	}
 
 	if args, ok := d.GetOk("args"); ok {
@@ -110,7 +113,7 @@ func resourceScalewayFunctionCronRead(ctx context.Context, d *schema.ResourceDat
 
 	cron, err := waitForFunctionCron(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -148,11 +151,11 @@ func resourceScalewayFunctionCronUpdate(ctx context.Context, d *schema.ResourceD
 	}
 	shouldUpdate := false
 	if d.HasChange("name") {
-		req.Name = expandStringPtr(d.Get("name").(string))
+		req.Name = types.ExpandStringPtr(d.Get("name").(string))
 		shouldUpdate = true
 	}
 	if d.HasChange("schedule") {
-		req.Schedule = expandStringPtr(d.Get("schedule").(string))
+		req.Schedule = types.ExpandStringPtr(d.Get("schedule").(string))
 		shouldUpdate = true
 	}
 
@@ -183,7 +186,7 @@ func resourceScalewayFunctionCronDelete(ctx context.Context, d *schema.ResourceD
 
 	cron, err := waitForFunctionCron(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -195,7 +198,7 @@ func resourceScalewayFunctionCronDelete(ctx context.Context, d *schema.ResourceD
 		CronID: cron.ID,
 	}, scw.WithContext(ctx))
 
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

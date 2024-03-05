@@ -3,6 +3,8 @@ package scaleway
 import (
 	"context"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -84,7 +86,7 @@ func resourceMNQSQSQueueResourceV0() *schema.Resource {
 				Description:  "The maximum size of a message. Should be in bytes.",
 			},
 			"region":     regionSchema(),
-			"project_id": projectIDSchema(),
+			"project_id": project.ProjectIDSchema(),
 
 			// Computed
 

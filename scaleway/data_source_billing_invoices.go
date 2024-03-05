@@ -5,6 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -119,7 +122,7 @@ func dataSourceScalewayBillingInvoices() *schema.Resource {
 					},
 				},
 			},
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 		},
 	}
 }
@@ -128,7 +131,7 @@ func dataSourceScalewayBillingInvoicesRead(ctx context.Context, d *schema.Resour
 	api := billingAPI(meta)
 
 	res, err := api.ListInvoices(&billing.ListInvoicesRequest{
-		OrganizationID:           expandStringPtr(d.Get("organization_id")),
+		OrganizationID:           types.ExpandStringPtr(d.Get("organization_id")),
 		BillingPeriodStartAfter:  expandTimePtr(d.Get("started_after").(string)),
 		BillingPeriodStartBefore: expandTimePtr(d.Get("started_before").(string)),
 		InvoiceType:              billing.InvoiceType(d.Get("invoice_type").(string)),

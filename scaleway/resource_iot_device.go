@@ -2,7 +2,11 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -189,8 +193,8 @@ func resourceScalewayIotDeviceCreate(ctx context.Context, d *schema.ResourceData
 
 	req := &iot.CreateDeviceRequest{
 		Region: region,
-		HubID:  expandID(d.Get("hub_id")),
-		Name:   expandOrGenerateString(d.Get("name"), "device"),
+		HubID:  locality.ExpandID(d.Get("hub_id")),
+		Name:   types.ExpandOrGenerateString(d.Get("name"), "device"),
 	}
 
 	if allowInsecure, ok := d.GetOk("allow_insecure"); ok {
@@ -282,7 +286,7 @@ func resourceScalewayIotDeviceRead(ctx context.Context, d *schema.ResourceData, 
 		DeviceID: deviceID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -444,7 +448,7 @@ func resourceScalewayIotDeviceDelete(ctx context.Context, d *schema.ResourceData
 		DeviceID: deviceID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if !is404Error(err) {
+		if !http_errors.Is404Error(err) {
 			return diag.FromErr(err)
 		}
 	}

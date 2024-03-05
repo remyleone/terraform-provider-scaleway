@@ -2,8 +2,11 @@ package scaleway
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
 	"net"
 	"testing"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -22,12 +25,12 @@ func init() {
 }
 
 func testSweepFlexibleIP(_ string) error {
-	return sweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
+	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
 		fipAPI := flexibleip.NewAPI(scwClient)
 
 		listIPs, err := fipAPI.ListFlexibleIPs(&flexibleip.ListFlexibleIPsRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
-			l.Warningf("error listing ips in (%s) in sweeper: %s", zone, err)
+			L.Warningf("error listing ips in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
@@ -46,7 +49,7 @@ func testSweepFlexibleIP(_ string) error {
 }
 
 func TestAccScalewayFlexibleIP_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -71,7 +74,7 @@ func TestAccScalewayFlexibleIP_Basic(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIP_WithZone(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -102,7 +105,7 @@ func TestAccScalewayFlexibleIP_WithZone(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIP_IPv6(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
 		ProviderFactories: tt.ProviderFactories,
@@ -125,7 +128,7 @@ func TestAccScalewayFlexibleIP_IPv6(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIP_CreateAndAttachToBaremetalServer(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	SSHKeyName := "TestAccScalewayFlexibleIP_CreateAndAttachToBaremetalServer"
@@ -220,7 +223,7 @@ func TestAccScalewayFlexibleIP_CreateAndAttachToBaremetalServer(t *testing.T) {
 }
 
 func TestAccScalewayFlexibleIP_AttachAndDetachFromBaremetalServer(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	SSHKeyName := "TestAccScalewayFlexibleIP_AttachAndDetachFromBaremetalServer"
@@ -324,7 +327,7 @@ func TestAccScalewayFlexibleIP_AttachAndDetachFromBaremetalServer(t *testing.T) 
 	})
 }
 
-func testAccCheckScalewayFlexibleIPExists(tt *TestTools, name string) resource.TestCheckFunc {
+func testAccCheckScalewayFlexibleIPExists(tt *tests.TestTools, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -348,7 +351,7 @@ func testAccCheckScalewayFlexibleIPExists(tt *TestTools, name string) resource.T
 	}
 }
 
-func testAccCheckScalewayFlexibleIPDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayFlexibleIPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "scaleway_flexible_ip" {
@@ -372,7 +375,8 @@ func testAccCheckScalewayFlexibleIPDestroy(tt *TestTools) resource.TestCheckFunc
 
 			// Unexpected api error we return it
 			// We check for 403 because instance API return 403 for deleted IP
-			if !is404Error(err) && !is403Error(err) {
+			if !http_errors.Is404Error(err)) && !http_errors.Is403Error(err)
+			{
 				return err
 			}
 		}
@@ -381,7 +385,7 @@ func testAccCheckScalewayFlexibleIPDestroy(tt *TestTools) resource.TestCheckFunc
 	}
 }
 
-func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *TestTools, ipResource, serverResource string) resource.TestCheckFunc {
+func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *tests.TestTools, ipResource, serverResource string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ipState, ok := s.RootModule().Resources[ipResource]
 		if !ok {
@@ -399,7 +403,7 @@ func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *TestTools, ipRe
 
 		server, err := baremetalAPI.GetServer(&baremetal.GetServerRequest{
 			Zone:     zoneID.Zone,
-			ServerID: expandID(serverState.Primary.ID),
+			ServerID: locality.ExpandID(serverState.Primary.ID),
 		})
 		if err != nil {
 			return err
@@ -425,7 +429,7 @@ func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *TestTools, ipRe
 	}
 }
 
-func testAccCheckScalewayFlexibleIPIsIPv6(tt *TestTools, resourceName string) resource.TestCheckFunc {
+func testAccCheckScalewayFlexibleIPIsIPv6(tt *tests.TestTools, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {

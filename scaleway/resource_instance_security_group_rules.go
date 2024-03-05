@@ -2,6 +2,7 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -63,7 +64,7 @@ func resourceScalewayInstanceSecurityGroupRulesRead(ctx context.Context, d *sche
 
 	inboundRules, outboundRules, err := getSecurityGroupRules(ctx, instanceAPI, zone, securityGroupID, d)
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}

@@ -3,6 +3,8 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -48,8 +50,8 @@ func resourceScalewayIamGroupMembership() *schema.Resource {
 func resourceScalewayIamGroupMembershipCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := iamAPI(meta)
 
-	userID := expandStringPtr(d.Get("user_id"))
-	applicationID := expandStringPtr(d.Get("application_id"))
+	userID := types.ExpandStringPtr(d.Get("user_id"))
+	applicationID := types.ExpandStringPtr(d.Get("application_id"))
 
 	group, err := api.AddGroupMember(&iam.AddGroupMemberRequest{
 		GroupID:       d.Get("group_id").(string),
@@ -76,7 +78,7 @@ func resourceScalewayIamGroupMembershipRead(ctx context.Context, d *schema.Resou
 		GroupID: groupID,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 
 			return nil
@@ -134,7 +136,7 @@ func resourceScalewayIamGroupMembershipDelete(ctx context.Context, d *schema.Res
 
 	_, err = api.RemoveGroupMember(req, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 
 			return nil

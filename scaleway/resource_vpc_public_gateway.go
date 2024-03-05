@@ -2,7 +2,15 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
 	"time"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/organization"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -81,10 +89,10 @@ func resourceScalewayVPCPublicGateway() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
-			"project_id": projectIDSchema(),
-			"zone":       zoneSchema(),
+			"project_id": project.ProjectIDSchema(),
+			"zone":       zonal.Schema(),
 			// Computed elements
-			"organization_id": organizationIDSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
 			"created_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -111,7 +119,7 @@ func resourceScalewayVPCPublicGatewayCreate(ctx context.Context, d *schema.Resou
 	}
 
 	req := &vpcgw.CreateGatewayRequest{
-		Name:               expandOrGenerateString(d.Get("name"), "pn"),
+		Name:               types.ExpandOrGenerateString(d.Get("name"), "pn"),
 		Type:               d.Get("type").(string),
 		Tags:               expandStrings(d.Get("tags")),
 		UpstreamDNSServers: expandStrings(d.Get("upstream_dns_servers")),
@@ -126,7 +134,7 @@ func resourceScalewayVPCPublicGatewayCreate(ctx context.Context, d *schema.Resou
 	}
 
 	if ipID, ok := d.GetOk("ip_id"); ok {
-		req.IPID = expandStringPtr(expandZonedID(ipID).ID)
+		req.IPID = types.ExpandStringPtr(expandZonedID(ipID).ID)
 	}
 
 	gateway, err := vpcgwAPI.CreateGateway(req, scw.WithContext(ctx))
@@ -134,7 +142,7 @@ func resourceScalewayVPCPublicGatewayCreate(ctx context.Context, d *schema.Resou
 		return diag.FromErr(err)
 	}
 
-	d.SetId(newZonedIDString(zone, gateway.ID))
+	d.SetId(zonal.NewZonedIDString(zone, gateway.ID))
 
 	// check err waiting process
 	_, err = waitForVPCPublicGateway(ctx, vpcgwAPI, zone, gateway.ID, d.Timeout(schema.TimeoutCreate))
@@ -153,7 +161,7 @@ func resourceScalewayVPCPublicGatewayRead(ctx context.Context, d *schema.Resourc
 
 	gateway, err := waitForVPCPublicGateway(ctx, vpcgwAPI, zone, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -251,7 +259,7 @@ func resourceScalewayVPCPublicGatewayDelete(ctx context.Context, d *schema.Resou
 	}
 
 	_, err = waitForVPCPublicGateway(ctx, vpcgwAPI, zone, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

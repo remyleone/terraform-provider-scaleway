@@ -2,6 +2,10 @@ package scaleway
 
 import (
 	"context"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -32,7 +36,7 @@ func resourceScalewayDocumentDBInstancePrivateNetworkEndpoint() *schema.Resource
 			"private_network_id": {
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateFunc:     validationUUIDorUUIDWithLocality(),
+				ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 				DiffSuppressFunc: diffSuppressFuncLocality,
 				Description:      "The private network ID",
 				ForceNew:         true,
@@ -68,7 +72,7 @@ func resourceScalewayDocumentDBInstancePrivateNetworkEndpoint() *schema.Resource
 				Computed:    true,
 				Description: "The hostname of your endpoint",
 			},
-			"zone":   zoneSchema(),
+			"zone":   zonal.Schema(),
 			"region": regionSchema(),
 		},
 	}
@@ -80,7 +84,7 @@ func resourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	instanceID := expandID(d.Get("instance_id"))
+	instanceID := locality.ExpandID(d.Get("instance_id"))
 	endpointSpecPN := &documentdb.EndpointSpecPrivateNetwork{}
 	createEndpointRequest := &documentdb.CreateEndpointRequest{
 		Region:       region,
@@ -88,7 +92,7 @@ func resourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *sc
 		EndpointSpec: &documentdb.EndpointSpec{},
 	}
 
-	endpointSpecPN.PrivateNetworkID = expandID(d.Get("private_network_id").(string))
+	endpointSpecPN.PrivateNetworkID = locality.ExpandID(d.Get("private_network_id").(string))
 	ipNet := d.Get("ip_net").(string)
 	if len(ipNet) > 0 {
 		ip, err := expandIPNet(ipNet)
@@ -103,7 +107,7 @@ func resourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *sc
 	createEndpointRequest.EndpointSpec.PrivateNetwork = endpointSpecPN
 	_, err = waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -117,7 +121,7 @@ func resourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *sc
 
 	_, err = waitForDocumentDBInstance(ctx, api, region, instanceID, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -140,7 +144,7 @@ func resourceScalewayDocumentDBInstanceEndpointRead(ctx context.Context, d *sche
 		Region:     region,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -177,7 +181,7 @@ func resourceScalewayDocumentDBInstanceEndpointUpdate(ctx context.Context, d *sc
 	}
 
 	if d.HasChange("instance_id") {
-		req.InstanceID = expandID(d.Get("instance_id"))
+		req.InstanceID = locality.ExpandID(d.Get("instance_id"))
 
 		if _, err := api.MigrateEndpoint(req, scw.WithContext(ctx)); err != nil {
 			return diag.FromErr(err)

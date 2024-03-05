@@ -3,6 +3,10 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -83,7 +87,7 @@ func resourceScalewayDocumentDBReadReplica() *schema.Resource {
 						"private_network_id": {
 							Type:             schema.TypeString,
 							Description:      "UUID of the private network to be connected to the read replica (UUID format)",
-							ValidateFunc:     validationUUIDorUUIDWithLocality(),
+							ValidateFunc:     verify.UUIDorUUIDWithLocality(),
 							DiffSuppressFunc: diffSuppressFuncLocality,
 							Required:         true,
 						},
@@ -159,7 +163,7 @@ func expandDocumentDBReadReplicaEndpointsSpecPrivateNetwork(data interface{}) (*
 
 	serviceIP := rawEndpoint["service_ip"].(string)
 	endpoint.PrivateNetwork = &documentdb.ReadReplicaEndpointSpecPrivateNetwork{
-		PrivateNetworkID: expandID(rawEndpoint["private_network_id"]),
+		PrivateNetworkID: locality.ExpandID(rawEndpoint["private_network_id"]),
 	}
 	if len(serviceIP) > 0 {
 		ipNet, err := expandIPNet(serviceIP)
@@ -176,8 +180,8 @@ func expandDocumentDBReadReplicaEndpointsSpecPrivateNetwork(data interface{}) (*
 
 func waitForDocumentDBReadReplica(ctx context.Context, api *documentdb.API, region scw.Region, id string, timeout time.Duration) (*documentdb.ReadReplica, error) {
 	retryInterval := defaultWaitDocumentDBRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	return api.WaitForReadReplica(&documentdb.WaitForReadReplicaRequest{
@@ -245,7 +249,7 @@ func resourceScalewayDocumentDBReadReplicaCreate(ctx context.Context, d *schema.
 
 	rr, err := api.CreateReadReplica(&documentdb.CreateReadReplicaRequest{
 		Region:       region,
-		InstanceID:   expandID(d.Get("instance_id")),
+		InstanceID:   locality.ExpandID(d.Get("instance_id")),
 		EndpointSpec: endpointSpecs,
 	}, scw.WithContext(ctx))
 	if err != nil {
@@ -270,7 +274,7 @@ func resourceScalewayDocumentDBReadReplicaRead(ctx context.Context, d *schema.Re
 
 	rr, err := waitForDocumentDBReadReplica(ctx, api, region, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -295,7 +299,7 @@ func resourceScalewayDocumentDBReadReplicaUpdate(ctx context.Context, d *schema.
 
 	_, err = waitForDocumentDBReadReplica(ctx, api, region, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -312,7 +316,7 @@ func resourceScalewayDocumentDBReadReplicaUpdate(ctx context.Context, d *schema.
 		if !directAccessExists {
 			err := api.DeleteEndpoint(&documentdb.DeleteEndpointRequest{
 				Region:     region,
-				EndpointID: expandID(d.Get("direct_access.0.endpoint_id")),
+				EndpointID: locality.ExpandID(d.Get("direct_access.0.endpoint_id")),
 			}, scw.WithContext(ctx))
 			if err != nil {
 				return diag.FromErr(err)
@@ -327,7 +331,7 @@ func resourceScalewayDocumentDBReadReplicaUpdate(ctx context.Context, d *schema.
 		if !privateNetworkExists {
 			err := api.DeleteEndpoint(&documentdb.DeleteEndpointRequest{
 				Region:     region,
-				EndpointID: expandID(d.Get("private_network.0.endpoint_id")),
+				EndpointID: locality.ExpandID(d.Get("private_network.0.endpoint_id")),
 			}, scw.WithContext(ctx))
 			if err != nil {
 				return diag.FromErr(err)
@@ -385,7 +389,7 @@ func resourceScalewayDocumentDBReadReplicaDelete(ctx context.Context, d *schema.
 	}
 
 	_, err = waitForDocumentDBReadReplica(ctx, api, region, id, d.Timeout(schema.TimeoutDelete))
-	if err != nil && !is404Error(err) {
+	if err != nil && !http_errors.Is404Error(err) {
 		return diag.FromErr(err)
 	}
 

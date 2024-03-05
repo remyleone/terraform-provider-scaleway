@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayLb() *schema.Resource {
@@ -21,7 +22,7 @@ func dataSourceScalewayLb() *schema.Resource {
 		Type:          schema.TypeString,
 		Optional:      true,
 		Description:   "The ID of the load-balancer",
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 		ConflictsWith: []string{"name"},
 	}
 	dsSchema["release_ip"] = &schema.Schema{
@@ -48,8 +49,8 @@ func dataSourceScalewayLbRead(ctx context.Context, d *schema.ResourceData, meta 
 		lbName := d.Get("name").(string)
 		res, err := api.ListLBs(&lbSDK.ZonedAPIListLBsRequest{
 			Zone:      zone,
-			Name:      expandStringPtr(lbName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(lbName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

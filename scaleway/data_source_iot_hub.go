@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/scaleway/scaleway-sdk-go/api/iot/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIotHub() *schema.Resource {
@@ -20,7 +21,7 @@ func dataSourceScalewayIotHub() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IOT Hub",
 		ConflictsWith: []string{"name"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 
 	return &schema.Resource{
@@ -40,8 +41,8 @@ func dataSourceScalewayIotHubRead(ctx context.Context, d *schema.ResourceData, m
 		hubName := d.Get("name").(string)
 		res, err := api.ListHubs(&iot.ListHubsRequest{
 			Region:    region,
-			ProjectID: expandStringPtr(d.Get("project_id")),
-			Name:      expandStringPtr(hubName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(hubName),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

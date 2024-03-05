@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
 
 	"github.com/dustin/go-humanize"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -16,6 +20,9 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 )
 
 const (
@@ -46,10 +53,10 @@ const (
 
 // instanceAPIWithZone returns a new instance API and the zone for a Create request
 func instanceAPIWithZone(d *schema.ResourceData, m interface{}) (*instance.API, scw.Zone, error) {
-	meta := m.(*Meta)
-	instanceAPI := instance.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	instanceAPI := instance.NewAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -58,10 +65,10 @@ func instanceAPIWithZone(d *schema.ResourceData, m interface{}) (*instance.API, 
 
 // instanceAPIWithZoneAndID returns an instance API with zone and ID extracted from the state
 func instanceAPIWithZoneAndID(m interface{}, zonedID string) (*instance.API, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	instanceAPI := instance.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	instanceAPI := instance.NewAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(zonedID)
+	zone, ID, err := zonal.ParseZonedID(zonedID)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -70,8 +77,8 @@ func instanceAPIWithZoneAndID(m interface{}, zonedID string) (*instance.API, scw
 
 // instanceAPIWithZoneAndNestedID returns an instance API with zone and inner/outer ID extracted from the state
 func instanceAPIWithZoneAndNestedID(m interface{}, zonedNestedID string) (*instance.API, scw.Zone, string, string, error) {
-	meta := m.(*Meta)
-	instanceAPI := instance.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	instanceAPI := instance.NewAPI(meta.GetScwClient())
 
 	zone, innerID, outerID, err := parseZonedNestedID(zonedNestedID)
 	if err != nil {
@@ -174,7 +181,7 @@ func reachState(ctx context.Context, api *InstanceBlockAPI, zone scw.Zone, serve
 			_, err := api.blockAPI.WaitForVolumeAndReferences(&block.WaitForVolumeAndReferencesRequest{
 				VolumeID:      volume.ID,
 				Zone:          zone,
-				RetryInterval: DefaultWaitRetryInterval,
+				RetryInterval: transport.DefaultWaitRetryInterval,
 			})
 			if err != nil {
 				return err
@@ -183,7 +190,7 @@ func reachState(ctx context.Context, api *InstanceBlockAPI, zone scw.Zone, serve
 			_, err = api.WaitForVolume(&instance.WaitForVolumeRequest{
 				Zone:          zone,
 				VolumeID:      volume.ID,
-				RetryInterval: DefaultWaitRetryInterval,
+				RetryInterval: transport.DefaultWaitRetryInterval,
 			})
 			if err != nil {
 				return err
@@ -197,7 +204,7 @@ func reachState(ctx context.Context, api *InstanceBlockAPI, zone scw.Zone, serve
 			Action:        a,
 			Zone:          zone,
 			Timeout:       scw.TimeDurationPtr(defaultInstanceServerWaitTimeout),
-			RetryInterval: DefaultWaitRetryInterval,
+			RetryInterval: transport.DefaultWaitRetryInterval,
 		})
 		if err != nil {
 			return err
@@ -312,14 +319,14 @@ func preparePrivateNIC(
 	for _, pn := range data.([]interface{}) {
 		r := pn.(map[string]interface{})
 		zonedID, pnExist := r["pn_id"]
-		privateNetworkID := expandID(zonedID.(string))
+		privateNetworkID := locality2.ExpandID(zonedID.(string))
 		if pnExist {
 			region, err := server.Zone.Region()
 			if err != nil {
 				return nil, err
 			}
 			currentPN, err := vpcAPI.GetPrivateNetwork(&vpc.GetPrivateNetworkRequest{
-				PrivateNetworkID: expandID(privateNetworkID),
+				PrivateNetworkID: locality2.ExpandID(privateNetworkID),
 				Region:           region,
 			}, scw.WithContext(ctx))
 			if err != nil {
@@ -368,18 +375,18 @@ func (ph *privateNICsHandler) flatPrivateNICs() error {
 }
 
 func (ph *privateNICsHandler) detach(ctx context.Context, o interface{}, timeout time.Duration) error {
-	oPtr := expandStringPtr(o)
+	oPtr := types.ExpandStringPtr(o)
 	if oPtr != nil && len(*oPtr) > 0 {
-		idPN := expandID(*oPtr)
+		idPN := locality2.ExpandID(*oPtr)
 		// check if old private network still exist on instance server
 		if p, ok := ph.privateNICsMap[idPN]; ok {
-			_, err := waitForPrivateNIC(ctx, ph.instanceAPI, ph.zone, ph.serverID, expandID(p.ID), timeout)
+			_, err := waitForPrivateNIC(ctx, ph.instanceAPI, ph.zone, ph.serverID, locality2.ExpandID(p.ID), timeout)
 			if err != nil {
 				return err
 			}
 			// detach private NIC
 			err = ph.instanceAPI.DeletePrivateNIC(&instance.DeletePrivateNICRequest{
-				PrivateNicID: expandID(p.ID),
+				PrivateNicID: locality2.ExpandID(p.ID),
 				Zone:         ph.zone,
 				ServerID:     ph.serverID,
 			},
@@ -395,7 +402,7 @@ func (ph *privateNICsHandler) detach(ctx context.Context, o interface{}, timeout
 				Timeout:       &timeout,
 				RetryInterval: scw.TimeDurationPtr(defaultInstanceRetryInterval),
 			})
-			if err != nil && !is404Error(err) {
+			if err != nil && !http_errors.Is404Error(err) {
 				return err
 			}
 		}
@@ -405,9 +412,9 @@ func (ph *privateNICsHandler) detach(ctx context.Context, o interface{}, timeout
 }
 
 func (ph *privateNICsHandler) attach(ctx context.Context, n interface{}, timeout time.Duration) error {
-	if nPtr := expandStringPtr(n); nPtr != nil {
+	if nPtr := types.ExpandStringPtr(n); nPtr != nil {
 		// check if new private network was already attached on instance server
-		privateNetworkID := expandID(*nPtr)
+		privateNetworkID := locality2.ExpandID(*nPtr)
 		if _, ok := ph.privateNICsMap[privateNetworkID]; !ok {
 			pn, err := ph.instanceAPI.CreatePrivateNIC(&instance.CreatePrivateNICRequest{
 				Zone:             ph.zone,
@@ -449,7 +456,7 @@ func (ph *privateNICsHandler) set(d *schema.ResourceData) error {
 }
 
 func (ph *privateNICsHandler) get(key string) (interface{}, error) {
-	locality, id, err := parseLocalizedID(key)
+	locality, id, err := locality2.ParseLocalizedID(key)
 	if err != nil {
 		return nil, err
 	}
@@ -467,8 +474,8 @@ func (ph *privateNICsHandler) get(key string) (interface{}, error) {
 
 func waitForInstanceSnapshot(ctx context.Context, api *instance.API, zone scw.Zone, id string, timeout time.Duration) (*instance.Snapshot, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	snapshot, err := api.WaitForSnapshot(&instance.WaitForSnapshotRequest{
@@ -483,8 +490,8 @@ func waitForInstanceSnapshot(ctx context.Context, api *instance.API, zone scw.Zo
 
 func waitForInstanceVolume(ctx context.Context, api *instance.API, zone scw.Zone, id string, timeout time.Duration) (*instance.Volume, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	volume, err := api.WaitForVolume(&instance.WaitForVolumeRequest{
@@ -498,8 +505,8 @@ func waitForInstanceVolume(ctx context.Context, api *instance.API, zone scw.Zone
 
 func waitForInstanceServer(ctx context.Context, api *instance.API, zone scw.Zone, id string, timeout time.Duration) (*instance.Server, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	server, err := api.WaitForServer(&instance.WaitForServerRequest{
@@ -514,8 +521,8 @@ func waitForInstanceServer(ctx context.Context, api *instance.API, zone scw.Zone
 
 func waitForPrivateNIC(ctx context.Context, instanceAPI *instance.API, zone scw.Zone, serverID string, privateNICID string, timeout time.Duration) (*instance.PrivateNIC, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	nic, err := instanceAPI.WaitForPrivateNIC(&instance.WaitForPrivateNICRequest{
@@ -531,8 +538,8 @@ func waitForPrivateNIC(ctx context.Context, instanceAPI *instance.API, zone scw.
 
 func waitForMACAddress(ctx context.Context, instanceAPI *instance.API, zone scw.Zone, serverID string, privateNICID string, timeout time.Duration) (*instance.PrivateNIC, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	nic, err := instanceAPI.WaitForMACAddress(&instance.WaitForMACAddressRequest{
@@ -548,8 +555,8 @@ func waitForMACAddress(ctx context.Context, instanceAPI *instance.API, zone scw.
 
 func waitForInstanceImage(ctx context.Context, api *instance.API, zone scw.Zone, id string, timeout time.Duration) (*instance.Image, error) {
 	retryInterval := defaultInstanceRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	image, err := api.WaitForImage(&instance.WaitForImageRequest{
@@ -565,7 +572,7 @@ func waitForInstanceImage(ctx context.Context, api *instance.API, zone scw.Zone,
 func getSnapshotsFromIDs(ctx context.Context, snapIDs []interface{}, instanceAPI *instance.API) ([]*instance.GetSnapshotResponse, error) {
 	snapResponses := []*instance.GetSnapshotResponse(nil)
 	for _, snapID := range snapIDs {
-		zone, id, err := parseZonedID(snapID.(string))
+		zone, id, err := zonal.ParseZonedID(snapID.(string))
 		if err != nil {
 			return nil, err
 		}
@@ -623,7 +630,7 @@ func flattenInstanceImageExtraVolumes(volumes map[string]*instance.Volume, zone 
 			server["name"] = volume.Server.Name
 		}
 		volumeFlat := map[string]interface{}{
-			"id":                newZonedIDString(zone, volume.ID),
+			"id":                zonal.NewZonedIDString(zone, volume.ID),
 			"name":              volume.Name,
 			"export_uri":        volume.ExportURI,
 			"size":              volume.Size,
@@ -685,7 +692,7 @@ func flattenServerPublicIPs(zone scw.Zone, ips []*instance.ServerIP) []interface
 
 	for i, ip := range ips {
 		flattenedIPs[i] = map[string]interface{}{
-			"id":      newZonedIDString(zone, ip.ID),
+			"id":      zonal.NewZonedIDString(zone, ip.ID),
 			"address": ip.Address.String(),
 		}
 	}
@@ -731,7 +738,7 @@ func instanceIPHasMigrated(d *schema.ResourceData) bool {
 func instanceServerAdditionalVolumeTemplate(api *InstanceBlockAPI, zone scw.Zone, volumeID string) (*instance.VolumeServerTemplate, error) {
 	vol, err := api.GetVolume(&instance.GetVolumeRequest{
 		Zone:     zone,
-		VolumeID: expandID(volumeID),
+		VolumeID: locality2.ExpandID(volumeID),
 	})
 	if err == nil {
 		return &instance.VolumeServerTemplate{
@@ -741,13 +748,13 @@ func instanceServerAdditionalVolumeTemplate(api *InstanceBlockAPI, zone scw.Zone
 			Size:       &vol.Volume.Size,
 		}, nil
 	}
-	if !is404Error(err) {
+	if !http_errors.Is404Error(err) {
 		return nil, err
 	}
 
 	blockVol, err := api.blockAPI.GetVolume(&block.GetVolumeRequest{
 		Zone:     zone,
-		VolumeID: expandID(volumeID),
+		VolumeID: locality2.ExpandID(volumeID),
 	})
 	if err == nil {
 		return &instance.VolumeServerTemplate{

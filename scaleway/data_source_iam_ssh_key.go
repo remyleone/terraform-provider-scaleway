@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayIamSSHKey() *schema.Resource {
@@ -19,7 +20,7 @@ func dataSourceScalewayIamSSHKey() *schema.Resource {
 		Type:         schema.TypeString,
 		Optional:     true,
 		Description:  "The ID of the SSH key",
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -35,8 +36,8 @@ func dataSourceScalewayIamSSHKeyRead(ctx context.Context, d *schema.ResourceData
 	if !sshKeyIDExists {
 		sshKeyName := d.Get("name").(string)
 		res, err := iamAPI.ListSSHKeys(&iam.ListSSHKeysRequest{
-			Name:      expandStringPtr(sshKeyName),
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			Name:      types.ExpandStringPtr(sshKeyName),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

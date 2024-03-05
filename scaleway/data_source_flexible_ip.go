@@ -2,11 +2,12 @@ package scaleway
 
 import (
 	"context"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	flexibleip "github.com/scaleway/scaleway-sdk-go/api/flexibleip/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/verify"
 )
 
 func dataSourceScalewayFlexibleIP() *schema.Resource {
@@ -24,7 +25,7 @@ func dataSourceScalewayFlexibleIP() *schema.Resource {
 		Optional:      true,
 		Description:   "The ID of the IPv4 address",
 		ConflictsWith: []string{"ip_address"},
-		ValidateFunc:  validationUUIDorUUIDWithLocality(),
+		ValidateFunc:  verify.UUIDorUUIDWithLocality(),
 	}
 	dsSchema["project_id"] = &schema.Schema{
 		Type:         schema.TypeString,
@@ -32,7 +33,7 @@ func dataSourceScalewayFlexibleIP() *schema.Resource {
 		Optional:     true,
 		ForceNew:     true,
 		Computed:     true,
-		ValidateFunc: validationUUID(),
+		ValidateFunc: verify.UUID(),
 	}
 
 	return &schema.Resource{
@@ -52,7 +53,7 @@ func dataSourceScalewayFlexibleIPRead(ctx context.Context, d *schema.ResourceDat
 	if !ipIDExists {
 		res, err := fipAPI.ListFlexibleIPs(&flexibleip.ListFlexibleIPsRequest{
 			Zone:      zone,
-			ProjectID: expandStringPtr(d.Get("project_id")),
+			ProjectID: types.ExpandStringPtr(d.Get("project_id")),
 		}, scw.WithContext(ctx))
 		if err != nil {
 			return diag.FromErr(err)

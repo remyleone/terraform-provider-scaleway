@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
@@ -21,7 +23,7 @@ func init() {
 }
 
 func testSweepIamPolicy(_ string) error {
-	return sweep(func(scwClient *scw.Client) error {
+	return tests.Sweep(func(scwClient *scw.Client) error {
 		api := iam.NewAPI(scwClient)
 
 		orgID, exists := scwClient.GetDefaultOrganizationID()
@@ -51,7 +53,7 @@ func testSweepIamPolicy(_ string) error {
 }
 
 func TestAccScalewayIamPolicy_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 	project, iamAPIKey, terminateFakeSideProject, err := createFakeIAMManager(tt)
@@ -124,7 +126,7 @@ func TestAccScalewayIamPolicy_Basic(t *testing.T) {
 }
 
 func TestAccScalewayIamPolicy_NoUpdate(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 	project, iamAPIKey, terminateFakeSideProject, err := createFakeIAMManager(tt)
@@ -186,7 +188,7 @@ func TestAccScalewayIamPolicy_NoUpdate(t *testing.T) {
 }
 
 func TestAccScalewayIamPolicy_ChangeLinkedEntity(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
 	ctx := context.Background()
@@ -291,7 +293,7 @@ func TestAccScalewayIamPolicy_ChangeLinkedEntity(t *testing.T) {
 }
 
 func TestAccScalewayIamPolicy_ChangePermissions(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 	project, iamAPIKey, terminateFakeSideProject, err := createFakeIAMManager(tt)
@@ -381,7 +383,7 @@ func TestAccScalewayIamPolicy_ChangePermissions(t *testing.T) {
 }
 
 func TestAccScalewayIamPolicy_ProjectID(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 	project, iamAPIKey, terminateFakeSideProject, err := createFakeIAMManager(tt)
@@ -446,7 +448,7 @@ func TestAccScalewayIamPolicy_ProjectID(t *testing.T) {
 }
 
 func TestAccScalewayIamPolicy_ChangeRulePrincipal(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	ctx := context.Background()
 	project, iamAPIKey, terminateFakeSideProject, err := createFakeIAMManager(tt)
@@ -511,7 +513,7 @@ func TestAccScalewayIamPolicy_ChangeRulePrincipal(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayIamPolicyExists(tt *TestTools, name string) resource.TestCheckFunc {
+func testAccCheckScalewayIamPolicyExists(tt *tests.TestTools, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -531,7 +533,7 @@ func testAccCheckScalewayIamPolicyExists(tt *TestTools, name string) resource.Te
 	}
 }
 
-func testAccCheckScalewayIamPolicyDestroy(tt *TestTools) resource.TestCheckFunc {
+func testAccCheckScalewayIamPolicyDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "scaleway_iam_policy" {
@@ -550,7 +552,7 @@ func testAccCheckScalewayIamPolicyDestroy(tt *TestTools) resource.TestCheckFunc 
 			}
 
 			// Unexpected api error we return it
-			if !is404Error(err) {
+			if !http_errors.Is404Error(err) {
 				return err
 			}
 		}

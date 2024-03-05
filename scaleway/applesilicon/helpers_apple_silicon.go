@@ -1,12 +1,14 @@
-package scaleway
+package applesilicon
 
 import (
 	"context"
-	"time"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	applesilicon "github.com/scaleway/scaleway-sdk-go/api/applesilicon/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/transport"
+	"time"
 )
 
 const (
@@ -16,10 +18,10 @@ const (
 
 // asAPIWithZone returns a new apple silicon API and the zone
 func asAPIWithZone(d *schema.ResourceData, m interface{}) (*applesilicon.API, scw.Zone, error) {
-	meta := m.(*Meta)
-	asAPI := applesilicon.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	asAPI := applesilicon.NewAPI(meta.GetScwClient())
 
-	zone, err := extractZone(d, meta)
+	zone, err := zonal.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
@@ -28,10 +30,10 @@ func asAPIWithZone(d *schema.ResourceData, m interface{}) (*applesilicon.API, sc
 
 // asAPIWithZoneAndID returns an apple silicon API with zone and ID extracted from the state
 func asAPIWithZoneAndID(m interface{}, id string) (*applesilicon.API, scw.Zone, string, error) {
-	meta := m.(*Meta)
-	asAPI := applesilicon.NewAPI(meta.scwClient)
+	meta := m.(*meta2.Meta)
+	asAPI := applesilicon.NewAPI(meta.GetScwClient())
 
-	zone, ID, err := parseZonedID(id)
+	zone, ID, err := zonal.ParseZonedID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -40,8 +42,8 @@ func asAPIWithZoneAndID(m interface{}, id string) (*applesilicon.API, scw.Zone, 
 
 func waitForAppleSiliconServer(ctx context.Context, api *applesilicon.API, zone scw.Zone, serverID string, timeout time.Duration) (*applesilicon.Server, error) {
 	retryInterval := defaultAppleSiliconServerRetryInterval
-	if DefaultWaitRetryInterval != nil {
-		retryInterval = *DefaultWaitRetryInterval
+	if transport.DefaultWaitRetryInterval != nil {
+		retryInterval = *transport.DefaultWaitRetryInterval
 	}
 
 	server, err := api.WaitForServer(&applesilicon.WaitForServerRequest{

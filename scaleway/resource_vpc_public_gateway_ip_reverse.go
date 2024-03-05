@@ -3,6 +3,10 @@ package scaleway
 import (
 	"context"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/errors"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/locality/zonal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -37,7 +41,7 @@ func resourceScalewayVPCPublicGatewayIPReverseDNS() *schema.Resource {
 				Required:    true,
 				Description: "The reverse DNS for this IP",
 			},
-			"zone": zoneSchema(),
+			"zone": zonal.Schema(),
 		},
 	}
 }
@@ -50,12 +54,12 @@ func resourceScalewayVPCPublicGatewayIPReverseDNSCreate(ctx context.Context, d *
 
 	res, err := vpcgwAPI.GetIP(&vpcgw.GetIPRequest{
 		Zone: zone,
-		IPID: expandID(d.Get("gateway_ip_id")),
+		IPID: locality.ExpandID(d.Get("gateway_ip_id")),
 	}, scw.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	d.SetId(newZonedIDString(zone, res.ID))
+	d.SetId(zonal.NewZonedIDString(zone, res.ID))
 
 	if _, ok := d.GetOk("reverse"); ok {
 		tflog.Debug(ctx, fmt.Sprintf("updating IP %q reverse to %q\n", d.Id(), d.Get("reverse")))
@@ -67,7 +71,7 @@ func resourceScalewayVPCPublicGatewayIPReverseDNSCreate(ctx context.Context, d *
 
 		reverse := d.Get("reverse").(string)
 		if len(reverse) > 0 {
-			updateReverseReq.Reverse = expandStringPtr(reverse)
+			updateReverseReq.Reverse = types.ExpandStringPtr(reverse)
 		}
 
 		err := retryUpdateGatewayReverseDNS(ctx, vpcgwAPI, updateReverseReq, d.Timeout(schema.TimeoutCreate))
@@ -90,7 +94,7 @@ func resourceScalewayVPCPublicGatewayIPReverseDNSRead(ctx context.Context, d *sc
 		Zone: zone,
 	}, scw.WithContext(ctx))
 	if err != nil {
-		if is404Error(err) {
+		if http_errors.Is404Error(err) {
 			d.SetId("")
 			return nil
 		}
@@ -119,7 +123,7 @@ func resourceScalewayVPCPublicGatewayIPReverseDNSUpdate(ctx context.Context, d *
 
 		reverse := d.Get("reverse").(string)
 		if len(reverse) > 0 {
-			updateReverseReq.Reverse = expandStringPtr(reverse)
+			updateReverseReq.Reverse = types.ExpandStringPtr(reverse)
 		}
 
 		err := retryUpdateGatewayReverseDNS(ctx, vpcgwAPI, updateReverseReq, d.Timeout(schema.TimeoutUpdate))

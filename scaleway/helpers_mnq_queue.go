@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/scaleway/meta"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/types"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -32,7 +36,7 @@ const (
 )
 
 func SQSClientWithRegion(d *schema.ResourceData, m interface{}) (*sqs.SQS, scw.Region, error) {
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 	region, err := extractRegion(d, meta)
 	if err != nil {
 		return nil, "", err
@@ -42,7 +46,7 @@ func SQSClientWithRegion(d *schema.ResourceData, m interface{}) (*sqs.SQS, scw.R
 	accessKey := d.Get("access_key").(string)
 	secretKey := d.Get("secret_key").(string)
 
-	sqsClient, err := newSQSClient(meta.httpClient, region.String(), endpoint, accessKey, secretKey)
+	sqsClient, err := newSQSClient(meta.GetHTTPClient(), region.String(), endpoint, accessKey, secretKey)
 	if err != nil {
 		return nil, "", err
 	}
@@ -68,7 +72,7 @@ func newSQSClient(httpClient *http.Client, region string, endpoint string, acces
 }
 
 func NATSClientWithRegion(d *schema.ResourceData, m interface{}) (nats.JetStreamContext, scw.Region, error) { //nolint:ireturn
-	meta := m.(*Meta)
+	meta := m.(*meta2.Meta)
 	region, err := extractRegion(d, meta)
 	if err != nil {
 		return nil, "", err
@@ -153,7 +157,7 @@ func resourceMNQQueueName(name interface{}, prefix interface{}, isSQS bool, isSQ
 	if value, ok := prefix.(string); ok && value != "" {
 		output = id.PrefixedUniqueId(value)
 	} else {
-		output = newRandomName("queue")
+		output = types.NewRandomName("queue")
 	}
 	if isSQS && isSQSFifo {
 		return output + SQSFIFOQueueNameSuffix

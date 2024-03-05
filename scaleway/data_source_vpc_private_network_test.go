@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/tests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccScalewayDataSourceVPCPrivateNetwork_Basic(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	pnName := "TestAccScalewayDataSourceVPCPrivateNetwork_Basic"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
@@ -75,10 +77,10 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_Basic(t *testing.T) {
 }
 
 func TestAccScalewayDataSourceVPCPrivateNetwork_VpcID(t *testing.T) {
-	tt := NewTestTools(t)
+	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{

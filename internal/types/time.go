@@ -1,0 +1,42 @@
+package types
+
+import "time"
+
+func FlattenTime(date *time.Time) interface{} {
+	if date != nil {
+		return date.Format(time.RFC3339)
+	}
+	return ""
+}
+
+func FlattenDuration(duration *time.Duration) interface{} {
+	if duration != nil {
+		return duration.String()
+	}
+	return ""
+}
+
+// ExpandTimePtr returns a time pointer for an RFC3339 time.
+// It returns nil if time is not valid, you should use validateDate to validate field.
+func ExpandTimePtr(i interface{}) *time.Time {
+	rawTime := ExpandStringPtr(i)
+	if rawTime == nil {
+		return nil
+	}
+	parsedTime, err := time.Parse(time.RFC3339, *rawTime)
+	if err != nil {
+		return nil
+	}
+	return &parsedTime
+}
+
+func ExpandDuration(data interface{}) (*time.Duration, error) {
+	if data == nil || data == "" {
+		return nil, nil
+	}
+	d, err := time.ParseDuration(data.(string))
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}

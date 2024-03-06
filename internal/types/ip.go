@@ -1,0 +1,39 @@
+package types
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/scaleway/scaleway-sdk-go/scw"
+	"net"
+	"strconv"
+)
+
+func ExpandIPNet(raw string) (scw.IPNet, error) {
+	if raw == "" {
+		return scw.IPNet{}, nil
+	}
+	var ipNet scw.IPNet
+	err := json.Unmarshal([]byte(strconv.Quote(raw)), &ipNet)
+	if err != nil {
+		return scw.IPNet{}, fmt.Errorf("%s could not be marshaled: %v", raw, err)
+	}
+
+	return ipNet, nil
+}
+
+func FlattenIPNet(ipNet scw.IPNet) (string, error) {
+	raw, err := json.Marshal(ipNet)
+	if err != nil {
+		return "", err
+	}
+	return string(raw[1 : len(raw)-1]), nil // remove quotes
+}
+
+func FlattenIPPtr(ip *net.IP) interface{} {
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
+}
+
+const NetIPNil = "<nil>"

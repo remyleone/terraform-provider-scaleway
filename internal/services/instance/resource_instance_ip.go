@@ -1,0 +1,226 @@
+package instance
+
+import (
+	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
+
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/project"
+
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/organization"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
+)
+
+func ResourceScalewayInstanceIP() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: ResourceScalewayInstanceIPCreate,
+		ReadContext:   ResourceScalewayInstanceIPRead,
+		UpdateContext: ResourceScalewayInstanceIPUpdate,
+		DeleteContext: ResourceScalewayInstanceIPDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Default: schema.DefaultTimeout(defaultInstanceIPTimeout),
+		},
+		SchemaVersion: 0,
+		Schema: map[string]*schema.Schema{
+			"address": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The IP address",
+			},
+			"prefix": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The IP prefix",
+			},
+			"type": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
+				Description: "The type of instance IP",
+			},
+			"reverse": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The reverse DNS for this IP",
+			},
+			"server_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The server associated with this IP",
+			},
+			"tags": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:    true,
+				Description: "The tags associated with the ip",
+			},
+			"zone":            locality.ZonalSchema(),
+			"organization_id": organization.OrganizationIDSchema(),
+			"project_id":      project.ProjectIDSchema(),
+		},
+		CustomizeDiff: func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+			// The only allowed change is
+			// nat -> routed_ipv4
+			if diff.HasChange("type") {
+				before, after := diff.GetChange("type")
+				oldType := instance.IPType(before.(string))
+				newType := instance.IPType(after.(string))
+
+				if oldType == "nat" && newType == "routed_ipv4" {
+					return nil
+				}
+
+				return diff.ForceNew("type")
+			}
+
+			return nil
+		},
+	}
+}
+
+func ResourceScalewayInstanceIPCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	instanceAPI, zone, err := instanceAPIWithZone(d, meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	iprequest := &instance.CreateIPRequest{
+		Zone:    zone,
+		Project: types.ExpandStringPtr(d.Get("project_id")),
+		Type:    instance.IPType(d.Get("type").(string)),
+	}
+	tags := types.ExpandStrings(d.Get("tags"))
+	if len(tags) > 0 {
+		iprequest.Tags = tags
+	}
+	res, err := instanceAPI.CreateIP(iprequest, scw.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	reverseRaw, ok := d.GetOk("reverse")
+	if ok {
+		reverseStrPtr := types.ExpandStringPtr(reverseRaw)
+		req := &instance.UpdateIPRequest{
+			IP:      res.IP.ID,
+			Reverse: &instance.NullableStringValue{Value: *reverseStrPtr},
+			Zone:    zone,
+		}
+		_, err = instanceAPI.UpdateIP(req, scw.WithContext(ctx))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	d.SetId(locality.NewZonedIDString(zone, res.IP.ID))
+	return ResourceScalewayInstanceIPRead(ctx, d, meta)
+}
+
+func ResourceScalewayInstanceIPUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(meta, d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req := &instance.UpdateIPRequest{
+		IP:   ID,
+		Zone: zone,
+	}
+
+	if d.HasChange("tags") {
+		req.Tags = types.ExpandUpdatedStringsPtr(d.Get("tags"))
+	}
+
+	if d.HasChange("type") {
+		req.Type = instance.IPType(d.Get("type").(string))
+	}
+
+	_, err = instanceAPI.UpdateIP(req, scw.WithContext(ctx))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return ResourceScalewayInstanceIPRead(ctx, d, meta)
+}
+
+func ResourceScalewayInstanceIPRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(meta, d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	res, err := instanceAPI.GetIP(&instance.GetIPRequest{
+		IP:   ID,
+		Zone: zone,
+	}, scw.WithContext(ctx))
+	if err != nil {
+		// We check for 403 because instance API returns 403 for a deleted IP
+		if http_errors.Is404Error(err) || http_errors.Is403Error(err) {
+			d.SetId("")
+			return nil
+		}
+		return diag.FromErr(err)
+	}
+
+	address := res.IP.Address.String()
+	prefix := res.IP.Prefix.String()
+	if prefix == types.NetIPNil {
+		ipnet := scw.IPNet{}
+		_ = (&ipnet).UnmarshalJSON([]byte("\"" + res.IP.Address.String() + "\""))
+		prefix = ipnet.String()
+	}
+	if address == types.NetIPNil {
+		address = res.IP.Prefix.IP.String()
+	}
+
+	_ = d.Set("address", address)
+	_ = d.Set("prefix", prefix)
+	_ = d.Set("zone", zone)
+	_ = d.Set("organization_id", res.IP.Organization)
+	_ = d.Set("project_id", res.IP.Project)
+	_ = d.Set("reverse", res.IP.Reverse)
+	_ = d.Set("type", res.IP.Type)
+
+	if len(res.IP.Tags) > 0 {
+		_ = d.Set("tags", types.FlattenSliceString(res.IP.Tags))
+	}
+
+	if res.IP.Server != nil {
+		_ = d.Set("server_id", locality.NewZonedIDString(res.IP.Zone, res.IP.Server.ID))
+	} else {
+		_ = d.Set("server_id", "")
+	}
+
+	return nil
+}
+
+func ResourceScalewayInstanceIPDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(meta, d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = instanceAPI.DeleteIP(&instance.DeleteIPRequest{
+		IP:   ID,
+		Zone: zone,
+	}, scw.WithContext(ctx))
+	if err != nil {
+		// We check for 403 because instance API returns 403 for a deleted IP
+		if http_errors.Is404Error(err) || http_errors.Is403Error(err) {
+			d.SetId("")
+			return nil
+		}
+		return diag.FromErr(err)
+	}
+
+	return nil
+}

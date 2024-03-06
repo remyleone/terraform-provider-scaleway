@@ -9,12 +9,12 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func resourceScaleway{{ .Resource }}() *schema.Resource {
+func ResourceScaleway{{ .Resource }}() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceScaleway{{ .Resource }}Create,
-		ReadContext:   resourceScaleway{{ .Resource }}Read,
-		UpdateContext: resourceScaleway{{ .Resource }}Update,
-		DeleteContext: resourceScaleway{{ .Resource }}Delete,
+		CreateContext: ResourceScaleway{{ .Resource }}Create,
+		ReadContext:   ResourceScaleway{{ .Resource }}Read,
+		UpdateContext: ResourceScaleway{{ .Resource }}Update,
+		DeleteContext: ResourceScaleway{{ .Resource }}Delete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -33,7 +33,7 @@ func resourceScaleway{{ .Resource }}() *schema.Resource {
 	}
 }
 
-func resourceScaleway{{ .Resource }}Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func ResourceScaleway{{ .Resource }}Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api, {{ .Locality }}, err := {{ .API }}APIWith{{ .LocalityUpper }}(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
@@ -57,10 +57,10 @@ func resourceScaleway{{ .Resource }}Create(ctx context.Context, d *schema.Resour
 	}
 {{end}}
 
-	return resourceScaleway{{ .Resource }}Read(ctx, d, meta)
+	return ResourceScaleway{{ .Resource }}Read(ctx, d, meta)
 }
 
-func resourceScaleway{{ .Resource }}Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func ResourceScaleway{{ .Resource }}Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api, {{ .Locality }}, id, err := {{ .API }}APIWith{{ .LocalityUpper }}AndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -88,7 +88,7 @@ func resourceScaleway{{ .Resource }}Read(ctx context.Context, d *schema.Resource
 	return nil
 }
 
-func resourceScaleway{{ .Resource }}Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func ResourceScaleway{{ .Resource }}Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api, {{ .Locality }}, id, err := {{ .API }}APIWith{{ .LocalityUpper }}AndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -109,17 +109,17 @@ func resourceScaleway{{ .Resource }}Update(ctx context.Context, d *schema.Resour
 	}
 
 	if d.HasChange("name") {
-		req.Name = expandUpdatedStringPtr(d.Get("name"))
+		req.Name = types.ExpandUpdatedStringPtr(d.Get("name"))
 	}
 
 	if _, err := api.Update{{ .ResourceClean }}(req, scw.WithContext(ctx)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	return resourceScaleway{{ .Resource }}Read(ctx, d, meta)
+	return ResourceScaleway{{ .Resource }}Read(ctx, d, meta)
 }
 
-func resourceScaleway{{ .Resource }}Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func ResourceScaleway{{ .Resource }}Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api, {{ .Locality }}, id, err := {{ .API }}APIWith{{ .LocalityUpper }}AndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)

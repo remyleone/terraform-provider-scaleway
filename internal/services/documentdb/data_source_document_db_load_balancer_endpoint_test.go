@@ -1,4 +1,4 @@
-package documentdb
+package documentdb_test
 
 import (
 	"testing"

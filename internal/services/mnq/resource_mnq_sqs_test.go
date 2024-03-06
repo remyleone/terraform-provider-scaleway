@@ -1,7 +1,9 @@
-package mnq
+package mnq_test
 
 import (
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"regexp"
 	"strings"
 	"testing"

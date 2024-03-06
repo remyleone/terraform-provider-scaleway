@@ -1,4 +1,4 @@
-package container
+package container_test
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"io"
 	"testing"
 

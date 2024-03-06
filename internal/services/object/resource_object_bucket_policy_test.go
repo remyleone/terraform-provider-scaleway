@@ -1,9 +1,10 @@
-package object
+package object_test
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 	"regexp"
 	"testing"
 

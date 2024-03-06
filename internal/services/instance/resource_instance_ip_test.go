@@ -1,8 +1,9 @@
-package instance
+package instance_test
 
 import (
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"net"
 	"testing"
 

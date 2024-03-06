@@ -1,9 +1,10 @@
-package domain
+package domain_test
 
 import (
 	"flag"
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"os"
 	"regexp"

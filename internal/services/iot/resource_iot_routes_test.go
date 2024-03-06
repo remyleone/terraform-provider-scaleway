@@ -1,4 +1,4 @@
-package iot
+package iot_test
 
 import (
 	"fmt"

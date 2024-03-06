@@ -1,4 +1,4 @@
-package object
+package object_test
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package marketplace
+package marketplace_test
 
 import (
 	"testing"

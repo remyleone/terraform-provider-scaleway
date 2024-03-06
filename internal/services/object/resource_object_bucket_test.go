@@ -1,9 +1,12 @@
-package object
+package object_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 	"reflect"
 	"regexp"
 	"strings"

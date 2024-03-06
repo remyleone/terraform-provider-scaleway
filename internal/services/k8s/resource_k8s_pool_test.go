@@ -1,8 +1,9 @@
-package k8s
+package k8s_test
 
 import (
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"strings"
 	"testing"
 

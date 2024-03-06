@@ -1,4 +1,4 @@
-package vpcgw
+package vpcgw_test
 
 import (
 	"testing"

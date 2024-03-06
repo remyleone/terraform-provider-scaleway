@@ -1,4 +1,4 @@
-package ipam
+package ipam_test
 
 import (
 	"errors"

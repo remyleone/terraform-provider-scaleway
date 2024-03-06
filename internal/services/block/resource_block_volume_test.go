@@ -1,7 +1,9 @@
-package block
+package block_test
 
 import (
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -159,8 +161,7 @@ func testAccCheckScalewayBlockVolumeDestroy(tt *tests.TestTools) resource.TestCh
 				return fmt.Errorf("block volume (%s) still exists", rs.Primary.ID)
 			}
 
-			if !http_errors.Is404Error(err)) && !Is410Error(err)
-			{
+			if !http_errors.Is404Error(err) && !http_errors.Is410Error(err) {
 				return err
 			}
 		}

@@ -1,4 +1,4 @@
-package mnq
+package mnq_test
 
 import (
 	"errors"

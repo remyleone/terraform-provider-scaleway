@@ -1,4 +1,4 @@
-package az
+package az_test
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package secret
+package secret_test
 
 import (
 	"fmt"

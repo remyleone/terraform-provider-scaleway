@@ -1,4 +1,4 @@
-package tem
+package tem_test
 
 import (
 	"fmt"

@@ -1,8 +1,10 @@
-package iam
+package iam_test
 
 import (
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"

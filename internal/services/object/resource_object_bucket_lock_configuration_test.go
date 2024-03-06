@@ -1,8 +1,9 @@
-package object
+package object_test
 
 import (
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
 	"regexp"
 	"testing"
 

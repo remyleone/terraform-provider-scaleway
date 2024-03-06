@@ -1,4 +1,4 @@
-package webhosting
+package webhosting_test
 
 import (
 	"fmt"

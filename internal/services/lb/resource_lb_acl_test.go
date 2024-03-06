@@ -1,7 +1,8 @@
-package lb
+package lb_test
 
 import (
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"

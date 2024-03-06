@@ -1,9 +1,12 @@
-package lb
+package lb_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"reflect"
 	"regexp"
 	"testing"

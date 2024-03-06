@@ -1,4 +1,4 @@
-package fip
+package fip_test
 
 import (
 	"fmt"

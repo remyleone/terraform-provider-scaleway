@@ -1,9 +1,10 @@
-package object
+package object_test
 
 import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
 	"regexp"
 	"testing"
 

@@ -1,4 +1,4 @@
-package baremetal
+package baremetal_test
 
 import (
 	"context"

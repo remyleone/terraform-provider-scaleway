@@ -1,4 +1,4 @@
-package cockpit
+package cockpit_test
 
 import (
 	"fmt"

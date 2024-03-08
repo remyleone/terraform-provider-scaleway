@@ -2,13 +2,14 @@ package iot_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iot"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	iotSDK "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
 )
 
 const customDevCert = `-----BEGIN CERTIFICATE-----
@@ -226,12 +227,12 @@ func testAccCheckScalewayIotDeviceExists(tt *tests.TestTools, n string) resource
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		iotAPI, region, deviceID, err := iotAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		iotAPI, region, deviceID, err := iot.NewAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = iotAPI.GetDevice(&iot.GetDeviceRequest{
+		_, err = iotAPI.GetDevice(&iotSDK.GetDeviceRequest{
 			Region:   region,
 			DeviceID: deviceID,
 		})

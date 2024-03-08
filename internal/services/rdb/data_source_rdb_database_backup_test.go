@@ -2,6 +2,7 @@ package rdb_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -13,13 +14,13 @@ func TestAccScalewayDataSourceRdbDatabaseBackup_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbDatabaseBackupDestroy(tt),
 		),
 		Steps: []resource.TestStep{

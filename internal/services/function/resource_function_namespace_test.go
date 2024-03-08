@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,10 +24,10 @@ func init() {
 
 func testSweepFunctionNamespace(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
-		functionAPI := function.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the function namespaces in (%s)", region)
+		functionAPI := functionSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the functionSDK namespaces in (%s)", region)
 		listNamespaces, err := functionAPI.ListNamespaces(
-			&function.ListNamespacesRequest{
+			&functionSDK.ListNamespacesRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepFunctionNamespace(_ string) error {
 		}
 
 		for _, ns := range listNamespaces.Namespaces {
-			_, err := functionAPI.DeleteNamespace(&function.DeleteNamespaceRequest{
+			_, err := functionAPI.DeleteNamespace(&functionSDK.DeleteNamespaceRequest{
 				NamespaceID: ns.ID,
 				Region:      region,
 			})
@@ -66,21 +67,21 @@ func TestAccScalewayFunctionNamespace_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionNamespaceExists(tt, "scaleway_function_namespace.main"),
-					testCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
 				),
 			},
 			{
 				Config: `
 					resource scaleway_function_namespace main {
 						name = "test-cr-ns-01"
-						description = "test function namespace 01"
+						description = "test functionSDK namespace 01"
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionNamespaceExists(tt, "scaleway_function_namespace.main"),
-					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "description", "test function namespace 01"),
+					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "description", "test functionSDK namespace 01"),
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "name", "test-cr-ns-01"),
-					testCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
 				),
 			},
 			{
@@ -102,7 +103,7 @@ func TestAccScalewayFunctionNamespace_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "environment_variables.test", "test"),
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "secret_environment_variables.test_secret", "test_secret"),
 
-					testCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
 				),
 			},
 		},
@@ -154,7 +155,7 @@ func TestAccScalewayFunctionNamespace_EnvironmentVariables(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "name", "tf-env-test"),
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "environment_variables.test", "test"),
 
-					testCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
 				),
 			},
 			{
@@ -171,7 +172,7 @@ func TestAccScalewayFunctionNamespace_EnvironmentVariables(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "name", "tf-env-test"),
 					resource.TestCheckResourceAttr("scaleway_function_namespace.main", "environment_variables.foo", "bar"),
 
-					testCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_namespace.main", "id"),
 				),
 			},
 		},
@@ -185,12 +186,12 @@ func testAccCheckScalewayFunctionNamespaceExists(tt *tests.TestTools, n string) 
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetNamespace(&function.GetNamespaceRequest{
+		_, err = api.GetNamespace(&functionSDK.GetNamespaceRequest{
 			NamespaceID: id,
 			Region:      region,
 		})
@@ -209,18 +210,18 @@ func testAccCheckScalewayFunctionNamespaceDestroy(tt *tests.TestTools) resource.
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteNamespace(&function.DeleteNamespaceRequest{
+			_, err = api.DeleteNamespace(&functionSDK.DeleteNamespaceRequest{
 				NamespaceID: id,
 				Region:      region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function namespace (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK namespace (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

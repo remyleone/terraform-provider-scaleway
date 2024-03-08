@@ -13,9 +13,13 @@ import (
 
 type TestTools struct {
 	T                 *testing.T
-	Meta              *meta.Meta
+	meta              *meta.Meta
 	ProviderFactories map[string]func() (*schema.Provider, error)
 	Cleanup           func()
+}
+
+func (tt TestTools) GetMeta() *meta.Meta {
+	return tt.meta
 }
 
 func NewTestTools(t *testing.T) *TestTools {
@@ -40,7 +44,7 @@ func NewTestTools(t *testing.T) *TestTools {
 
 	return &TestTools{
 		T:    t,
-		Meta: meta,
+		meta: meta,
 		ProviderFactories: map[string]func() (*schema.Provider, error){
 			"scaleway": func() (*schema.Provider, error) {
 				return provider.Provider(&provider.ProviderConfig{Meta: meta})(), nil

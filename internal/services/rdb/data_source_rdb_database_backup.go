@@ -39,7 +39,7 @@ func DataSourceScalewayRDBDatabaseBackup() *schema.Resource {
 }
 
 func DataSourceScalewayRDBDatabaseBackupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := rdbAPIWithRegion(d, meta)
+	api, region, err := RdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

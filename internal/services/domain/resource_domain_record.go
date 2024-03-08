@@ -267,7 +267,7 @@ func ResourceScalewayDomainRecord() *schema.Resource {
 }
 
 func ResourceScalewayDomainRecordCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	dnsZone := d.Get("dns_zone").(string)
 	geoIP, okGeoIP := d.GetOk("geo_ip")
@@ -332,7 +332,7 @@ func ResourceScalewayDomainRecordCreate(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayDomainRecordRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 	var record *domain.Record
 	var dnsZone string
 	var projectID string
@@ -443,7 +443,7 @@ func ResourceScalewayDomainRecordUpdate(ctx context.Context, d *schema.ResourceD
 		return ResourceScalewayDomainRecordRead(ctx, d, meta)
 	}
 
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	req := &domain.UpdateDNSZoneRecordsRequest{
 		DNSZone:          d.Get("dns_zone").(string),
@@ -486,7 +486,7 @@ func ResourceScalewayDomainRecordUpdate(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayDomainRecordDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	recordID := locality.ExpandID(d.Id())
 	_, err := domainAPI.UpdateDNSZoneRecords(&domain.UpdateDNSZoneRecordsRequest{

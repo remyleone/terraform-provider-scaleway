@@ -2,13 +2,12 @@ package iot_test
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	iotSDK "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iot"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayIotNetwork_Minimal(t *testing.T) {
@@ -134,12 +133,12 @@ func testAccCheckScalewayIotNetworkExists(tt *tests.TestTools, n string) resourc
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		iotAPI, region, networkID, err := iotAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		iotAPI, region, networkID, err := iot.NewAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = iotAPI.GetNetwork(&iot.GetNetworkRequest{
+		_, err = iotAPI.GetNetwork(&iotSDK.GetNetworkRequest{
 			Region:    region,
 			NetworkID: networkID,
 		})

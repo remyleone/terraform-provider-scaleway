@@ -31,7 +31,7 @@ func DataSourceScalewayBlockSnapshot() *schema.Resource {
 }
 
 func DataSourceScalewayBlockSnapshotRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, zone, err := blockAPIWithZone(d, meta)
+	api, zone, err := BlockAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

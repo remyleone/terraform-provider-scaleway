@@ -2,18 +2,17 @@ package cockpit_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"regexp"
-	"strings"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
+	cockpitSDK "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/cockpit"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 func init() {
@@ -26,7 +25,7 @@ func init() {
 func testSweepCockpitGrafanaUser(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
-		cockpitAPI := cockpit.NewAPI(scwClient)
+		cockpitAPI := cockpitSDK.NewAPI(scwClient)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -38,7 +37,7 @@ func testSweepCockpitGrafanaUser(_ string) error {
 				continue
 			}
 
-			listGrafanaUsers, err := cockpitAPI.ListGrafanaUsers(&cockpit.ListGrafanaUsersRequest{
+			listGrafanaUsers, err := cockpitAPI.ListGrafanaUsers(&cockpitSDK.ListGrafanaUsersRequest{
 				ProjectID: project.ID,
 			}, scw.WithAllPages())
 			if err != nil {
@@ -50,7 +49,7 @@ func testSweepCockpitGrafanaUser(_ string) error {
 			}
 
 			for _, grafanaUser := range listGrafanaUsers.GrafanaUsers {
-				err = cockpitAPI.DeleteGrafanaUser(&cockpit.DeleteGrafanaUserRequest{
+				err = cockpitAPI.DeleteGrafanaUser(&cockpitSDK.DeleteGrafanaUserRequest{
 					ProjectID:     project.ID,
 					GrafanaUserID: grafanaUser.ID,
 				})
@@ -207,19 +206,19 @@ func testAccCheckScalewayCockpitGrafanaUserExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource cockpit grafana user not found: %s", n)
 		}
 
-		api, projectID, grafanaUserID, err := cockpitAPIGrafanaUserID(tt.Meta, rs.Primary.ID)
+		api, projectID, grafanaUserID, err := cockpit.CockpitAPIGrafanaUserID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		res, err := api.ListGrafanaUsers(&cockpit.ListGrafanaUsersRequest{
+		res, err := api.ListGrafanaUsers(&cockpitSDK.ListGrafanaUsersRequest{
 			ProjectID: projectID,
 		}, scw.WithAllPages())
 		if err != nil {
 			return err
 		}
 
-		var grafanaUser *cockpit.GrafanaUser
+		var grafanaUser *cockpitSDK.GrafanaUser
 		for _, user := range res.GrafanaUsers {
 			if user.ID == grafanaUserID {
 				grafanaUser = user
@@ -242,12 +241,12 @@ func testAccCheckScalewayCockpitGrafanaUserDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			api, projectID, grafanaUserID, err := cockpitAPIGrafanaUserID(tt.Meta, rs.Primary.ID)
+			api, projectID, grafanaUserID, err := cockpit.CockpitAPIGrafanaUserID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteGrafanaUser(&cockpit.DeleteGrafanaUserRequest{
+			err = api.DeleteGrafanaUser(&cockpitSDK.DeleteGrafanaUserRequest{
 				ProjectID:     projectID,
 				GrafanaUserID: grafanaUserID,
 			})

@@ -3,6 +3,7 @@ package documentdb_test
 import (
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -40,7 +41,7 @@ func TestAccScalewayDocumentDBDatabase_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBDatabaseExists(tt, "scaleway_documentdb_database.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_database.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_database.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_documentdb_database.main", "name", "test-document_db-database-basic"),
 				),
 			},
@@ -55,12 +56,12 @@ func testAccCheckScalewayDocumentDBDatabaseExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		localizedInstanceID, databaseName, err := ResourceScalewayDocumentDBDatabaseName(rs.Primary.ID)
+		localizedInstanceID, databaseName, err := documentdb.ResourceScalewayDocumentDBDatabaseName(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		api, region, instanceID, err := documentDBAPIWithRegionAndID(tt.Meta, localizedInstanceID)
+		api, region, instanceID, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), localizedInstanceID)
 		if err != nil {
 			return err
 		}

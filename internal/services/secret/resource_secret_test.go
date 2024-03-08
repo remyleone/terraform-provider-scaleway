@@ -2,16 +2,15 @@ package secret_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	secret "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
+	secretSDK "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/secret"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,17 +22,17 @@ func init() {
 
 func testSweepSecret(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		secretAPI := secret.NewAPI(scwClient)
+		secretAPI := secretSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: deleting the secrets in (%s)", region)
 
-		listSecrets, err := secretAPI.ListSecrets(&secret.ListSecretsRequest{Region: region}, scw.WithAllPages())
+		listSecrets, err := secretAPI.ListSecrets(&secretSDK.ListSecretsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing secrets in (%s) in sweeper: %s", region, err)
 		}
 
 		for _, se := range listSecrets.Secrets {
-			err := secretAPI.DeleteSecret(&secret.DeleteSecretRequest{
+			err := secretAPI.DeleteSecret(&secretSDK.DeleteSecretRequest{
 				SecretID: se.ID,
 				Region:   region,
 			})
@@ -72,14 +71,14 @@ func TestAccScalewaySecret_Basic(t *testing.T) {
 					testAccCheckScalewaySecretExists(tt, "scaleway_secret.main"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "name", secretName),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "description", secretDescription),
-					resource.TestCheckResourceAttr("scaleway_secret.main", "status", secret.SecretStatusReady.String()),
+					resource.TestCheckResourceAttr("scaleway_secret.main", "status", secretSDK.SecretStatusReady.String()),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.0", "devtools"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.1", "provider"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.2", "terraform"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.#", "3"),
 					resource.TestCheckResourceAttrSet("scaleway_secret.main", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_secret.main", "created_at"),
-					testCheckResourceAttrUUID("scaleway_secret.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_secret.main", "id"),
 				),
 			},
 			{
@@ -96,7 +95,7 @@ func TestAccScalewaySecret_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_secret.main", "description", "update description"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.0", "devtools"),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.#", "1"),
-					testCheckResourceAttrUUID("scaleway_secret.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_secret.main", "id"),
 				),
 			},
 			{
@@ -110,7 +109,7 @@ func TestAccScalewaySecret_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_secret.main", "name", secretName),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "description", ""),
 					resource.TestCheckResourceAttr("scaleway_secret.main", "tags.#", "0"),
-					testCheckResourceAttrUUID("scaleway_secret.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_secret.main", "id"),
 				),
 			},
 		},
@@ -124,12 +123,12 @@ func testAccCheckScalewaySecretExists(tt *tests.TestTools, n string) resource.Te
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := secretAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := secret.SecretAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetSecret(&secret.GetSecretRequest{
+		_, err = api.GetSecret(&secretSDK.GetSecretRequest{
 			SecretID: id,
 			Region:   region,
 		})
@@ -148,12 +147,12 @@ func testAccCheckScalewaySecretDestroy(tt *tests.TestTools) resource.TestCheckFu
 				continue
 			}
 
-			api, region, id, err := secretAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := secret.SecretAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.GetSecret(&secret.GetSecretRequest{
+			_, err = api.GetSecret(&secretSDK.GetSecretRequest{
 				SecretID: id,
 				Region:   region,
 			})

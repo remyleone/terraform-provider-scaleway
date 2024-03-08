@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepMNQSQSCredentials(_ string) error {
-	return tests.SweepRegions((&mnq.SqsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		mnqAPI := mnq.NewSqsAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the mnq sqs credentials in (%s)", region)
+	return tests.SweepRegions((&mnqSDK.SqsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		mnqAPI := mnqSDK.NewSqsAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the mnqSDK sqs credentials in (%s)", region)
 		listSqsCredentials, err := mnqAPI.ListSqsCredentials(
-			&mnq.SqsAPIListSqsCredentialsRequest{
+			&mnqSDK.SqsAPIListSqsCredentialsRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepMNQSQSCredentials(_ string) error {
 		}
 
 		for _, credentials := range listSqsCredentials.SqsCredentials {
-			err := mnqAPI.DeleteSqsCredentials(&mnq.SqsAPIDeleteSqsCredentialsRequest{
+			err := mnqAPI.DeleteSqsCredentials(&mnqSDK.SqsAPIDeleteSqsCredentialsRequest{
 				SqsCredentialsID: credentials.ID,
 				Region:           region,
 			})
@@ -70,13 +71,13 @@ func TestAccScalewayMNQSQSCredentials_Basic(t *testing.T) {
 
 					resource scaleway_mnq_sqs_credentials main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-credentials-basic"
+						name = "test-mnqSDK-sqs-credentials-basic"
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSQSCredentialsExists(tt, "scaleway_mnq_sqs_credentials.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sqs_credentials.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_mnq_sqs_credentials.main", "name", "test-mnq-sqs-credentials-basic"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sqs_credentials.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_mnq_sqs_credentials.main", "name", "test-mnqSDK-sqs-credentials-basic"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sqs_credentials.main", "access_key"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sqs_credentials.main", "secret_key"),
 				),
@@ -93,7 +94,7 @@ func TestAccScalewayMNQSQSCredentials_Basic(t *testing.T) {
 
 					resource scaleway_mnq_sqs_credentials main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-credentials-basic"
+						name = "test-mnqSDK-sqs-credentials-basic"
 						permissions {
 							can_manage = true
 							can_receive = false
@@ -120,7 +121,7 @@ func TestAccScalewayMNQSQSCredentials_Basic(t *testing.T) {
 
 					resource scaleway_mnq_sqs_credentials main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-credentials-basic"
+						name = "test-mnqSDK-sqs-credentials-basic"
 						permissions {
 							can_manage = false
 							can_receive = true
@@ -146,12 +147,12 @@ func testAccCheckScalewayMNQSQSCredentialsExists(tt *tests.TestTools, n string) 
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqSQSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqSQSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetSqsCredentials(&mnq.SqsAPIGetSqsCredentialsRequest{
+		_, err = api.GetSqsCredentials(&mnqSDK.SqsAPIGetSqsCredentialsRequest{
 			SqsCredentialsID: id,
 			Region:           region,
 		})
@@ -170,18 +171,18 @@ func testAccCheckScalewayMNQSQSCredentialsDestroy(tt *tests.TestTools) resource.
 				continue
 			}
 
-			api, region, id, err := mnqSQSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqSQSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteSqsCredentials(&mnq.SqsAPIDeleteSqsCredentialsRequest{
+			err = api.DeleteSqsCredentials(&mnqSDK.SqsAPIDeleteSqsCredentialsRequest{
 				SqsCredentialsID: id,
 				Region:           region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("mnq sqs credentials (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("mnqSDK sqs credentials (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

@@ -10,7 +10,7 @@ import (
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
 )
 
-func DataSourceScalewayWebhostingOffer() *schema.Resource {
+func DataSourceOffer() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: DataSourceScalewayWebhostingOfferRead,
 		Schema: map[string]*schema.Schema{
@@ -84,7 +84,7 @@ func DataSourceScalewayWebhostingOffer() *schema.Resource {
 }
 
 func DataSourceScalewayWebhostingOfferRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	webhostingAPI, region, err := webhostingAPIWithRegion(d, meta)
+	webhostingAPI, region, err := WebhostingAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

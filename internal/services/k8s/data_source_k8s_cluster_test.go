@@ -20,7 +20,7 @@ func TestAccScalewayDataSourceK8SCluster_Basic(t *testing.T) {
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SPoolDestroy(tt, "scaleway_k8s_pool.default"),
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{

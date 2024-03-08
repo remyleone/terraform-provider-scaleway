@@ -26,7 +26,7 @@ func DataSourceScalewayLbRoute() *schema.Resource {
 }
 
 func DataSourceScalewayLbRouteRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	_, zone, err := lbAPIWithZone(d, meta)
+	_, zone, err := LbAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

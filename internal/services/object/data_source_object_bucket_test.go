@@ -3,6 +3,8 @@ package object_test
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"regexp"
 	"testing"
 
@@ -18,12 +20,12 @@ func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
-	objectBucketTestDefaultRegion, _ := tt.meta.GetScwClient().GetDefaultRegion()
+	objectBucketTestDefaultRegion, _ := tt.GetMeta().GetScwClient().GetDefaultRegion()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -38,9 +40,9 @@ func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
 				data "scaleway_object_bucket" "by-id" {
 					name = scaleway_object_bucket.base-01.id
 				}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					resource.TestCheckResourceAttr("data.scaleway_object_bucket.by-id", "name", bucketName),
 				),
 			},
@@ -59,7 +61,7 @@ func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
 				}
 				`, bucketName, objectBucketTestDefaultRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					resource.TestCheckResourceAttr("data.scaleway_object_bucket.by-name", "name", bucketName),
 				),
 			},
@@ -76,9 +78,9 @@ func TestAccScalewayDataSourceObjectBucket_Basic(t *testing.T) {
 				data "scaleway_object_bucket" "by-name" {
 					name = scaleway_object_bucket.base-01.name
 				}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					resource.TestCheckResourceAttr("data.scaleway_object_bucket.by-name", "name", bucketName),
 				),
 				ExpectError: regexp.MustCompile("failed getting Object Storage bucket"),
@@ -92,19 +94,19 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDAllowed(t *testing.T) {
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
 
-	project, iamAPIKey, terminateFakeSideProject, err := createFakeSideProject(tt)
+	project, iamAPIKey, terminateFakeSideProject, err := tests.CreateFakeSideProject(tt)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ProviderFactories: fakeSideProjectProviders(ctx, tt, project, iamAPIKey),
+		ProviderFactories: tests.FakeSideProjectProviders(ctx, tt, project, iamAPIKey),
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			func(_ *terraform.State) error {
 				return terminateFakeSideProject()
 			},
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			// Create a bucket from the main provider into the side project and read it from the side provider
@@ -124,10 +126,10 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDAllowed(t *testing.T) {
 				`,
 					bucketName,
 					project.ID,
-					objectTestsMainRegion,
+					object.ObjectTestsMainRegion,
 				),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base", false),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base", false),
 					resource.TestCheckResourceAttr("data.scaleway_object_bucket.selected", "name", bucketName),
 					resource.TestCheckResourceAttr("data.scaleway_object_bucket.selected", "project_id", project.ID),
 				),
@@ -141,19 +143,19 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDForbidden(t *testing.T) {
 	defer tt.Cleanup()
 	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-object-bucket")
 
-	project, iamAPIKey, terminateFakeSideProject, err := createFakeSideProject(tt)
+	project, iamAPIKey, terminateFakeSideProject, err := tests.CreateFakeSideProject(tt)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ProviderFactories: fakeSideProjectProviders(ctx, tt, project, iamAPIKey),
+		ProviderFactories: tests.FakeSideProjectProviders(ctx, tt, project, iamAPIKey),
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			func(_ *terraform.State) error {
 				return terminateFakeSideProject()
 			},
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			// The side provider should not be able to read the bucket from the main project
@@ -171,9 +173,9 @@ func TestAccScalewayDataSourceObjectBucket_ProjectIDForbidden(t *testing.T) {
 				`,
 					bucketName,
 					project.ID,
-					objectTestsMainRegion,
+					object.ObjectTestsMainRegion,
 				),
-				Check:       testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base", false),
+				Check:       checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base", false),
 				ExpectError: regexp.MustCompile("failed getting Object Storage bucket"),
 			},
 		},

@@ -3,6 +3,7 @@ package documentdb
 import (
 	"context"
 	"fmt"
+	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/difffuncs"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -12,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -71,7 +71,7 @@ func ResourceScalewayDocumentDBPrivilege() *schema.Resource {
 }
 
 func ResourceScalewayDocumentDBPrivilegeCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -122,7 +122,7 @@ func ResourceScalewayDocumentDBPrivilegeCreate(ctx context.Context, d *schema.Re
 }
 
 func ResourceScalewayDocumentDBPrivilegeRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, _, err := documentDBAPIWithRegion(d, meta)
+	api, _, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -183,7 +183,7 @@ func ResourceScalewayDocumentDBPrivilegeRead(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayDocumentDBPrivilegeUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -252,7 +252,7 @@ func ResourceScalewayDocumentDBPrivilegeUpdate(ctx context.Context, d *schema.Re
 
 //gocyclo:ignore
 func ResourceScalewayDocumentDBPrivilegeDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

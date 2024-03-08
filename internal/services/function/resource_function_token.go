@@ -89,7 +89,7 @@ func ResourceScalewayFunctionTokenCreate(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewayFunctionTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, ID, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, ID, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

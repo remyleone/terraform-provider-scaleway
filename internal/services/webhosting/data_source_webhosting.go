@@ -14,7 +14,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func DataSourceScalewayWebhosting() *schema.Resource {
+func DataSource() *schema.Resource {
 	dsSchema := datasource.DatasourceSchemaFromResourceSchema(ResourceScalewayWebhosting().Schema)
 
 	datasource.AddOptionalFieldsToSchema(dsSchema, "domain")
@@ -42,7 +42,7 @@ func DataSourceScalewayWebhosting() *schema.Resource {
 }
 
 func DataSourceScalewayWebhostingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := webhostingAPIWithRegion(d, meta)
+	api, region, err := WebhostingAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

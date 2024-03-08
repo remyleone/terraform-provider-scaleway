@@ -17,10 +17,10 @@ func ResourceScalewayCockpit() *schema.Resource {
 		UpdateContext: ResourceScalewayCockpitUpdate,
 		DeleteContext: ResourceScalewayCockpitDelete,
 		Timeouts: &schema.ResourceTimeout{
-			Create:  schema.DefaultTimeout(defaultCockpitTimeout),
-			Read:    schema.DefaultTimeout(defaultCockpitTimeout),
-			Delete:  schema.DefaultTimeout(defaultCockpitTimeout),
-			Default: schema.DefaultTimeout(defaultCockpitTimeout),
+			Create:  schema.DefaultTimeout(DefaultCockpitTimeout),
+			Read:    schema.DefaultTimeout(DefaultCockpitTimeout),
+			Delete:  schema.DefaultTimeout(DefaultCockpitTimeout),
+			Default: schema.DefaultTimeout(DefaultCockpitTimeout),
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -95,7 +95,7 @@ func ResourceScalewayCockpit() *schema.Resource {
 }
 
 func ResourceScalewayCockpitCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, err := cockpitAPI(meta)
+	api, err := NewAPI(meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -143,7 +143,7 @@ func ResourceScalewayCockpitCreate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayCockpitRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, err := cockpitAPI(meta)
+	api, err := NewAPI(meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,7 +166,7 @@ func ResourceScalewayCockpitRead(ctx context.Context, d *schema.ResourceData, me
 }
 
 func ResourceScalewayCockpitUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, err := cockpitAPI(meta)
+	api, err := NewAPI(meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -213,7 +213,7 @@ func ResourceScalewayCockpitUpdate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayCockpitDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, err := cockpitAPI(meta)
+	api, err := NewAPI(meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

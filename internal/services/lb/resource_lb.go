@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	defaultWaitLBRetryInterval = 30 * time.Second
+	DefaultWaitLBRetryInterval = 30 * time.Second
 )
 
 func ResourceScalewayLb() *schema.Resource {
@@ -46,7 +46,7 @@ func ResourceScalewayLb() *schema.Resource {
 		},
 		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
-			{Version: 0, Type: lbUpgradeV1SchemaType(), Upgrade: lbUpgradeV1SchemaUpgradeFunc},
+			{Version: 0, Type: LbUpgradeV1SchemaType(), Upgrade: LbUpgradeV1SchemaUpgradeFunc},
 		},
 		CustomizeDiff: difffuncs.CustomizeDiffLocalityCheck("ip_id", "private_network.#.private_network_id"),
 		Schema: map[string]*schema.Schema{
@@ -172,7 +172,7 @@ func ResourceScalewayLb() *schema.Resource {
 }
 
 func ResourceScalewayLbCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, err := lbAPIWithZone(d, meta)
+	lbAPI, zone, err := LbAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -230,7 +230,7 @@ func ResourceScalewayLbCreate(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func ResourceScalewayLbRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -279,7 +279,7 @@ func ResourceScalewayLbRead(ctx context.Context, d *schema.ResourceData, meta in
 
 //gocyclo:ignore
 func ResourceScalewayLbUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -401,7 +401,7 @@ func ResourceScalewayLbUpdate(ctx context.Context, d *schema.ResourceData, meta 
 }
 
 func ResourceScalewayLbDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

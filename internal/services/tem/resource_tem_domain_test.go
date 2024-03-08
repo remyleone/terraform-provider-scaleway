@@ -5,6 +5,7 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/tem"
 	"regexp"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
+	temSDK "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -25,10 +26,10 @@ func init() {
 
 func testSweepTemDomain(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
-		temAPI := tem.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: revoking the tem domains in (%s)", region)
+		temAPI := temSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: revoking the temSDK domains in (%s)", region)
 
-		listDomains, err := temAPI.ListDomains(&tem.ListDomainsRequest{Region: region}, scw.WithAllPages())
+		listDomains, err := temAPI.ListDomains(&temSDK.ListDomainsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing domains in (%s) in sweeper: %s", region, err)
 		}
@@ -38,7 +39,7 @@ func testSweepTemDomain(_ string) error {
 				logging.L.Debugf("sweeper: skipping deletion of domain %s", ns.Name)
 				continue
 			}
-			_, err := temAPI.RevokeDomain(&tem.RevokeDomainRequest{
+			_, err := temAPI.RevokeDomain(&temSDK.RevokeDomainRequest{
 				DomainID: ns.ID,
 				Region:   region,
 			})
@@ -74,7 +75,7 @@ func TestAccScalewayTemDomain_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayTemDomainExists(tt, "scaleway_tem_domain.cr01"),
 					resource.TestCheckResourceAttr("scaleway_tem_domain.cr01", "name", domainName),
-					testCheckResourceAttrUUID("scaleway_tem_domain.cr01", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_tem_domain.cr01", "id"),
 				),
 			},
 		},
@@ -112,12 +113,12 @@ func testAccCheckScalewayTemDomainExists(tt *tests.TestTools, n string) resource
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := temAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := tem.TemAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetDomain(&tem.GetDomainRequest{
+		_, err = api.GetDomain(&temSDK.GetDomainRequest{
 			DomainID: id,
 			Region:   region,
 		})
@@ -136,12 +137,12 @@ func testAccCheckScalewayTemDomainDestroy(tt *tests.TestTools) resource.TestChec
 				continue
 			}
 
-			api, region, id, err := temAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := tem.TemAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.RevokeDomain(&tem.RevokeDomainRequest{
+			_, err = api.RevokeDomain(&temSDK.RevokeDomainRequest{
 				Region:   region,
 				DomainID: id,
 			}, scw.WithContext(context.Background()))
@@ -149,7 +150,7 @@ func testAccCheckScalewayTemDomainDestroy(tt *tests.TestTools) resource.TestChec
 				return err
 			}
 
-			_, err = waitForTemDomain(context.Background(), api, region, id, defaultTemDomainTimeout)
+			_, err = tem.WaitForTemDomain(context.Background(), api, region, id, tem.DefaultTemDomainTimeout)
 			if err != nil && !http_errors.Is404Error(err) {
 				return err
 			}

@@ -31,7 +31,7 @@ func DataSourceScalewayIamSSHKey() *schema.Resource {
 }
 
 func DataSourceScalewayIamSSHKeyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	iamAPI := iamAPI(meta)
+	iamAPI := IAMAPI(meta)
 
 	sshKeyID, sshKeyIDExists := d.GetOk("ssh_key_id")
 	if !sshKeyIDExists {

@@ -3,15 +3,14 @@ package iam_test
 import (
 	"errors"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,25 +22,25 @@ func init() {
 
 func testSweepIamApplication(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
-		api := iam.NewAPI(scwClient)
+		api := iamSDK.NewAPI(scwClient)
 
 		orgID, exists := scwClient.GetDefaultOrganizationID()
 		if !exists {
 			return errors.New("missing organizationID")
 		}
 
-		listApps, err := api.ListApplications(&iam.ListApplicationsRequest{
+		listApps, err := api.ListApplications(&iamSDK.ListApplicationsRequest{
 			OrganizationID: orgID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to list applications: %w", err)
 		}
 		for _, app := range listApps.Applications {
-			if !isTestResource(app.Name) {
+			if !tests.IsTestResource(app.Name) {
 				continue
 			}
 
-			err = api.DeleteApplication(&iam.DeleteApplicationRequest{
+			err = api.DeleteApplication(&iamSDK.DeleteApplicationRequest{
 				ApplicationID: app.ID,
 			})
 			if err != nil {
@@ -134,9 +133,9 @@ func testAccCheckScalewayIamApplicationExists(tt *tests.TestTools, name string) 
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		iamAPI := iamAPI(tt.Meta)
+		iamAPI := iam.IAMAPI(tt.GetMeta())
 
-		_, err := iamAPI.GetApplication(&iam.GetApplicationRequest{
+		_, err := iamAPI.GetApplication(&iamSDK.GetApplicationRequest{
 			ApplicationID: rs.Primary.ID,
 		})
 		if err != nil {
@@ -154,9 +153,9 @@ func testAccCheckScalewayIamApplicationDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			iamAPI := iamAPI(tt.Meta)
+			iamAPI := iam.IAMAPI(tt.GetMeta())
 
-			_, err := iamAPI.GetApplication(&iam.GetApplicationRequest{
+			_, err := iamAPI.GetApplication(&iamSDK.GetApplicationRequest{
 				ApplicationID: rs.Primary.ID,
 			})
 

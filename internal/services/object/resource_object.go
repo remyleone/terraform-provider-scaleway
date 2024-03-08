@@ -173,7 +173,7 @@ func ResourceScalewayObjectCreate(ctx context.Context, d *schema.ResourceData, m
 			Bucket: types.ExpandStringPtr(bucket),
 			Key:    types.ExpandStringPtr(key),
 			Tagging: &s3.Tagging{
-				TagSet: expandObjectBucketTags(rawTags),
+				TagSet: ExpandObjectBucketTags(rawTags),
 			},
 		})
 		if err != nil {
@@ -246,7 +246,7 @@ func ResourceScalewayObjectUpdate(ctx context.Context, d *schema.ResourceData, m
 			Bucket: types.ExpandStringPtr(bucketUpdated),
 			Key:    types.ExpandStringPtr(key),
 			Tagging: &s3.Tagging{
-				TagSet: expandObjectBucketTags(d.Get("tags")),
+				TagSet: ExpandObjectBucketTags(d.Get("tags")),
 			},
 		})
 		if err != nil {

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepContainerTrigger(_ string) error {
-	return tests.SweepRegions((&container.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		containerAPI := container.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the container triggers in (%s)", region)
+	return tests.SweepRegions((&containerSDK.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		containerAPI := containerSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the containerSDK triggers in (%s)", region)
 		listTriggers, err := containerAPI.ListTriggers(
-			&container.ListTriggersRequest{
+			&containerSDK.ListTriggersRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepContainerTrigger(_ string) error {
 		}
 
 		for _, trigger := range listTriggers.Triggers {
-			_, err := containerAPI.DeleteTrigger(&container.DeleteTriggerRequest{
+			_, err := containerAPI.DeleteTrigger(&containerSDK.DeleteTriggerRequest{
 				TriggerID: trigger.ID,
 				Region:    region,
 			})
@@ -89,7 +90,7 @@ func TestAccScalewayContainerTrigger_SQS(t *testing.T) {
 
 					resource scaleway_container_trigger main {
 						container_id = scaleway_container.main.id
-						name = "test-container-trigger-sqs"
+						name = "test-containerSDK-trigger-sqs"
 						sqs {
 							queue = "TestQueue"
 							project_id = scaleway_mnq_sqs.main.project_id
@@ -107,8 +108,8 @@ func TestAccScalewayContainerTrigger_SQS(t *testing.T) {
 				Config: basicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerTriggerExists(tt, "scaleway_container_trigger.main"),
-					testCheckResourceAttrUUID("scaleway_container_trigger.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_container_trigger.main", "name", "test-container-trigger-sqs"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_trigger.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_container_trigger.main", "name", "test-containerSDK-trigger-sqs"),
 					testAccCheckScalewayContainerTriggerStatusReady(tt, "scaleway_container_trigger.main"),
 				),
 			},
@@ -136,7 +137,7 @@ func TestAccScalewayContainerTrigger_Nats(t *testing.T) {
 
 					resource scaleway_container_trigger main {
 						container_id = scaleway_container.main.id
-						name = "test-container-trigger-nats"
+						name = "test-containerSDK-trigger-nats"
 						nats {
 							subject = "TestSubject"
 							account_id = scaleway_mnq_nats_account.main.id
@@ -154,8 +155,8 @@ func TestAccScalewayContainerTrigger_Nats(t *testing.T) {
 				Config: basicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerTriggerExists(tt, "scaleway_container_trigger.main"),
-					testCheckResourceAttrUUID("scaleway_container_trigger.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_container_trigger.main", "name", "test-container-trigger-nats"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_trigger.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_container_trigger.main", "name", "test-containerSDK-trigger-nats"),
 					testAccCheckScalewayContainerTriggerStatusReady(tt, "scaleway_container_trigger.main"),
 				),
 			},
@@ -174,12 +175,12 @@ func testAccCheckScalewayContainerTriggerExists(tt *tests.TestTools, n string) r
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetTrigger(&container.GetTriggerRequest{
+		_, err = api.GetTrigger(&containerSDK.GetTriggerRequest{
 			TriggerID: id,
 			Region:    region,
 		})
@@ -198,12 +199,12 @@ func testAccCheckScalewayContainerTriggerStatusReady(tt *tests.TestTools, n stri
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		trigger, err := api.GetTrigger(&container.GetTriggerRequest{
+		trigger, err := api.GetTrigger(&containerSDK.GetTriggerRequest{
 			TriggerID: id,
 			Region:    region,
 		})
@@ -211,7 +212,7 @@ func testAccCheckScalewayContainerTriggerStatusReady(tt *tests.TestTools, n stri
 			return err
 		}
 
-		if trigger.Status != container.TriggerStatusReady {
+		if trigger.Status != containerSDK.TriggerStatusReady {
 			return fmt.Errorf("trigger status is %s, expected ready", trigger.Status)
 		}
 
@@ -226,18 +227,18 @@ func testAccCheckScalewayContainerTriggerDestroy(tt *tests.TestTools) resource.T
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteTrigger(&container.DeleteTriggerRequest{
+			_, err = api.DeleteTrigger(&containerSDK.DeleteTriggerRequest{
 				TriggerID: id,
 				Region:    region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("container trigger (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("containerSDK trigger (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

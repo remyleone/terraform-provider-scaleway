@@ -44,7 +44,7 @@ func DataSourceScalewaySecret() *schema.Resource {
 }
 
 func DataSourceScalewaySecretRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, projectID, err := secretAPIWithRegionAndProjectID(d, meta)
+	api, region, projectID, err := SecretAPIWithRegionAndProjectID(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

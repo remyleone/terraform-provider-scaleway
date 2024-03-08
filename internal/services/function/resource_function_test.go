@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,10 +24,10 @@ func init() {
 
 func testSweepFunction(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
-		functionAPI := function.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the function in (%s)", region)
+		functionAPI := functionSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the functionSDK in (%s)", region)
 		listFunctions, err := functionAPI.ListFunctions(
-			&function.ListFunctionsRequest{
+			&functionSDK.ListFunctionsRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepFunction(_ string) error {
 		}
 
 		for _, f := range listFunctions.Functions {
-			_, err := functionAPI.DeleteFunction(&function.DeleteFunctionRequest{
+			_, err := functionAPI.DeleteFunction(&functionSDK.DeleteFunctionRequest{
 				FunctionID: f.ID,
 				Region:     region,
 			})
@@ -315,7 +316,7 @@ func TestAccScalewayFunction_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionExists(tt, "scaleway_function.main"),
-					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", function.FunctionHTTPOptionEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", functionSDK.FunctionHTTPOptionEnabled.String()),
 				),
 			},
 			{
@@ -333,7 +334,7 @@ func TestAccScalewayFunction_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionExists(tt, "scaleway_function.main"),
-					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", function.FunctionHTTPOptionRedirected.String()),
+					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", functionSDK.FunctionHTTPOptionRedirected.String()),
 				),
 			},
 			{
@@ -350,7 +351,7 @@ func TestAccScalewayFunction_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionExists(tt, "scaleway_function.main"),
-					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", function.FunctionHTTPOptionEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_function.main", "http_option", functionSDK.FunctionHTTPOptionEnabled.String()),
 				),
 			},
 		},
@@ -364,12 +365,12 @@ func testAccCheckScalewayFunctionExists(tt *tests.TestTools, n string) resource.
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetFunction(&function.GetFunctionRequest{
+		_, err = api.GetFunction(&functionSDK.GetFunctionRequest{
 			FunctionID: id,
 			Region:     region,
 		})
@@ -388,18 +389,18 @@ func testAccCheckScalewayFunctionDestroy(tt *tests.TestTools) resource.TestCheck
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteFunction(&function.DeleteFunctionRequest{
+			_, err = api.DeleteFunction(&functionSDK.DeleteFunctionRequest{
 				FunctionID: id,
 				Region:     region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

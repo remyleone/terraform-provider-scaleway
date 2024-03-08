@@ -2,21 +2,21 @@ package rdb_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	rdbSDK "github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
-	mySQLEngineName      = "MySQL"
-	postgreSQLEngineName = "PostgreSQL"
+	mySQLEngineName = "MySQL"
 )
 
 func init() {
@@ -26,30 +26,11 @@ func init() {
 	})
 }
 
-func testAccCheckScalewayRdbEngineGetLatestVersion(tt *tests.TestTools, engineName string) string {
-	api := rdb.NewAPI(tt.meta.GetScwClient())
-	engines, err := api.ListDatabaseEngines(&rdb.ListDatabaseEnginesRequest{})
-	if err != nil {
-		tt.T.Fatalf("Could not get latest engine version: %s", err)
-	}
-
-	latestEngineVersion := ""
-	for _, engine := range engines.Engines {
-		if engine.Name == engineName {
-			if len(engine.Versions) > 0 {
-				latestEngineVersion = engine.Versions[0].Name
-				break
-			}
-		}
-	}
-	return latestEngineVersion
-}
-
 func testSweepRDBInstance(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		rdbAPI := rdb.NewAPI(scwClient)
+		rdbAPI := rdbSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the rdb instance in (%s)", region)
-		listInstances, err := rdbAPI.ListInstances(&rdb.ListInstancesRequest{
+		listInstances, err := rdbAPI.ListInstances(&rdbSDK.ListInstancesRequest{
 			Region: region,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -57,7 +38,7 @@ func testSweepRDBInstance(_ string) error {
 		}
 
 		for _, instance := range listInstances.Instances {
-			_, err := rdbAPI.DeleteInstance(&rdb.DeleteInstanceRequest{
+			_, err := rdbAPI.DeleteInstance(&rdbSDK.DeleteInstanceRequest{
 				Region:     region,
 				InstanceID: instance.ID,
 			})
@@ -74,12 +55,12 @@ func TestAccScalewayRdbInstance_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -153,12 +134,12 @@ func TestAccScalewayRdbInstance_WithCluster(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -195,12 +176,12 @@ func TestAccScalewayRdbInstance_Settings(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -239,12 +220,12 @@ func TestAccScalewayRdbInstance_InitSettings(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, mySQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, mySQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -277,12 +258,12 @@ func TestAccScalewayRdbInstance_Capitalize(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -308,12 +289,12 @@ func TestAccScalewayRdbInstance_PrivateNetwork(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -494,14 +475,14 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -528,7 +509,7 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 					}
 				`, latestEngineVersion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.main"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.0.enable_ipam", "true"),
@@ -563,8 +544,8 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 					}
 				`, latestEngineVersion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.main"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.0.enable_ipam", "true"),
@@ -603,7 +584,7 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 						}
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.main"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.0.enable_ipam", "false"),
@@ -642,8 +623,8 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 						}
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.main"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.0.enable_ipam", "false"),
@@ -674,7 +655,7 @@ func TestAccScalewayRdbInstance_PrivateNetworkUpdate(t *testing.T) {
 						}
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.main"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.main", "private_network.0.enable_ipam", "true"),
@@ -689,12 +670,12 @@ func TestAccScalewayRdbInstance_PrivateNetwork_DHCP(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -792,12 +773,12 @@ func TestAccScalewayRdbInstance_BackupSchedule(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -832,12 +813,12 @@ func TestAccScalewayRdbInstance_Volume(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -888,12 +869,12 @@ func TestAccScalewayRdbInstance_SBSVolume(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -947,12 +928,12 @@ func TestAccScalewayRdbInstance_ChangeVolumeType(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -1006,12 +987,12 @@ func TestAccScalewayRdbInstance_Endpoints(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -1036,7 +1017,7 @@ func TestAccScalewayRdbInstance_Endpoints(t *testing.T) {
 				`, latestEngineVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.test_endpoints"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.test_endpoints"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.test_endpoints"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.test_endpoints", "private_network.#", "1"),
 					resource.TestCheckResourceAttrPair("scaleway_rdb_instance.test_endpoints", "private_network.0.pn_id", "scaleway_vpc_private_network.test_endpoints", "id"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.test_endpoints", "private_network.0.enable_ipam", "true"),
@@ -1069,7 +1050,7 @@ func TestAccScalewayRdbInstance_Endpoints(t *testing.T) {
 				`, latestEngineVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRdbExists(tt, "scaleway_rdb_instance.test_endpoints"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.test_endpoints"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.test_endpoints"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.test_endpoints", "load_balancer.#", "1"),
 					resource.TestCheckResourceAttr("scaleway_rdb_instance.test_endpoints", "private_network.#", "1"),
 					resource.TestCheckResourceAttrPair("scaleway_rdb_instance.test_endpoints", "private_network.0.pn_id", "scaleway_vpc_private_network.test_endpoints", "id"),
@@ -1114,49 +1095,17 @@ func testAccCheckScalewayRdbExists(tt *tests.TestTools, n string) resource.TestC
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		rdbAPI, region, ID, err := rdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		rdbAPI, region, ID, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = rdbAPI.GetInstance(&rdb.GetInstanceRequest{
+		_, err = rdbAPI.GetInstance(&rdbSDK.GetInstanceRequest{
 			InstanceID: ID,
 			Region:     region,
 		})
 		if err != nil {
 			return err
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckScalewayRdbInstanceDestroy(tt *tests.TestTools) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type != "scaleway_rdb_instance" {
-				continue
-			}
-
-			rdbAPI, region, ID, err := rdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-
-			_, err = rdbAPI.GetInstance(&rdb.GetInstanceRequest{
-				InstanceID: ID,
-				Region:     region,
-			})
-
-			// If no error resource still exist
-			if err == nil {
-				return fmt.Errorf("instance (%s) still exists", rs.Primary.ID)
-			}
-
-			// Unexpected api error we return it
-			if !http_errors.Is404Error(err) {
-				return err
-			}
 		}
 
 		return nil

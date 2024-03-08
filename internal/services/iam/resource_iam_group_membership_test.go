@@ -3,13 +3,12 @@ package iam_test
 import (
 	"errors"
 	"fmt"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
@@ -26,12 +25,12 @@ func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_iam_group main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 						external_membership = true
 					}
 
 					resource scaleway_iam_application main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 					}
 
 					resource scaleway_iam_group_membership main {
@@ -41,18 +40,18 @@ func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt, "scaleway_iam_group_membership.main", "scaleway_iam_application.main"),
-					testCheckResourceAttrUUID("scaleway_iam_group_membership.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_iam_group_membership.main", "id"),
 				),
 			},
 			{
 				Config: `
 					resource scaleway_iam_group main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 						external_membership = true
 					}
 
 					resource scaleway_iam_application main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 					}
 
 					resource scaleway_iam_group_membership main {
@@ -71,19 +70,19 @@ func TestAccScalewayIamGroupMembership_Basic(t *testing.T) {
 					groupID := state.RootModule().Resources["scaleway_iam_group.main"].Primary.ID
 					applicationID := state.RootModule().Resources["scaleway_iam_application.main"].Primary.ID
 
-					return groupMembershipID(groupID, nil, &applicationID), nil
+					return iam.GroupMembershipID(groupID, nil, &applicationID), nil
 				},
 				ImportStatePersist: true,
 			},
 			{
 				Config: `
 					resource scaleway_iam_group main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 						external_membership = true
 					}
 
 					resource scaleway_iam_application main {
-						name = "tf-tests-iam-group-membership-basic"
+						name = "tf-tests-iamSDK-group-membership-basic"
 					}
 
 					resource scaleway_iam_group_membership main {
@@ -116,7 +115,7 @@ func TestAccScalewayIamGroupMembership_User(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_iam_group main {
-						name = "tf-tests-iam-group-membership-user"
+						name = "tf-tests-iamSDK-group-membership-user"
 						external_membership = true
 					}
 
@@ -131,7 +130,7 @@ func TestAccScalewayIamGroupMembership_User(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIamGroupMembershipUserInGroup(tt, "scaleway_iam_group_membership.main", "data.scaleway_iam_user.main"),
-					testCheckResourceAttrUUID("scaleway_iam_group_membership.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_iam_group_membership.main", "id"),
 				),
 			},
 		},
@@ -152,8 +151,8 @@ func testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt *tests.TestTool
 
 		expectedApplicationID := appRS.Primary.ID
 
-		api := iamAPI(tt.Meta)
-		groupID, _, applicationID, err := expandGroupMembershipID(rs.Primary.ID)
+		api := iam.IAMAPI(tt.GetMeta())
+		groupID, _, applicationID, err := iam.ExpandGroupMembershipID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -162,7 +161,7 @@ func testAccCheckScalewayIamGroupMembershipApplicationInGroup(tt *tests.TestTool
 			return fmt.Errorf("group membership id does not contain expected application id, expected %s, got %s", expectedApplicationID, applicationID)
 		}
 
-		group, err := api.GetGroup(&iam.GetGroupRequest{
+		group, err := api.GetGroup(&iamSDK.GetGroupRequest{
 			GroupID: groupID,
 		})
 		if err != nil {
@@ -199,8 +198,8 @@ func testAccCheckScalewayIamGroupMembershipUserInGroup(tt *tests.TestTools, n st
 
 		expectedUserID := appRS.Primary.ID
 
-		api := iamAPI(tt.Meta)
-		groupID, userID, _, err := expandGroupMembershipID(rs.Primary.ID)
+		api := iam.IAMAPI(tt.GetMeta())
+		groupID, userID, _, err := iam.ExpandGroupMembershipID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -209,7 +208,7 @@ func testAccCheckScalewayIamGroupMembershipUserInGroup(tt *tests.TestTools, n st
 			return fmt.Errorf("group membership id does not contain expected user id, expected %s, got %s", expectedUserID, userID)
 		}
 
-		group, err := api.GetGroup(&iam.GetGroupRequest{
+		group, err := api.GetGroup(&iamSDK.GetGroupRequest{
 			GroupID: groupID,
 		})
 		if err != nil {

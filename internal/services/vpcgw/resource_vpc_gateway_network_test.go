@@ -2,16 +2,15 @@ package vpcgw_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
+	"testing"
 )
 
 func init() {
@@ -23,10 +22,10 @@ func init() {
 
 func testSweepVPCGatewayNetwork(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		vpcgwAPI := vpcgw.NewAPI(scwClient)
+		vpcgwAPI := vpcgwSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the gateway network in (%s)", zone)
 
-		listPNResponse, err := vpcgwAPI.ListGatewayNetworks(&vpcgw.ListGatewayNetworksRequest{
+		listPNResponse, err := vpcgwAPI.ListGatewayNetworks(&vpcgwSDK.ListGatewayNetworksRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepVPCGatewayNetwork(_ string) error {
 		}
 
 		for _, gn := range listPNResponse.GatewayNetworks {
-			err := vpcgwAPI.DeleteGatewayNetwork(&vpcgw.DeleteGatewayNetworkRequest{
+			err := vpcgwAPI.DeleteGatewayNetwork(&vpcgwSDK.DeleteGatewayNetworkRequest{
 				GatewayNetworkID: gn.GatewayID,
 				Zone:             zone,
 				// Cleanup the dhcp resource related. DON'T CALL THE SWEEPER DHCP
@@ -54,7 +53,7 @@ func TestAccScalewayVPCGatewayNetwork_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCGatewayNetworkDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCGatewayNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -143,7 +142,7 @@ func TestAccScalewayVPCGatewayNetwork_WithoutDHCP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCGatewayNetworkDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCGatewayNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -189,8 +188,8 @@ func TestAccScalewayVPCGatewayNetwork_WithIPAMConfig(t *testing.T) {
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayVPCGatewayNetworkDestroy(tt),
-			testAccCheckScalewayIPAMIPDestroy(tt),
+			checks.TestAccCheckScalewayVPCGatewayNetworkDestroy(tt),
+			CheckIPAMIPDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -277,7 +276,7 @@ func TestAccScalewayVPCGatewayNetwork_WithIPAMConfig(t *testing.T) {
 					testAccCheckScalewayVPCGatewayNetworkExists(tt, "scaleway_vpc_gateway_network.main"),
 					resource.TestCheckResourceAttr("scaleway_vpc_gateway_network.main", "ipam_config.0.push_default_route", "true"),
 					resource.TestCheckResourceAttrSet("scaleway_vpc_gateway_network.main", "ipam_config.0.ipam_ip_id"),
-					testAccCheckScalewayResourceRawIDMatches("scaleway_vpc_gateway_network.main", "ipam_config.0.ipam_ip_id", "scaleway_ipam_ip.ip01", "id"),
+					tests.TestAccCheckScalewayResourceRawIDMatches("scaleway_vpc_gateway_network.main", "ipam_config.0.ipam_ip_id", "scaleway_ipam_ip.ip01", "id"),
 				),
 			},
 		},
@@ -291,51 +290,17 @@ func testAccCheckScalewayVPCGatewayNetworkExists(tt *tests.TestTools, n string) 
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwNetworkAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwNetworkAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = vpcgwNetworkAPI.GetGatewayNetwork(&vpcgw.GetGatewayNetworkRequest{
+		_, err = vpcgwNetworkAPI.GetGatewayNetwork(&vpcgwSDK.GetGatewayNetworkRequest{
 			GatewayNetworkID: ID,
 			Zone:             zone,
 		})
 		if err != nil {
 			return err
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckScalewayVPCGatewayNetworkDestroy(tt *tests.TestTools) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type != "scaleway_vpc_gateway_network" {
-				continue
-			}
-
-			vpcgwNetworkAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-
-			_, err = vpcgwNetworkAPI.GetGatewayNetwork(&vpcgw.GetGatewayNetworkRequest{
-				GatewayNetworkID: ID,
-				Zone:             zone,
-			})
-
-			if err == nil {
-				return fmt.Errorf(
-					"VPC gateway network %s still exists",
-					rs.Primary.ID,
-				)
-			}
-
-			// Unexpected api error we return it
-			if !http_errors.Is404Error(err) {
-				return err
-			}
 		}
 
 		return nil

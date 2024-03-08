@@ -2,16 +2,15 @@ package webhosting_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	webhosting "github.com/scaleway/scaleway-sdk-go/api/webhosting/v1alpha1"
+	webhostingSDK "github.com/scaleway/scaleway-sdk-go/api/webhosting/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/webhosting"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,17 +22,17 @@ func init() {
 
 func testSweepWebhosting(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		webhsotingAPI := webhosting.NewAPI(scwClient)
+		webhsotingAPI := webhostingSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: deleting the hostings in (%s)", region)
 
-		listHostings, err := webhsotingAPI.ListHostings(&webhosting.ListHostingsRequest{Region: region}, scw.WithAllPages())
+		listHostings, err := webhsotingAPI.ListHostings(&webhostingSDK.ListHostingsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing hostings in (%s) in sweeper: %s", region, err)
 		}
 
 		for _, hosting := range listHostings.Hostings {
-			_, err := webhsotingAPI.DeleteHosting(&webhosting.DeleteHostingRequest{
+			_, err := webhsotingAPI.DeleteHosting(&webhostingSDK.DeleteHostingRequest{
 				HostingID: hosting.ID,
 				Region:    region,
 			})
@@ -75,13 +74,13 @@ func TestAccScalewayWebhosting_Basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair("scaleway_webhosting.main", "offer_id", "data.scaleway_webhosting_offer.by_name", "offer_id"),
 					resource.TestCheckResourceAttr("scaleway_webhosting.main", "email", "hashicorp@scaleway.com"),
 					resource.TestCheckResourceAttr("scaleway_webhosting.main", "domain", "scaleway.com"),
-					resource.TestCheckResourceAttr("scaleway_webhosting.main", "status", webhosting.HostingStatusReady.String()),
+					resource.TestCheckResourceAttr("scaleway_webhosting.main", "status", webhostingSDK.HostingStatusReady.String()),
 					resource.TestCheckResourceAttr("scaleway_webhosting.main", "tags.0", "devtools"),
 					resource.TestCheckResourceAttr("scaleway_webhosting.main", "tags.1", "provider"),
 					resource.TestCheckResourceAttr("scaleway_webhosting.main", "tags.2", "terraform"),
 					resource.TestCheckResourceAttrSet("scaleway_webhosting.main", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_webhosting.main", "created_at"),
-					testCheckResourceAttrUUID("scaleway_webhosting.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_webhosting.main", "id"),
 				),
 			},
 		},
@@ -95,12 +94,12 @@ func testAccCheckScalewayWebhostingExists(tt *tests.TestTools, n string) resourc
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := webhostingAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := webhosting.WebhostingAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetHosting(&webhosting.GetHostingRequest{
+		_, err = api.GetHosting(&webhostingSDK.GetHostingRequest{
 			HostingID: id,
 			Region:    region,
 		})
@@ -119,17 +118,17 @@ func testAccCheckScalewayWebhostingDestroy(tt *tests.TestTools) resource.TestChe
 				continue
 			}
 
-			api, region, id, err := webhostingAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := webhosting.WebhostingAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			res, err := api.GetHosting(&webhosting.GetHostingRequest{
+			res, err := api.GetHosting(&webhostingSDK.GetHostingRequest{
 				HostingID: id,
 				Region:    region,
 			})
 
-			if err == nil && res.Status != webhosting.HostingStatusUnknownStatus {
+			if err == nil && res.Status != webhostingSDK.HostingStatusUnknownStatus {
 				return fmt.Errorf("hosting (%s) still exists", rs.Primary.ID)
 			}
 

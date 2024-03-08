@@ -3,6 +3,7 @@ package instance
 import (
 	"bytes"
 	"context"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/difffuncs"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -24,11 +24,11 @@ func ResourceScalewayInstanceUserData() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Read:    schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Update:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Delete:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Default: schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
+			Create:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Read:    schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Update:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Delete:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Default: schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
 		},
 		SchemaVersion: 0,
 		Schema: map[string]*schema.Schema{
@@ -55,7 +55,7 @@ func ResourceScalewayInstanceUserData() *schema.Resource {
 }
 
 func ResourceScalewayInstanceUserDataCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, err := instanceAPIWithZone(d, meta)
+	instanceAPI, zone, err := InstanceAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -69,7 +69,7 @@ func ResourceScalewayInstanceUserDataCreate(ctx context.Context, d *schema.Resou
 	key := d.Get("key").(string)
 	value := bytes.NewBufferString(d.Get("value").(string))
 
-	userDataRequest := &instance.SetServerUserDataRequest{
+	userDataRequest := &instanceSDK.SetServerUserDataRequest{
 		Zone:     zone,
 		ServerID: server.ID,
 		Key:      key,
@@ -91,7 +91,7 @@ func ResourceScalewayInstanceUserDataCreate(ctx context.Context, d *schema.Resou
 }
 
 func ResourceScalewayInstanceUserDataRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, id, key, err := instanceAPIWithZoneAndNestedID(meta, d.Id())
+	instanceAPI, zone, id, key, err := InstanceAPIWithZoneAndNestedID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -101,7 +101,7 @@ func ResourceScalewayInstanceUserDataRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	requestGetUserData := &instance.GetServerUserDataRequest{
+	requestGetUserData := &instanceSDK.GetServerUserDataRequest{
 		Zone:     zone,
 		ServerID: server.ID,
 		Key:      key,
@@ -134,7 +134,7 @@ func ResourceScalewayInstanceUserDataRead(ctx context.Context, d *schema.Resourc
 }
 
 func ResourceScalewayInstanceUserDataUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, id, key, err := instanceAPIWithZoneAndNestedID(meta, d.Id())
+	instanceAPI, zone, id, key, err := InstanceAPIWithZoneAndNestedID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -144,7 +144,7 @@ func ResourceScalewayInstanceUserDataUpdate(ctx context.Context, d *schema.Resou
 		return diag.FromErr(err)
 	}
 
-	userDataRequest := &instance.SetServerUserDataRequest{
+	userDataRequest := &instanceSDK.SetServerUserDataRequest{
 		Zone:     zone,
 		ServerID: server.ID,
 		Key:      key,
@@ -173,12 +173,12 @@ func ResourceScalewayInstanceUserDataUpdate(ctx context.Context, d *schema.Resou
 }
 
 func ResourceScalewayInstanceUserDataDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, id, key, err := instanceAPIWithZoneAndNestedID(meta, d.Id())
+	instanceAPI, zone, id, key, err := InstanceAPIWithZoneAndNestedID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	deleteUserData := &instance.DeleteServerUserDataRequest{
+	deleteUserData := &instanceSDK.DeleteServerUserDataRequest{
 		ServerID: locality.ExpandID(id),
 		Key:      key,
 		Zone:     zone,

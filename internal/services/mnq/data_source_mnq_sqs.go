@@ -23,7 +23,7 @@ func DataSourceScalewayMNQSQS() *schema.Resource {
 }
 
 func DataSourceScalewayMNQSQSRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := newMNQSQSAPI(d, meta)
+	api, region, err := NewSQSAPI(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

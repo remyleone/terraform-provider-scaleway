@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/api/marketplace/v2"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	scwvalidation "github.com/scaleway/scaleway-sdk-go/validation"
@@ -41,11 +41,11 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Read:    schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Update:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Delete:  schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
-			Default: schema.DefaultTimeout(defaultInstanceServerWaitTimeout),
+			Create:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Read:    schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Update:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Delete:  schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
+			Default: schema.DefaultTimeout(DefaultInstanceServerWaitTimeout),
 		},
 		SchemaVersion: 0,
 		Schema: map[string]*schema.Schema{
@@ -65,7 +65,7 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 			"type": {
 				Type:             schema.TypeString,
 				Required:         true,
-				Description:      "The instance type of the server", // TODO: link to scaleway pricing in the doc
+				Description:      "The instanceSDK type of the server", // TODO: link to scaleway pricing in the doc
 				DiffSuppressFunc: difffuncs.DiffSuppressFuncIgnoreCase,
 			},
 			"replace_on_type_change": {
@@ -127,15 +127,15 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 							ForceNew:    true,
 							Description: "Volume type of the root volume",
 							ValidateFunc: validation.StringInSlice([]string{
-								instance.VolumeVolumeTypeBSSD.String(),
-								instance.VolumeVolumeTypeLSSD.String(),
+								instanceSDK.VolumeVolumeTypeBSSD.String(),
+								instanceSDK.VolumeVolumeTypeLSSD.String(),
 							}, false),
 						},
 						"delete_on_termination": {
 							Type:        schema.TypeBool,
 							Optional:    true,
 							Default:     true,
-							Description: "Force deletion of the root volume on instance termination",
+							Description: "Force deletion of the root volume on instanceSDK termination",
 						},
 						"boot": {
 							Type:        schema.TypeBool,
@@ -232,11 +232,11 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The boot type of the server",
-				Default:     instance.BootTypeLocal,
+				Default:     instanceSDK.BootTypeLocal,
 				ValidateFunc: validation.StringInSlice([]string{
-					instance.BootTypeLocal.String(),
-					instance.BootTypeRescue.String(),
-					instance.BootTypeBootscript.String(),
+					instanceSDK.BootTypeLocal.String(),
+					instanceSDK.BootTypeRescue.String(),
+					instanceSDK.BootTypeBootscript.String(),
 				}, false),
 			},
 			"bootscript_id": {
@@ -266,7 +266,7 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				MaxItems:    8,
-				Description: "List of private network to connect with your instance",
+				Description: "List of private network to connect with your instanceSDK",
 				Elem: &schema.Resource{
 					Timeouts: &schema.ResourceTimeout{
 						Default: schema.DefaultTimeout(defaultInstancePrivateNICWaitTimeout),
@@ -298,7 +298,7 @@ func ResourceScalewayInstanceServer() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
-				Description: "List of public IPs attached to your instance",
+				Description: "List of public IPs attached to your instanceSDK",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
@@ -367,7 +367,7 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 		imageUUID = image.ID
 	}
 
-	req := &instance.CreateServerRequest{
+	req := &instanceSDK.CreateServerRequest{
 		Zone:              zone,
 		Name:              types.ExpandOrGenerateString(d.Get("name"), "srv"),
 		Project:           types.ExpandStringPtr(d.Get("project_id")),
@@ -389,7 +389,7 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	if bootType, ok := d.GetOk("boot_type"); ok {
-		bootType := instance.BootType(bootType.(string))
+		bootType := instanceSDK.BootType(bootType.(string))
 		req.BootType = &bootType
 	}
 
@@ -419,7 +419,7 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 		}}
 	}
 
-	req.Volumes = make(map[string]*instance.VolumeServerTemplate)
+	req.Volumes = make(map[string]*instanceSDK.VolumeServerTemplate)
 	serverTypeCanBootOnBlock := serverType.VolumesConstraint.MaxSize == 0
 	rootVolumeIsBootVolume := types.ExpandBoolPtr(d.Get("root_volume.0.boot"))
 	rootVolumeType := d.Get("root_volume.0.volume_type").(string)
@@ -429,19 +429,19 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	// If the rootVolumeType is not defined, define it depending on the offer
 	if rootVolumeType == "" {
 		if serverTypeCanBootOnBlock {
-			rootVolumeType = instance.VolumeVolumeTypeBSSD.String()
+			rootVolumeType = instanceSDK.VolumeVolumeTypeBSSD.String()
 		} else {
-			rootVolumeType = instance.VolumeVolumeTypeLSSD.String()
+			rootVolumeType = instanceSDK.VolumeVolumeTypeLSSD.String()
 		}
 	}
 
 	rootVolumeName := ""
-	if req.Image == "" { // When creating an instance from an image, volume should not have a name
+	if req.Image == "" { // When creating an instanceSDK from an image, volume should not have a name
 		rootVolumeName = types.NewRandomName("vol")
 	}
 
 	var rootVolumeSize *scw.Size
-	if sizeInput == 0 && rootVolumeType == instance.VolumeVolumeTypeLSSD.String() {
+	if sizeInput == 0 && rootVolumeType == instanceSDK.VolumeVolumeTypeLSSD.String() {
 		// Compute the rootVolumeSize so it will be valid against the local volume constraints
 		// It wouldn't be valid if another local volume is added, but in this case
 		// the user would be informed that it does not fulfill the local volume constraints
@@ -450,10 +450,10 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 		rootVolumeSize = scw.SizePtr(scw.Size(uint64(sizeInput) * types.Gb))
 	}
 
-	req.Volumes["0"] = &instance.VolumeServerTemplate{
+	req.Volumes["0"] = &instanceSDK.VolumeServerTemplate{
 		Name:       types.ExpandStringPtr(rootVolumeName),
 		ID:         types.ExpandStringPtr(rootVolumeID),
-		VolumeType: instance.VolumeVolumeType(rootVolumeType),
+		VolumeType: instanceSDK.VolumeVolumeType(rootVolumeType),
 		Size:       rootVolumeSize,
 		Boot:       rootVolumeIsBootVolume,
 	}
@@ -491,7 +491,7 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 	////
 	// Set user data
 	////
-	userDataRequests := &instance.SetAllServerUserDataRequest{
+	userDataRequests := &instanceSDK.SetAllServerUserDataRequest{
 		Zone:     zone,
 		ServerID: res.Server.ID,
 		UserData: make(map[string]io.Reader),
@@ -571,7 +571,7 @@ func ResourceScalewayInstanceServerCreate(ctx context.Context, d *schema.Resourc
 
 //gocyclo:ignore
 func ResourceScalewayInstanceServerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, id, err := instanceAPIWithZoneAndID(meta, d.Id())
+	instanceAPI, zone, id, err := InstanceAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -579,7 +579,7 @@ func ResourceScalewayInstanceServerRead(ctx context.Context, d *schema.ResourceD
 	server, err := waitForInstanceServer(ctx, instanceAPI, zone, id, d.Timeout(schema.TimeoutRead))
 	if err != nil {
 		if errs.ErrorCheck(err, "is not found") {
-			log.Printf("[WARN] instance %s not found droping from state", d.Id())
+			log.Printf("[WARN] instanceSDK %s not found droping from state", d.Id())
 			d.SetId("")
 			return nil
 		}
@@ -703,7 +703,7 @@ func ResourceScalewayInstanceServerRead(ctx context.Context, d *schema.ResourceD
 		////
 		// Read server user data
 		////
-		allUserData, _ := instanceAPI.GetAllServerUserData(&instance.GetAllServerUserDataRequest{
+		allUserData, _ := instanceAPI.GetAllServerUserData(&instanceSDK.GetAllServerUserDataRequest{
 			Zone:     zone,
 			ServerID: id,
 		}, scw.WithContext(ctx))
@@ -761,7 +761,7 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 	// Construct UpdateServerRequest
 	////
 	serverShouldUpdate := false
-	updateRequest := &instance.UpdateServerRequest{
+	updateRequest := &instanceSDK.UpdateServerRequest{
 		Zone:     zone,
 		ServerID: server.ID,
 	}
@@ -778,7 +778,7 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("security_group_id") {
 		serverShouldUpdate = true
-		updateRequest.SecurityGroup = &instance.SecurityGroupTemplate{
+		updateRequest.SecurityGroup = &instanceSDK.SecurityGroupTemplate{
 			ID:   locality.ExpandZonedID(d.Get("security_group_id")).ID,
 			Name: types.NewRandomName("sg"), // this value will be ignored by the API
 		}
@@ -794,10 +794,10 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 		updateRequest.DynamicIPRequired = scw.BoolPtr(d.Get("enable_dynamic_ip").(bool))
 	}
 
-	volumes := map[string]*instance.VolumeServerTemplate{}
+	volumes := map[string]*instanceSDK.VolumeServerTemplate{}
 
 	if raw, hasAdditionalVolumes := d.GetOk("additional_volume_ids"); d.HasChanges("additional_volume_ids", "root_volume") {
-		volumes["0"] = &instance.VolumeServerTemplate{
+		volumes["0"] = &instanceSDK.VolumeServerTemplate{
 			ID:   scw.StringPtr(locality.ExpandZonedID(d.Get("root_volume.0.volume_id")).ID),
 			Name: scw.StringPtr(types.NewRandomName("vol")), // name is ignored by the API, any name will work here
 			Boot: types.ExpandBoolPtr(d.Get("root_volume.0.boot")),
@@ -809,9 +809,9 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 
 		for i, volumeID := range raw.([]interface{}) {
 			volumeHasChange := d.HasChange("additional_volume_ids." + strconv.Itoa(i))
-			// local volumes can only be added when the instance is stopped
+			// local volumes can only be added when the instanceSDK is stopped
 			if volumeHasChange && !isStopped {
-				volumeResp, err := api.API.GetVolume(&instance.GetVolumeRequest{
+				volumeResp, err := api.API.GetVolume(&instanceSDK.GetVolumeRequest{
 					Zone:     zone,
 					VolumeID: locality.ExpandZonedID(volumeID).ID,
 				})
@@ -821,12 +821,12 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 
 				// We must be able to tell whether a volume is already present in the server or not
 				if volumeResp.Volume.Server != nil {
-					if volumeResp.Volume.VolumeType == instance.VolumeVolumeTypeLSSD && volumeResp.Volume.Server.ID != "" {
-						return diag.FromErr(errors.New("instance must be stopped to change local volumes"))
+					if volumeResp.Volume.VolumeType == instanceSDK.VolumeVolumeTypeLSSD && volumeResp.Volume.Server.ID != "" {
+						return diag.FromErr(errors.New("instanceSDK must be stopped to change local volumes"))
 					}
 				}
 			}
-			volumes[strconv.Itoa(i+1)] = &instance.VolumeServerTemplate{
+			volumes[strconv.Itoa(i+1)] = &instanceSDK.VolumeServerTemplate{
 				ID:   scw.StringPtr(locality.ExpandZonedID(volumeID).ID),
 				Name: scw.StringPtr(types.NewRandomName("vol")), // name is ignored by the API, any name will work here
 			}
@@ -840,12 +840,12 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 		serverShouldUpdate = true
 		placementGroupID := locality.ExpandZonedID(d.Get("placement_group_id")).ID
 		if placementGroupID == "" {
-			updateRequest.PlacementGroup = &instance.NullableStringValue{Null: true}
+			updateRequest.PlacementGroup = &instanceSDK.NullableStringValue{Null: true}
 		} else {
 			if !isStopped {
-				return diag.FromErr(errors.New("instance must be stopped to change placement group"))
+				return diag.FromErr(errors.New("instanceSDK must be stopped to change placement group"))
 			}
-			updateRequest.PlacementGroup = &instance.NullableStringValue{Value: placementGroupID}
+			updateRequest.PlacementGroup = &instanceSDK.NullableStringValue{Value: placementGroupID}
 		}
 	}
 
@@ -861,10 +861,10 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 		ipID := locality.ExpandZonedID(d.Get("ip_id")).ID
 		// If an IP is already attached, and it's not a dynamic IP we detach it.
 		if server.PublicIP != nil && !server.PublicIP.Dynamic {
-			_, err = api.UpdateIP(&instance.UpdateIPRequest{
+			_, err = api.UpdateIP(&instanceSDK.UpdateIPRequest{
 				Zone:   zone,
 				IP:     server.PublicIP.ID,
-				Server: &instance.NullableStringValue{Null: true},
+				Server: &instanceSDK.NullableStringValue{Null: true},
 			})
 			if err != nil {
 				return diag.FromErr(err)
@@ -882,10 +882,10 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 				return diag.FromErr(err)
 			}
 
-			_, err = api.UpdateIP(&instance.UpdateIPRequest{
+			_, err = api.UpdateIP(&instanceSDK.UpdateIPRequest{
 				Zone:   zone,
 				IP:     ipID,
-				Server: &instance.NullableStringValue{Value: id},
+				Server: &instanceSDK.NullableStringValue{Value: id},
 			}, scw.WithContext(ctx))
 			if err != nil {
 				return diag.FromErr(err)
@@ -906,13 +906,13 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 	}
 
 	if d.HasChanges("boot_type") {
-		bootType := instance.BootType(d.Get("boot_type").(string))
+		bootType := instanceSDK.BootType(d.Get("boot_type").(string))
 		serverShouldUpdate = true
 		updateRequest.BootType = &bootType
 		if !isStopped {
 			warnings = append(warnings, diag.Diagnostic{
 				Severity: diag.Warning,
-				Summary:  "instance may need to be rebooted to use the new boot type",
+				Summary:  "instanceSDK may need to be rebooted to use the new boot type",
 			})
 		}
 	}
@@ -923,7 +923,7 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 		if !isStopped {
 			warnings = append(warnings, diag.Diagnostic{
 				Severity: diag.Warning,
-				Summary:  "instance may need to be rebooted to use the new bootscript",
+				Summary:  "instanceSDK may need to be rebooted to use the new bootscript",
 			})
 		}
 	}
@@ -932,7 +932,7 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 	// Update server user data
 	////
 	if d.HasChanges("user_data") {
-		userDataRequests := &instance.SetAllServerUserDataRequest{
+		userDataRequests := &instanceSDK.SetAllServerUserDataRequest{
 			Zone:     zone,
 			ServerID: id,
 			UserData: make(map[string]io.Reader),
@@ -946,7 +946,7 @@ func ResourceScalewayInstanceServerUpdate(ctx context.Context, d *schema.Resourc
 			if !isStopped && d.HasChange("user_data.cloud-init") {
 				warnings = append(warnings, diag.Diagnostic{
 					Severity: diag.Warning,
-					Summary:  "instance may need to be rebooted to use the new cloud init config",
+					Summary:  "instanceSDK may need to be rebooted to use the new cloud init config",
 				})
 			}
 		}
@@ -1062,30 +1062,30 @@ func ResourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	// detach eip to ensure to free eip even if instance won't stop
+	// detach eip to ensure to free eip even if instanceSDK won't stop
 	if ipID, ok := d.GetOk("ip_id"); ok {
-		_, err := api.UpdateIP(&instance.UpdateIPRequest{
+		_, err := api.UpdateIP(&instanceSDK.UpdateIPRequest{
 			Zone:   zone,
 			IP:     locality.ExpandZonedID(ipID).ID,
-			Server: &instance.NullableStringValue{Null: true},
+			Server: &instanceSDK.NullableStringValue{Null: true},
 		})
 		if err != nil {
 			log.Print("[WARN] Failed to detach eip of server")
 		}
 	}
-	// Remove instance from placement group to free it even if instance won't stop
+	// Remove instanceSDK from placement group to free it even if instanceSDK won't stop
 	if _, ok := d.GetOk("placement_group_id"); ok {
-		_, err := api.UpdateServer(&instance.UpdateServerRequest{
+		_, err := api.UpdateServer(&instanceSDK.UpdateServerRequest{
 			Zone:           zone,
-			PlacementGroup: &instance.NullableStringValue{Null: true},
+			PlacementGroup: &instanceSDK.NullableStringValue{Null: true},
 			ServerID:       id,
 		})
 		if err != nil {
-			log.Print("[WARN] Failed remove server from instance group")
+			log.Print("[WARN] Failed remove server from instanceSDK group")
 		}
 	}
 	// reach stopped state
-	err = reachState(ctx, api, zone, id, instance.ServerStateStopped)
+	err = reachState(ctx, api, zone, id, instanceSDK.ServerStateStopped)
 	if http_errors.Is404Error(err) {
 		return nil
 	}
@@ -1115,7 +1115,7 @@ func ResourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	err = api.DeleteServer(&instance.DeleteServerRequest{
+	err = api.DeleteServer(&instanceSDK.DeleteServerRequest{
 		Zone:     zone,
 		ServerID: id,
 	}, scw.WithContext(ctx))
@@ -1135,7 +1135,7 @@ func ResourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 		if !volumeExist {
 			return diag.Errorf("volume ID not found")
 		}
-		err = api.DeleteVolume(&instance.DeleteVolumeRequest{
+		err = api.DeleteVolume(&instanceSDK.DeleteVolumeRequest{
 			Zone:     zone,
 			VolumeID: locality.ExpandID(volumeID),
 		})
@@ -1147,16 +1147,16 @@ func ResourceScalewayInstanceServerDelete(ctx context.Context, d *schema.Resourc
 	return nil
 }
 
-func instanceServerCanMigrate(api *instance.API, server *instance.Server, requestedType string) error {
+func instanceServerCanMigrate(api *instanceSDK.API, server *instanceSDK.Server, requestedType string) error {
 	var localVolumeSize scw.Size
 
 	for _, volume := range server.Volumes {
-		if volume.VolumeType == instance.VolumeServerVolumeTypeLSSD {
+		if volume.VolumeType == instanceSDK.VolumeServerVolumeTypeLSSD {
 			localVolumeSize += volume.Size
 		}
 	}
 
-	serverType, err := api.GetServerType(&instance.GetServerTypeRequest{
+	serverType, err := api.GetServerType(&instanceSDK.GetServerTypeRequest{
 		Zone: server.Zone,
 		Name: requestedType,
 	})
@@ -1185,7 +1185,7 @@ func customDiffInstanceServerType(_ context.Context, diff *schema.ResourceDiff, 
 		return diff.ForceNew("type")
 	}
 
-	instanceAPI, zone, id, err := instanceAPIWithZoneAndID(meta, diff.Id())
+	instanceAPI, zone, id, err := InstanceAPIWithZoneAndID(meta, diff.Id())
 	if err != nil {
 		return err
 	}
@@ -1193,7 +1193,7 @@ func customDiffInstanceServerType(_ context.Context, diff *schema.ResourceDiff, 
 	_, newValue := diff.GetChange("type")
 	newType := newValue.(string)
 
-	resp, err := instanceAPI.GetServer(&instance.GetServerRequest{
+	resp, err := instanceAPI.GetServer(&instanceSDK.GetServerRequest{
 		Zone:     zone,
 		ServerID: id,
 	})
@@ -1215,11 +1215,11 @@ func customDiffInstanceServerImage(ctx context.Context, diff *schema.ResourceDif
 	}
 
 	// We get the server to fetch the UUID of the image
-	instanceAPI, zone, id, err := instanceAPIWithZoneAndID(meta, diff.Id())
+	instanceAPI, zone, id, err := InstanceAPIWithZoneAndID(meta, diff.Id())
 	if err != nil {
 		return err
 	}
-	server, err := instanceAPI.GetServer(&instance.GetServerRequest{
+	server, err := instanceAPI.GetServer(&instanceSDK.GetServerRequest{
 		Zone:     zone,
 		ServerID: id,
 	}, scw.WithContext(ctx))
@@ -1269,12 +1269,12 @@ func ResourceScalewayInstanceServerMigrate(ctx context.Context, d *schema.Resour
 	}
 	beginningState := server.State
 
-	err = reachState(ctx, api, zone, id, instance.ServerStateStopped)
+	err = reachState(ctx, api, zone, id, instanceSDK.ServerStateStopped)
 	if err != nil {
 		return fmt.Errorf("failed to stop server before changing server type: %w", err)
 	}
 
-	_, err = api.UpdateServer(&instance.UpdateServerRequest{
+	_, err = api.UpdateServer(&instanceSDK.UpdateServerRequest{
 		Zone:           zone,
 		ServerID:       id,
 		CommercialType: types.ExpandStringPtr(d.Get("type")),
@@ -1291,13 +1291,13 @@ func ResourceScalewayInstanceServerMigrate(ctx context.Context, d *schema.Resour
 	return nil
 }
 
-func ResourceScalewayInstanceServerEnableRoutedIP(ctx context.Context, d *schema.ResourceData, instanceAPI *instance.API, zone scw.Zone, id string) error {
+func ResourceScalewayInstanceServerEnableRoutedIP(ctx context.Context, d *schema.ResourceData, instanceAPI *instanceSDK.API, zone scw.Zone, id string) error {
 	server, err := waitForInstanceServer(ctx, instanceAPI, zone, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return err
 	}
 
-	_, err = instanceAPI.ServerAction(&instance.ServerActionRequest{
+	_, err = instanceAPI.ServerAction(&instanceSDK.ServerActionRequest{
 		Zone:     server.Zone,
 		ServerID: server.ID,
 		Action:   "enable_routed_ip",
@@ -1314,7 +1314,7 @@ func ResourceScalewayInstanceServerEnableRoutedIP(ctx context.Context, d *schema
 	return nil
 }
 
-func ResourceScalewayInstanceServerUpdateIPs(ctx context.Context, d *schema.ResourceData, instanceAPI *instance.API, zone scw.Zone, id string) error {
+func ResourceScalewayInstanceServerUpdateIPs(ctx context.Context, d *schema.ResourceData, instanceAPI *instanceSDK.API, zone scw.Zone, id string) error {
 	server, err := waitForInstanceServer(ctx, instanceAPI, zone, id, d.Timeout(schema.TimeoutUpdate))
 	if err != nil {
 		return err
@@ -1334,10 +1334,10 @@ func ResourceScalewayInstanceServerUpdateIPs(ctx context.Context, d *schema.Reso
 		if isRequested {
 			requestedIPs[ip.ID] = true
 		} else {
-			_, err := instanceAPI.UpdateIP(&instance.UpdateIPRequest{
+			_, err := instanceAPI.UpdateIP(&instanceSDK.UpdateIPRequest{
 				Zone: zone,
 				IP:   ip.ID,
-				Server: &instance.NullableStringValue{
+				Server: &instanceSDK.NullableStringValue{
 					Null: true,
 				},
 			})
@@ -1352,10 +1352,10 @@ func ResourceScalewayInstanceServerUpdateIPs(ctx context.Context, d *schema.Reso
 		if isAttached {
 			continue
 		}
-		_, err := instanceAPI.UpdateIP(&instance.UpdateIPRequest{
+		_, err := instanceAPI.UpdateIP(&instanceSDK.UpdateIPRequest{
 			Zone: zone,
 			IP:   ipID,
-			Server: &instance.NullableStringValue{
+			Server: &instanceSDK.NullableStringValue{
 				Value: server.ID,
 			},
 		})

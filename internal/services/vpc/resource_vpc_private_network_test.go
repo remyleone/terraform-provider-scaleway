@@ -2,16 +2,12 @@ package vpc_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	v2 "github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
+	vpcSDK "github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -24,11 +20,11 @@ func init() {
 
 func testSweepVPCPrivateNetwork(_ string) error {
 	err := tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		vpcAPI := v2.NewAPI(scwClient)
+		vpcAPI := vpcSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: destroying the private network in (%s)", region)
 
-		listPNResponse, err := vpcAPI.ListPrivateNetworks(&v2.ListPrivateNetworksRequest{
+		listPNResponse, err := vpcAPI.ListPrivateNetworks(&vpcSDK.ListPrivateNetworksRequest{
 			Region: region,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -36,7 +32,7 @@ func testSweepVPCPrivateNetwork(_ string) error {
 		}
 
 		for _, pn := range listPNResponse.PrivateNetworks {
-			err := vpcAPI.DeletePrivateNetwork(&v2.DeletePrivateNetworkRequest{
+			err := vpcAPI.DeletePrivateNetwork(&vpcSDK.DeletePrivateNetworkRequest{
 				Region:           region,
 				PrivateNetworkID: pn.ID,
 			})
@@ -61,7 +57,7 @@ func TestAccScalewayVPCPrivateNetwork_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -70,7 +66,7 @@ func TestAccScalewayVPCPrivateNetwork_Basic(t *testing.T) {
 					}
 				`, privateNetworkName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.pn01",
 					),
@@ -97,7 +93,7 @@ func TestAccScalewayVPCPrivateNetwork_Basic(t *testing.T) {
 					}
 				`, privateNetworkName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.pn01",
 					),
@@ -123,12 +119,12 @@ func TestAccScalewayVPCPrivateNetwork_DefaultName(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `resource scaleway_vpc_private_network main {}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.main",
 					),
@@ -145,7 +141,7 @@ func TestAccScalewayVPCPrivateNetwork_Subnets(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -157,7 +153,7 @@ func TestAccScalewayVPCPrivateNetwork_Subnets(t *testing.T) {
 						vpc_id = scaleway_vpc.vpc01.id
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.test",
 					),
@@ -189,7 +185,7 @@ func TestAccScalewayVPCPrivateNetwork_Subnets(t *testing.T) {
 						vpc_id = scaleway_vpc.vpc01.id
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.test",
 					),
@@ -250,7 +246,7 @@ func TestAccScalewayVPCPrivateNetwork_OneSubnet(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -265,7 +261,7 @@ func TestAccScalewayVPCPrivateNetwork_OneSubnet(t *testing.T) {
 						vpc_id = scaleway_vpc.vpc01.id
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.test",
 					),
@@ -300,7 +296,7 @@ func TestAccScalewayVPCPrivateNetwork_WithTwoIPV6Subnets(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -325,7 +321,7 @@ func TestAccScalewayVPCPrivateNetwork_WithTwoIPV6Subnets(t *testing.T) {
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(
+					CheckPrivateNetworkExists(
 						tt,
 						"scaleway_vpc_private_network.pn01",
 					),
@@ -360,60 +356,4 @@ func TestAccScalewayVPCPrivateNetwork_WithTwoIPV6Subnets(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccCheckScalewayVPCPrivateNetworkExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("resource not found: %s", n)
-		}
-
-		vpcAPI, region, ID, err := vpcAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		_, err = vpcAPI.GetPrivateNetwork(&v2.GetPrivateNetworkRequest{
-			PrivateNetworkID: ID,
-			Region:           region,
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckScalewayVPCPrivateNetworkDestroy(tt *tests.TestTools) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type != "scaleway_vpc_private_network" {
-				continue
-			}
-
-			vpcAPI, region, ID, err := vpcAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-			_, err = vpcAPI.GetPrivateNetwork(&v2.GetPrivateNetworkRequest{
-				PrivateNetworkID: ID,
-				Region:           region,
-			})
-
-			if err == nil {
-				return fmt.Errorf(
-					"VPC private network %s still exists",
-					rs.Primary.ID,
-				)
-			}
-			// Unexpected api error we return it
-			if !http_errors.Is404Error(err) {
-				return err
-			}
-		}
-
-		return nil
-	}
 }

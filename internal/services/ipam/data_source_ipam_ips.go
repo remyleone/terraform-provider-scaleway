@@ -16,7 +16,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func DataSourceScalewayIPAMIPs() *schema.Resource {
+func DataSourceIPAMIPs() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: DataSourceScalewayIPAMIPsRead,
 		Schema: map[string]*schema.Schema{
@@ -141,7 +141,7 @@ func DataSourceScalewayIPAMIPs() *schema.Resource {
 }
 
 func DataSourceScalewayIPAMIPsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := ipamAPIWithRegion(d, meta)
+	api, region, err := IpamAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -39,7 +39,7 @@ func TestAccScalewayDataSourceDomainRecord_Basic(t *testing.T) {
 						type     = "${scaleway_domain_record.main.type}"
 						data     = "${scaleway_domain_record.main.data}"
 					}
-				`, testDomain),
+				`, tests.TestDomain),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test"),
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test2"),
@@ -93,7 +93,7 @@ func TestAccScalewayDataSourceDomainRecord_Basic(t *testing.T) {
 						dns_zone  = "${scaleway_domain_record.geo_ip.dns_zone}"
 						record_id = "${scaleway_domain_record.geo_ip.id}"
 					}
-				`, testDomain),
+				`, tests.TestDomain),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test_geo_ip"),
 					resource.TestCheckResourceAttrPair(
@@ -142,7 +142,7 @@ func TestAccScalewayDataSourceDomainRecord_Basic(t *testing.T) {
 						dns_zone  = "${scaleway_domain_record.http_service.dns_zone}"
 						record_id = "${scaleway_domain_record.http_service.id}"
 					}
-				`, testDomain),
+				`, tests.TestDomain),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test_http_service"),
 					resource.TestCheckResourceAttrPair(
@@ -192,7 +192,7 @@ func TestAccScalewayDataSourceDomainRecord_Basic(t *testing.T) {
 						dns_zone  = "${scaleway_domain_record.view.dns_zone}"
 						record_id = "${scaleway_domain_record.view.id}"
 					}
-				`, testDomain),
+				`, tests.TestDomain),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test_view"),
 					resource.TestCheckResourceAttrPair(
@@ -242,7 +242,7 @@ func TestAccScalewayDataSourceDomainRecord_Basic(t *testing.T) {
 						dns_zone  = "${scaleway_domain_record.weighted.dns_zone}"
 						record_id = "${scaleway_domain_record.weighted.id}"
 					}
-				`, testDomain),
+				`, tests.TestDomain),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainRecordExists(tt, "data.scaleway_domain_record.test_weighted"),
 					resource.TestCheckResourceAttrPair(

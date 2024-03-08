@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iot"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	iotSDK "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,9 +24,9 @@ func init() {
 
 func testSweepIotHub(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		iotAPI := iot.NewAPI(scwClient)
+		iotAPI := iotSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the iot hub in (%s)", region)
-		listHubs, err := iotAPI.ListHubs(&iot.ListHubsRequest{Region: region}, scw.WithAllPages())
+		listHubs, err := iotAPI.ListHubs(&iotSDK.ListHubsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			logging.L.Debugf("sweeper: destroying the iot hub in (%s)", region)
 			return fmt.Errorf("error listing hubs in (%s) in sweeper: %s", region, err)
@@ -33,7 +34,7 @@ func testSweepIotHub(_ string) error {
 
 		deleteDevices := true
 		for _, hub := range listHubs.Hubs {
-			err := iotAPI.DeleteHub(&iot.DeleteHubRequest{
+			err := iotAPI.DeleteHub(&iotSDK.DeleteHubRequest{
 				HubID:         hub.ID,
 				Region:        hub.Region,
 				DeleteDevices: &deleteDevices,
@@ -64,7 +65,7 @@ func TestAccScalewayIotHub_Minimal(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIotHubExists(tt, "scaleway_iot_hub.minimal"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "product_plan", "plan_shared"),
-					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iot.HubStatusReady.String()),
+					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iotSDK.HubStatusReady.String()),
 					resource.TestCheckResourceAttrSet("scaleway_iot_hub.minimal", "endpoint"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "device_count", "0"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "connected_device_count", "0"),
@@ -82,7 +83,7 @@ func TestAccScalewayIotHub_Minimal(t *testing.T) {
 						}`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIotHubExists(tt, "scaleway_iot_hub.minimal"),
-					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iot.HubStatusDisabled.String()),
+					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iotSDK.HubStatusDisabled.String()),
 					resource.TestCheckResourceAttrSet("scaleway_iot_hub.minimal", "endpoint"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "device_count", "0"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "connected_device_count", "0"),
@@ -113,7 +114,7 @@ func TestAccScalewayIotHub_Dedicated(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIotHubExists(tt, "scaleway_iot_hub.minimal"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "product_plan", "plan_dedicated"),
-					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iot.HubStatusReady.String()),
+					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iotSDK.HubStatusReady.String()),
 					resource.TestCheckResourceAttrSet("scaleway_iot_hub.minimal", "endpoint"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "device_count", "0"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "connected_device_count", "0"),
@@ -130,7 +131,7 @@ func TestAccScalewayIotHub_Dedicated(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIotHubExists(tt, "scaleway_iot_hub.minimal"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "product_plan", "plan_dedicated"),
-					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iot.HubStatusReady.String()),
+					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "status", iotSDK.HubStatusReady.String()),
 					resource.TestCheckResourceAttrSet("scaleway_iot_hub.minimal", "endpoint"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "device_count", "0"),
 					resource.TestCheckResourceAttr("scaleway_iot_hub.minimal", "connected_device_count", "0"),
@@ -149,12 +150,12 @@ func testAccCheckScalewayIotHubDestroy(tt *tests.TestTools) resource.TestCheckFu
 				continue
 			}
 
-			iotAPI, region, hubID, err := iotAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			iotAPI, region, hubID, err := iot.NewAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = iotAPI.GetHub(&iot.GetHubRequest{
+			_, err = iotAPI.GetHub(&iotSDK.GetHubRequest{
 				Region: region,
 				HubID:  hubID,
 			})
@@ -180,12 +181,12 @@ func testAccCheckScalewayIotHubExists(tt *tests.TestTools, n string) resource.Te
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		iotAPI, region, hubID, err := iotAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		iotAPI, region, hubID, err := iot.NewAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = iotAPI.GetHub(&iot.GetHubRequest{
+		_, err = iotAPI.GetHub(&iotSDK.GetHubRequest{
 			Region: region,
 			HubID:  hubID,
 		})

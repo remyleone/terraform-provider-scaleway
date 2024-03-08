@@ -3,13 +3,15 @@ package rdb_test
 import (
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	rdbSDK "github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,13 +21,13 @@ func TestAccScalewayRdbDatabase_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	instanceName := "TestAccScalewayRdbDatabase_Basic"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -54,12 +56,12 @@ func TestAccScalewayRdbDatabase_ManualDelete(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -116,17 +118,17 @@ func testAccCheckRdbDatabaseExists(tt *tests.TestTools, instance string, databas
 			return fmt.Errorf("resource database not found: %s", database)
 		}
 
-		rdbAPI, _, _, err := rdbAPIWithRegionAndID(tt.Meta, instanceResource.Primary.ID)
+		rdbAPI, _, _, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), instanceResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		region, instanceID, databaseName, err := ResourceScalewayRdbDatabaseParseID(databaseResource.Primary.ID)
+		region, instanceID, databaseName, err := rdb.ResourceScalewayRdbDatabaseParseID(databaseResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		databases, err := rdbAPI.ListDatabases(&rdb.ListDatabasesRequest{
+		databases, err := rdbAPI.ListDatabases(&rdbSDK.ListDatabasesRequest{
 			Region:     region,
 			InstanceID: instanceID,
 			Name:       &databaseName,
@@ -147,14 +149,14 @@ func testAccCheckRdbDatabaseExists(tt *tests.TestTools, instance string, databas
 }
 
 func TestResourceScalewayRdbDatabaseParseIDWithWronglyFormatedIdReturnError(t *testing.T) {
-	region, _, _, err := ResourceScalewayRdbDatabaseParseID("notandid")
+	region, _, _, err := rdb.ResourceScalewayRdbDatabaseParseID("notandid")
 	require.Error(t, err)
 	assert.Empty(t, region)
 	assert.Equal(t, "can't parse user resource id: notandid", err.Error())
 }
 
 func TestResourceScalewayRdbDatabaseParseID(t *testing.T) {
-	region, instanceID, dbname, err := ResourceScalewayRdbDatabaseParseID("region/instanceid/dbname")
+	region, instanceID, dbname, err := rdb.ResourceScalewayRdbDatabaseParseID("region/instanceid/dbname")
 	require.NoError(t, err)
 	assert.Equal(t, scw.Region("region"), region)
 	assert.Equal(t, "instanceid", instanceID)

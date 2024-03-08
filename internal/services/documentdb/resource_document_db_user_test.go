@@ -3,13 +3,12 @@ package documentdb_test
 import (
 	"errors"
 	"fmt"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
+	documentdbSDK "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayDocumentDBUser_Basic(t *testing.T) {
@@ -84,17 +83,17 @@ func testAccCheckDocumentDBUserExists(tt *tests.TestTools, instance string, user
 			return fmt.Errorf("resource not found: %s", user)
 		}
 
-		api, _, _, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, _, _, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		region, instanceID, userName, err := ResourceScalewayDocumentDBUserParseID(userResource.Primary.ID)
+		region, instanceID, userName, err := documentdb.ResourceScalewayDocumentDBUserParseID(userResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		users, err := api.ListUsers(&documentdb.ListUsersRequest{
+		users, err := api.ListUsers(&documentdbSDK.ListUsersRequest{
 			InstanceID: instanceID,
 			Region:     region,
 			Name:       &userName,

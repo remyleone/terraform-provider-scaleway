@@ -2,13 +2,14 @@ package iam_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 )
 
 func TestAccScalewayDataSourceIamUser_Basic(t *testing.T) {
@@ -51,9 +52,9 @@ func testAccCheckScalewayIamUserExists(tt *tests.TestTools, name string) resourc
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		iamAPI := iamAPI(tt.Meta)
+		iamAPI := iam.IAMAPI(tt.GetMeta())
 
-		_, err := iamAPI.GetUser(&iam.GetUserRequest{
+		_, err := iamAPI.GetUser(&iamSDK.GetUserRequest{
 			UserID: rs.Primary.ID,
 		})
 		if err != nil {

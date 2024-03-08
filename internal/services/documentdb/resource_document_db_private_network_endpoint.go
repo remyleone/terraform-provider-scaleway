@@ -78,7 +78,7 @@ func ResourceScalewayDocumentDBInstancePrivateNetworkEndpoint() *schema.Resource
 }
 
 func ResourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -133,7 +133,7 @@ func ResourceScalewayDocumentDBInstanceEndpointCreate(ctx context.Context, d *sc
 }
 
 func ResourceScalewayDocumentDBInstanceEndpointRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -169,7 +169,7 @@ func ResourceScalewayDocumentDBInstanceEndpointRead(ctx context.Context, d *sche
 }
 
 func ResourceScalewayDocumentDBInstanceEndpointUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -196,7 +196,7 @@ func ResourceScalewayDocumentDBInstanceEndpointUpdate(ctx context.Context, d *sc
 }
 
 func ResourceScalewayDocumentDBInstanceEndpointDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -2,16 +2,15 @@ package instance_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,9 +22,9 @@ func init() {
 
 func testSweepInstancePlacementGroup(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		instanceAPI := instance.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the instance placement group in (%s)", zone)
-		listPlacementGroups, err := instanceAPI.ListPlacementGroups(&instance.ListPlacementGroupsRequest{
+		instanceAPI := instanceSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the instanceSDK placement group in (%s)", zone)
+		listPlacementGroups, err := instanceAPI.ListPlacementGroups(&instanceSDK.ListPlacementGroupsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepInstancePlacementGroup(_ string) error {
 		}
 
 		for _, pg := range listPlacementGroups.PlacementGroups {
-			err := instanceAPI.DeletePlacementGroup(&instance.DeletePlacementGroupRequest{
+			err := instanceAPI.DeletePlacementGroup(&instanceSDK.DeletePlacementGroupRequest{
 				Zone:             zone,
 				PlacementGroupID: pg.ID,
 			})
@@ -184,12 +183,12 @@ func testAccCheckScalewayInstancePlacementGroupExists(tt *tests.TestTools, n str
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = instanceAPI.GetPlacementGroup(&instance.GetPlacementGroupRequest{
+		_, err = instanceAPI.GetPlacementGroup(&instanceSDK.GetPlacementGroupRequest{
 			Zone:             zone,
 			PlacementGroupID: ID,
 		})
@@ -208,12 +207,12 @@ func testAccCheckScalewayInstancePlacementGroupDestroy(tt *tests.TestTools) reso
 				continue
 			}
 
-			instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = instanceAPI.GetPlacementGroup(&instance.GetPlacementGroupRequest{
+			_, err = instanceAPI.GetPlacementGroup(&instanceSDK.GetPlacementGroupRequest{
 				Zone:             zone,
 				PlacementGroupID: ID,
 			})

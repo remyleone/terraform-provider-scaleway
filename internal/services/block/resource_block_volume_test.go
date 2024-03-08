@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/block"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	block "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
+	blockSDK "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepBlockVolume(_ string) error {
-	return tests.SweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
-		blockAPI := block.NewAPI(scwClient)
+	return tests.SweepZones((&blockSDK.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
+		blockAPI := blockSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the block volumes in (%s)", zone)
 		listVolumes, err := blockAPI.ListVolumes(
-			&block.ListVolumesRequest{
+			&blockSDK.ListVolumesRequest{
 				Zone: zone,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepBlockVolume(_ string) error {
 		}
 
 		for _, volume := range listVolumes.Volumes {
-			err := blockAPI.DeleteVolume(&block.DeleteVolumeRequest{
+			err := blockAPI.DeleteVolume(&blockSDK.DeleteVolumeRequest{
 				VolumeID: volume.ID,
 				Zone:     zone,
 			})
@@ -68,7 +69,7 @@ func TestAccScalewayBlockVolume_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayBlockVolumeExists(tt, "scaleway_block_volume.main"),
-					testCheckResourceAttrUUID("scaleway_block_volume.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_block_volume.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_block_volume.main", "name", "test-block-volume-basic"),
 					resource.TestCheckResourceAttr("scaleway_block_volume.main", "size_in_gb", "20"),
 				),
@@ -107,7 +108,7 @@ func TestAccScalewayBlockVolume_FromSnapshot(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayBlockVolumeExists(tt, "scaleway_block_volume.main"),
-					testCheckResourceAttrUUID("scaleway_block_volume.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_block_volume.main", "id"),
 					resource.TestCheckResourceAttrPair("scaleway_block_volume.main", "snapshot_id", "scaleway_block_snapshot.main", "id"),
 					resource.TestCheckResourceAttrPair("scaleway_block_volume.main", "size_in_gb", "scaleway_block_volume.base", "size_in_gb"),
 				),
@@ -123,12 +124,12 @@ func testAccCheckScalewayBlockVolumeExists(tt *tests.TestTools, n string) resour
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, zone, id, err := blockAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		api, zone, id, err := block.BlockAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetVolume(&block.GetVolumeRequest{
+		_, err = api.GetVolume(&blockSDK.GetVolumeRequest{
 			VolumeID: id,
 			Zone:     zone,
 		})
@@ -147,12 +148,12 @@ func testAccCheckScalewayBlockVolumeDestroy(tt *tests.TestTools) resource.TestCh
 				continue
 			}
 
-			api, zone, id, err := blockAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			api, zone, id, err := block.BlockAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteVolume(&block.DeleteVolumeRequest{
+			err = api.DeleteVolume(&blockSDK.DeleteVolumeRequest{
 				VolumeID: id,
 				Zone:     zone,
 			})

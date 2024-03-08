@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"regexp"
 	"testing"
 
@@ -30,7 +32,7 @@ func TestAccScalewayObject_Basic(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -47,9 +49,9 @@ func TestAccScalewayObject_Basic(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -67,9 +69,9 @@ func TestAccScalewayObject_Basic(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile/foo"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -87,9 +89,9 @@ func TestAccScalewayObject_Basic(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile/foo/bar"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -109,7 +111,7 @@ func TestAccScalewayObject_Hash(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -127,9 +129,9 @@ func TestAccScalewayObject_Hash(t *testing.T) {
 						key = "myfile"
 						hash = "1"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -148,9 +150,9 @@ func TestAccScalewayObject_Hash(t *testing.T) {
 						key = "myfile"
 						hash = "2"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -170,7 +172,7 @@ func TestAccScalewayObject_Move(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -187,9 +189,9 @@ func TestAccScalewayObject_Move(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file")),
 			},
 			{
@@ -206,9 +208,9 @@ func TestAccScalewayObject_Move(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile2"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file")),
 			},
 		},
@@ -227,7 +229,7 @@ func TestAccScalewayObject_StorageClass(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -246,9 +248,9 @@ func TestAccScalewayObject_StorageClass(t *testing.T) {
 
 						storage_class = "ONEZONE_IA"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "storage_class", "ONEZONE_IA"),
 				),
@@ -269,9 +271,9 @@ func TestAccScalewayObject_StorageClass(t *testing.T) {
 
 						storage_class = "STANDARD"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "storage_class", "STANDARD"),
 				),
@@ -292,7 +294,7 @@ func TestAccScalewayObject_Metadata(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -313,9 +315,9 @@ func TestAccScalewayObject_Metadata(t *testing.T) {
 							key = "value"
 						}
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "metadata.key", "value"),
 				),
@@ -339,9 +341,9 @@ func TestAccScalewayObject_Metadata(t *testing.T) {
 							other_key = "VALUE"
 						}
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "metadata.key", "other_value"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "metadata.other_key", "VALUE"),
@@ -363,7 +365,7 @@ func TestAccScalewayObject_Tags(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -381,9 +383,9 @@ func TestAccScalewayObject_Tags(t *testing.T) {
 							key = "value"
 						}
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "tags.key", "value"),
 				),
@@ -404,9 +406,9 @@ func TestAccScalewayObject_Tags(t *testing.T) {
 							other_key = "VALUE"
 						}
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "tags.key", "other_value"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "tags.other_key", "VALUE"),
@@ -428,7 +430,7 @@ func TestAccScalewayObject_Visibility(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -444,9 +446,9 @@ func TestAccScalewayObject_Visibility(t *testing.T) {
 
 						visibility = "public-read"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "visibility", "public-read"),
 				),
@@ -464,9 +466,9 @@ func TestAccScalewayObject_Visibility(t *testing.T) {
 
 						visibility = "private"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					resource.TestCheckResourceAttr("scaleway_object.file", "visibility", "private"),
 				),
@@ -487,7 +489,7 @@ func TestAccScalewayObject_State(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -503,9 +505,9 @@ func TestAccScalewayObject_State(t *testing.T) {
 
 						visibility = "public-read"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -527,12 +529,12 @@ func TestAccScalewayObject_State(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.id
 						key = "myfile"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				ImportState:   true,
 				ResourceName:  "scaleway_object.file_imported",
-				ImportStateId: fmt.Sprintf("%s/%s/myfile", objectTestsMainRegion, bucketName),
+				ImportStateId: fmt.Sprintf("%s/%s/myfile", object.ObjectTestsMainRegion, bucketName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file_imported"),
 					resource.TestCheckResourceAttrPair("scaleway_object.file_imported", "id", "scaleway_object.file", "id"),
@@ -558,7 +560,7 @@ func TestAccScalewayObject_ByContent(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -573,9 +575,9 @@ func TestAccScalewayObject_ByContent(t *testing.T) {
 						key = "test-by-content"
 						content = "%s"
 					}
-				`, bucketName, objectTestsMainRegion, fileContentStep1),
+				`, bucketName, object.ObjectTestsMainRegion, fileContentStep1),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.by-content"),
 					resource.TestCheckResourceAttr("scaleway_object.by-content", "content", fileContentStep1),
 				),
@@ -592,9 +594,9 @@ func TestAccScalewayObject_ByContent(t *testing.T) {
 						key = "test-by-content"
 						content = "%s"
 					}
-				`, bucketName, objectTestsMainRegion, fileContentStep2),
+				`, bucketName, object.ObjectTestsMainRegion, fileContentStep2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.by-content"),
 					resource.TestCheckResourceAttr("scaleway_object.by-content", "content", fileContentStep2),
 				),
@@ -618,7 +620,7 @@ func TestAccScalewayObject_ByContentBase64(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -633,9 +635,9 @@ func TestAccScalewayObject_ByContentBase64(t *testing.T) {
 						key = "test-by-content-base64"
 						content_base64 = base64encode("%s")
 					}
-				`, bucketName, objectTestsMainRegion, fileContentStep1),
+				`, bucketName, object.ObjectTestsMainRegion, fileContentStep1),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.by-content-base64"),
 					resource.TestCheckResourceAttr("scaleway_object.by-content-base64", "content_base64", fileEncodedStep1),
 				),
@@ -652,9 +654,9 @@ func TestAccScalewayObject_ByContentBase64(t *testing.T) {
 						key = "test-by-content-base64"
 						content_base64 = base64encode("%s")
 					}
-				`, bucketName, objectTestsMainRegion, fileContentStep2),
+				`, bucketName, object.ObjectTestsMainRegion, fileContentStep2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.by-content-base64"),
 					resource.TestCheckResourceAttr("scaleway_object.by-content-base64", "content_base64", fileEncodedStep2),
 				),
@@ -671,7 +673,7 @@ func TestAccScalewayObject_ByContentBase64(t *testing.T) {
 						key = "test-by-content-base64"
 						content_base64 = "%s"
 					}
-				`, bucketName, objectTestsMainRegion, fileContentStep2),
+				`, bucketName, object.ObjectTestsMainRegion, fileContentStep2),
 				ExpectError: regexp.MustCompile("illegal base64 data at input byte 4"),
 			},
 		},
@@ -690,7 +692,7 @@ func TestAccScalewayObject_WithBucketName(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -707,7 +709,7 @@ func TestAccScalewayObject_WithBucketName(t *testing.T) {
 						bucket = scaleway_object_bucket.base-01.name
 						key = "myfile"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				ExpectError: regexp.MustCompile("NoSuchBucket: The specified bucket does not exist"),
 			},
 			{
@@ -725,9 +727,9 @@ func TestAccScalewayObject_WithBucketName(t *testing.T) {
 						region = "%[2]s"
 						key = "myfile"
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.base-01", true),
 					testAccCheckScalewayObjectExists(tt, "scaleway_object.file"),
 				),
 			},
@@ -747,7 +749,7 @@ func testAccCheckScalewayObjectExists(tt *tests.TestTools, n string) resource.Te
 		bucketRegion := regionalID.Region.String()
 		bucketName := regionalID.ID
 
-		s3Client, err := NewS3ClientFromMeta(tt.Meta, bucketRegion)
+		s3Client, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion)
 		if err != nil {
 			return err
 		}
@@ -766,7 +768,7 @@ func testAccCheckScalewayObjectExists(tt *tests.TestTools, n string) resource.Te
 			Key:    scw.StringPtr(key),
 		})
 		if err != nil {
-			if isS3Err(err, s3.ErrCodeNoSuchBucket, "") {
+			if object.IsS3Err(err, s3.ErrCodeNoSuchBucket, "") {
 				return errors.New("s3 object not found")
 			}
 			return err
@@ -787,7 +789,7 @@ func testAccCheckScalewayObjectDestroy(tt *tests.TestTools) resource.TestCheckFu
 			bucketName := regionalID.ID
 			key := rs.Primary.Attributes["key"]
 
-			s3Client, err := NewS3ClientFromMeta(tt.Meta, bucketRegion)
+			s3Client, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion)
 			if err != nil {
 				return err
 			}

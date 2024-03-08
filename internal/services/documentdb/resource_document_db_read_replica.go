@@ -3,6 +3,7 @@ package documentdb
 import (
 	"context"
 	"fmt"
+	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/difffuncs"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -14,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -232,7 +232,7 @@ func flattenDocumentDBReadReplicaEndpoints(endpoints []*documentdb.Endpoint) (di
 }
 
 func ResourceScalewayDocumentDBReadReplicaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -268,7 +268,7 @@ func ResourceScalewayDocumentDBReadReplicaCreate(ctx context.Context, d *schema.
 }
 
 func ResourceScalewayDocumentDBReadReplicaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -293,7 +293,7 @@ func ResourceScalewayDocumentDBReadReplicaRead(ctx context.Context, d *schema.Re
 
 //gocyclo:ignore
 func ResourceScalewayDocumentDBReadReplicaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -371,7 +371,7 @@ func ResourceScalewayDocumentDBReadReplicaUpdate(ctx context.Context, d *schema.
 }
 
 func ResourceScalewayDocumentDBReadReplicaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := documentDBAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := DocumentDBAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

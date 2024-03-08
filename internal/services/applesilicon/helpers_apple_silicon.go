@@ -16,8 +16,8 @@ const (
 	defaultAppleSiliconServerRetryInterval = 5 * time.Second
 )
 
-// asAPIWithZone returns a new apple silicon API and the zone
-func asAPIWithZone(d *schema.ResourceData, m interface{}) (*applesilicon.API, scw.Zone, error) {
+// NewAPIWithZone returns a new apple silicon API and the zone
+func NewAPIWithZone(d *schema.ResourceData, m interface{}) (*applesilicon.API, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 	asAPI := applesilicon.NewAPI(meta.GetScwClient())
 
@@ -28,8 +28,8 @@ func asAPIWithZone(d *schema.ResourceData, m interface{}) (*applesilicon.API, sc
 	return asAPI, zone, nil
 }
 
-// asAPIWithZoneAndID returns an apple silicon API with zone and ID extracted from the state
-func asAPIWithZoneAndID(m interface{}, id string) (*applesilicon.API, scw.Zone, string, error) {
+// NewAPIWithZoneAndID returns an apple silicon API with zone and ID extracted from the state
+func NewAPIWithZoneAndID(m interface{}, id string) (*applesilicon.API, scw.Zone, string, error) {
 	meta := m.(*meta2.Meta)
 	asAPI := applesilicon.NewAPI(meta.GetScwClient())
 

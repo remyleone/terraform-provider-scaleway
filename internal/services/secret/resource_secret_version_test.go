@@ -2,14 +2,13 @@ package secret_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	secret "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
+	secretSDK "github.com/scaleway/scaleway-sdk-go/api/secret/v1beta1"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/secret"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewaySecretVersion_Basic(t *testing.T) {
@@ -43,8 +42,8 @@ func TestAccScalewaySecretVersion_Basic(t *testing.T) {
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v1"),
 					resource.TestCheckResourceAttrPair("scaleway_secret_version.v1", "secret_id", "scaleway_secret.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "description", "version1"),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", base64Encoded([]byte(secretVersionData))),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secret.SecretVersionStatusEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", secret.Base64Encoded([]byte(secretVersionData))),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secretSDK.SecretVersionStatusEnabled.String()),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "created_at"),
 				),
@@ -67,8 +66,8 @@ func TestAccScalewaySecretVersion_Basic(t *testing.T) {
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v1"),
 					resource.TestCheckResourceAttrPair("scaleway_secret_version.v1", "secret_id", "scaleway_secret.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "description", secretVersionDescription),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", base64Encoded([]byte(secretVersionData))),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secret.SecretVersionStatusEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", secret.Base64Encoded([]byte(secretVersionData))),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secretSDK.SecretVersionStatusEnabled.String()),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "created_at"),
 				),
@@ -97,16 +96,16 @@ func TestAccScalewaySecretVersion_Basic(t *testing.T) {
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v1"),
 					resource.TestCheckResourceAttrPair("scaleway_secret_version.v1", "secret_id", "scaleway_secret.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "description", secretVersionDescription),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", base64Encoded([]byte(secretVersionData))),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secret.SecretVersionStatusEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "data", secret.Base64Encoded([]byte(secretVersionData))),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v1", "status", secretSDK.SecretVersionStatusEnabled.String()),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v1", "created_at"),
 
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v2"),
 					resource.TestCheckResourceAttrPair("scaleway_secret_version.v2", "secret_id", "scaleway_secret.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_secret_version.v2", "description", "version2"),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v2", "data", base64Encoded([]byte("another_secret"))),
-					resource.TestCheckResourceAttr("scaleway_secret_version.v2", "status", secret.SecretVersionStatusEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v2", "data", secret.Base64Encoded([]byte("another_secret"))),
+					resource.TestCheckResourceAttr("scaleway_secret_version.v2", "status", secretSDK.SecretVersionStatusEnabled.String()),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v2", "updated_at"),
 					resource.TestCheckResourceAttrSet("scaleway_secret_version.v2", "created_at"),
 				),
@@ -122,12 +121,12 @@ func testAccCheckScalewaySecretVersionExists(tt *tests.TestTools, n string) reso
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, revision, err := secretVersionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, revision, err := secret.SecretVersionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetSecretVersion(&secret.GetSecretVersionRequest{
+		_, err = api.GetSecretVersion(&secretSDK.GetSecretVersionRequest{
 			SecretID: id,
 			Region:   region,
 			Revision: revision,
@@ -147,12 +146,12 @@ func testAccCheckScalewaySecretVersionDestroy(tt *tests.TestTools) resource.Test
 				continue
 			}
 
-			api, region, id, revision, err := secretVersionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, revision, err := secret.SecretVersionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.GetSecretVersion(&secret.GetSecretVersionRequest{
+			_, err = api.GetSecretVersion(&secretSDK.GetSecretVersionRequest{
 				SecretID: id,
 				Region:   region,
 				Revision: revision,

@@ -3,7 +3,10 @@ package object_test
 import (
 	"errors"
 	"fmt"
+	scaleway "github.com/scaleway/terraform-provider-scaleway/v2/internal"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"regexp"
 	"testing"
 
@@ -31,11 +34,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -55,9 +58,9 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Basic(t *testing.T) {
 						  suffix = "index.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "index_document.#", "1"),
@@ -84,11 +87,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithPolicy(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -130,9 +133,9 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithPolicy(t *testing.T) {
 						  suffix = "index.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "index_document.#", "1"),
@@ -160,11 +163,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Update(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -184,9 +187,9 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Update(t *testing.T) {
 						  suffix = "index.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
 				),
 			},
@@ -211,9 +214,9 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_Update(t *testing.T) {
 							key = "error.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "index_document.#", "1"),
@@ -240,11 +243,11 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithBucketName(t *testing.T
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -261,7 +264,7 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithBucketName(t *testing.T
 						  suffix = "index.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				ExpectError: regexp.MustCompile("couldn't read bucket: NoSuchBucket: The specified bucket does not exist"),
 			},
 			{
@@ -279,9 +282,9 @@ func TestAccScalewayObjectBucketWebsiteConfiguration_WithBucketName(t *testing.T
 						  suffix = "index.html"
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
 				),
 			},
@@ -300,7 +303,7 @@ func testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt *tests.TestT
 			bucket := regionalID.ID
 			bucketRegion := regionalID.Region
 
-			conn, err := NewS3ClientFromMeta(tt.Meta, bucketRegion.String())
+			conn, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion.String())
 			if err != nil {
 				return err
 			}
@@ -311,7 +314,7 @@ func testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt *tests.TestT
 
 			output, err := conn.GetBucketWebsite(input)
 
-			if tfawserr.ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, ErrCodeNoSuchWebsiteConfiguration) {
+			if tfawserr.ErrCodeEquals(err, s3.ErrCodeNoSuchBucket, object.ErrCodeNoSuchWebsiteConfiguration) {
 				continue
 			}
 
@@ -348,7 +351,7 @@ func testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt *tests.TestTo
 		bucket := regionalID.ID
 		bucketRegion := regionalID.Region
 
-		conn, err := NewS3ClientFromMeta(tt.Meta, bucketRegion.String())
+		conn, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion.String())
 		if err != nil {
 			return err
 		}

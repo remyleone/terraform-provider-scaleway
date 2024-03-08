@@ -3,16 +3,15 @@ package iam_test
 import (
 	"errors"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -24,7 +23,7 @@ func init() {
 
 func testSweepIamAPIKey(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
-		api := iam.NewAPI(scwClient)
+		api := iamSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: destroying the api keys")
 
@@ -33,17 +32,17 @@ func testSweepIamAPIKey(_ string) error {
 			return errors.New("missing organizationID")
 		}
 
-		listAPIKeys, err := api.ListAPIKeys(&iam.ListAPIKeysRequest{
+		listAPIKeys, err := api.ListAPIKeys(&iamSDK.ListAPIKeysRequest{
 			OrganizationID: &orgID,
 		}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("failed to list api keys: %w", err)
 		}
 		for _, key := range listAPIKeys.APIKeys {
-			if !isTestResource(key.Description) {
+			if !tests.IsTestResource(key.Description) {
 				continue
 			}
-			err = api.DeleteAPIKey(&iam.DeleteAPIKeyRequest{
+			err = api.DeleteAPIKey(&iamSDK.DeleteAPIKeyRequest{
 				AccessKey: key.AccessKey,
 			})
 			if err != nil {
@@ -260,9 +259,9 @@ func testAccCheckScalewayIamAPIKeyExists(tt *tests.TestTools, name string) resou
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		iamAPI := iamAPI(tt.Meta)
+		iamAPI := iam.IAMAPI(tt.GetMeta())
 
-		_, err := iamAPI.GetAPIKey(&iam.GetAPIKeyRequest{
+		_, err := iamAPI.GetAPIKey(&iamSDK.GetAPIKeyRequest{
 			AccessKey: rs.Primary.ID,
 		})
 		if err != nil {
@@ -280,9 +279,9 @@ func testAccCheckScalewayIamAPIKeyDestroy(tt *tests.TestTools) resource.TestChec
 				continue
 			}
 
-			iamAPI := iamAPI(tt.Meta)
+			iamAPI := iam.IAMAPI(tt.GetMeta())
 
-			_, err := iamAPI.GetAPIKey(&iam.GetAPIKeyRequest{
+			_, err := iamAPI.GetAPIKey(&iamSDK.GetAPIKeyRequest{
 				AccessKey: rs.Primary.ID,
 			})
 

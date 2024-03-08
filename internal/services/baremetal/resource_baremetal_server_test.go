@@ -4,6 +4,7 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/baremetal"
 	"regexp"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
+	baremetalSDK "github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -26,16 +27,16 @@ func init() {
 
 func testSweepBaremetalServer(_ string) error {
 	return tests.SweepZones([]scw.Zone{scw.ZoneFrPar2}, func(scwClient *scw.Client, zone scw.Zone) error {
-		baremetalAPI := baremetal.NewAPI(scwClient)
+		baremetalAPI := baremetalSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the baremetal server in (%s)", zone)
-		listServers, err := baremetalAPI.ListServers(&baremetal.ListServersRequest{Zone: zone}, scw.WithAllPages())
+		listServers, err := baremetalAPI.ListServers(&baremetalSDK.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			logging.L.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
 		for _, server := range listServers.Servers {
-			_, err := baremetalAPI.DeleteServer(&baremetal.DeleteServerRequest{
+			_, err := baremetalAPI.DeleteServer(&baremetalSDK.DeleteServerRequest{
 				Zone:     zone,
 				ServerID: server.ID,
 			})
@@ -94,7 +95,7 @@ func TestAccScalewayBaremetalServer_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.0", "terraform-test"),
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.1", "scaleway_baremetal_server"),
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.2", "minimal"),
-					testCheckResourceAttrUUID("scaleway_baremetal_server.base", "ssh_key_ids.0"),
+					tests.TestCheckResourceAttrUUID("scaleway_baremetal_server.base", "ssh_key_ids.0"),
 				),
 			},
 			{
@@ -133,7 +134,7 @@ func TestAccScalewayBaremetalServer_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.1", "scaleway_baremetal_server"),
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.2", "minimal"),
 					resource.TestCheckResourceAttr("scaleway_baremetal_server.base", "tags.3", "edited"),
-					testCheckResourceAttrUUID("scaleway_baremetal_server.base", "ssh_key_ids.0"),
+					tests.TestCheckResourceAttrUUID("scaleway_baremetal_server.base", "ssh_key_ids.0"),
 				),
 			},
 		},
@@ -803,12 +804,12 @@ func testAccCheckScalewayBaremetalServerExists(tt *tests.TestTools, n string) re
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		baremetalAPI, zonedID, err := baremetal.BaremetalAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = baremetalAPI.GetServer(&baremetal.GetServerRequest{
+		_, err = baremetalAPI.GetServer(&baremetalSDK.GetServerRequest{
 			ServerID: zonedID.ID,
 			Zone:     zonedID.Zone,
 		})
@@ -827,12 +828,12 @@ func testAccCheckScalewayBaremetalServerDestroy(tt *tests.TestTools) resource.Te
 				continue
 			}
 
-			baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			baremetalAPI, zonedID, err := baremetal.BaremetalAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = baremetalAPI.GetServer(&baremetal.GetServerRequest{
+			_, err = baremetalAPI.GetServer(&baremetalSDK.GetServerRequest{
 				ServerID: zonedID.ID,
 				Zone:     zonedID.Zone,
 			})
@@ -858,12 +859,12 @@ func testAccCheckScalewayBaremetalServerHasOptions(tt *tests.TestTools, n string
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		baremetalAPI, zonedID, err := baremetal.BaremetalAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		server, err := baremetalAPI.GetServer(&baremetal.GetServerRequest{
+		server, err := baremetalAPI.GetServer(&baremetalSDK.GetServerRequest{
 			ServerID: zonedID.ID,
 			Zone:     zonedID.Zone,
 		})
@@ -886,17 +887,17 @@ func testAccCheckScalewayBaremetalServerHasPrivateNetwork(tt *tests.TestTools, n
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		_, zonedID, err := baremetalAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		_, zonedID, err := baremetal.BaremetalAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		baremetalPrivateNetworkAPI, _, err := baremetalPrivateNetworkAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		baremetalPrivateNetworkAPI, _, err := baremetal.BaremetalPrivateNetworkAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		listPrivateNetworks, err := baremetalPrivateNetworkAPI.ListServerPrivateNetworks(&baremetal.PrivateNetworkAPIListServerPrivateNetworksRequest{
+		listPrivateNetworks, err := baremetalPrivateNetworkAPI.ListServerPrivateNetworks(&baremetalSDK.PrivateNetworkAPIListServerPrivateNetworksRequest{
 			Zone:     zonedID.Zone,
 			ServerID: &zonedID.ID,
 		})

@@ -2,19 +2,18 @@ package mnq_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"regexp"
-	"strings"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 func init() {
@@ -25,11 +24,11 @@ func init() {
 }
 
 func testSweepMNQSQS(_ string) error {
-	return tests.SweepRegions((&mnq.SqsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return tests.SweepRegions((&mnqSDK.SqsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
-		mnqAPI := mnq.NewSqsAPI(scwClient)
+		mnqAPI := mnqSDK.NewSqsAPI(scwClient)
 
-		logging.L.Debugf("sweeper: destroying the mnq sqss in (%s)", region)
+		logging.L.Debugf("sweeper: destroying the mnqSDK sqss in (%s)", region)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -40,7 +39,7 @@ func testSweepMNQSQS(_ string) error {
 				continue
 			}
 
-			_, err := mnqAPI.DeactivateSqs(&mnq.SqsAPIDeactivateSqsRequest{
+			_, err := mnqAPI.DeactivateSqs(&mnqSDK.SqsAPIDeactivateSqsRequest{
 				Region:    region,
 				ProjectID: project.ID,
 			})
@@ -75,7 +74,7 @@ func TestAccScalewayMNQSQS_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSQSExists(tt, "scaleway_mnq_sqs.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sqs.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sqs.main", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sqs.main", "endpoint"),
 				),
 			},
@@ -130,12 +129,12 @@ func testAccCheckScalewayMNQSQSExists(tt *tests.TestTools, n string) resource.Te
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqSQSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqSQSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		sqs, err := api.GetSqsInfo(&mnq.SqsAPIGetSqsInfoRequest{
+		sqs, err := api.GetSqsInfo(&mnqSDK.SqsAPIGetSqsInfoRequest{
 			ProjectID: id,
 			Region:    region,
 		})
@@ -143,7 +142,7 @@ func testAccCheckScalewayMNQSQSExists(tt *tests.TestTools, n string) resource.Te
 			return err
 		}
 
-		if sqs.Status != mnq.SqsInfoStatusEnabled {
+		if sqs.Status != mnqSDK.SqsInfoStatusEnabled {
 			return fmt.Errorf("sqs status should be enabled, got: %s", sqs.Status)
 		}
 
@@ -158,12 +157,12 @@ func testAccCheckScalewayMNQSQSDestroy(tt *tests.TestTools) resource.TestCheckFu
 				continue
 			}
 
-			api, region, id, err := mnqSQSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqSQSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			sqs, err := api.DeactivateSqs(&mnq.SqsAPIDeactivateSqsRequest{
+			sqs, err := api.DeactivateSqs(&mnqSDK.SqsAPIDeactivateSqsRequest{
 				ProjectID: id,
 				Region:    region,
 			})
@@ -174,8 +173,8 @@ func testAccCheckScalewayMNQSQSDestroy(tt *tests.TestTools) resource.TestCheckFu
 				return err
 			}
 
-			if sqs.Status != mnq.SqsInfoStatusDisabled {
-				return fmt.Errorf("mnq sqs (%s) should be disabled", rs.Primary.ID)
+			if sqs.Status != mnqSDK.SqsInfoStatusDisabled {
+				return fmt.Errorf("mnqSDK sqs (%s) should be disabled", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

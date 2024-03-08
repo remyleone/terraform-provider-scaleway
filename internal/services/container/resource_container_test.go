@@ -1,29 +1,20 @@
 package container_test
 
 import (
-	"bufio"
-	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"io"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/registry"
-	docker "github.com/docker/docker/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
-
-var testDockerIMG = "docker.io/library/nginx:alpine"
 
 func init() {
 	resource.AddTestSweepers("scaleway_container", &resource.Sweeper{
@@ -34,10 +25,10 @@ func init() {
 
 func testSweepContainer(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		containerAPI := container.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the container in (%s)", region)
+		containerAPI := containerSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the containerSDK in (%s)", region)
 		listNamespaces, err := containerAPI.ListContainers(
-			&container.ListContainersRequest{
+			&containerSDK.ListContainersRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -45,14 +36,14 @@ func testSweepContainer(_ string) error {
 		}
 
 		for _, cont := range listNamespaces.Containers {
-			_, err := containerAPI.DeleteContainer(&container.DeleteContainerRequest{
+			_, err := containerAPI.DeleteContainer(&containerSDK.DeleteContainerRequest{
 				ContainerID: cont.ID,
 				Region:      region,
 			})
 			if err != nil {
 				logging.L.Debugf("sweeper: error (%s)", err)
 
-				return fmt.Errorf("error deleting container in sweeper: %s", err)
+				return fmt.Errorf("error deleting containerSDK in sweeper: %s", err)
 			}
 		}
 
@@ -79,8 +70,8 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_container.main", "name"),
 					resource.TestCheckResourceAttrSet("scaleway_container.main", "registry_image"),
 					resource.TestCheckResourceAttrSet("scaleway_container.main", "domain_name"),
@@ -101,7 +92,7 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 					}
 
 					resource scaleway_container main {
-						name = "my-container-tf"
+						name = "my-containerSDK-tf"
 						namespace_id = scaleway_container_namespace.main.id
 						port = 8080
 						cpu_limit = 70
@@ -114,8 +105,8 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-container-tf"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-containerSDK-tf"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "port", "8080"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "cpu_limit", "70"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "memory_limit", "128"),
@@ -124,8 +115,8 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container.main", "timeout", "300"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "max_concurrency", "50"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "deploy", "false"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "privacy", container.ContainerPrivacyPublic.String()),
-					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", container.ContainerProtocolHTTP1.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "privacy", containerSDK.ContainerPrivacyPublic.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", containerSDK.ContainerProtocolHTTP1.String()),
 				),
 			},
 			{
@@ -134,7 +125,7 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 					}
 
 					resource "scaleway_container" main {
-						name 			= "my-container-tf"
+						name 			= "my-containerSDK-tf"
 						namespace_id	= scaleway_container_namespace.main.id
 						port         	= 5000
 						min_scale    	= 1
@@ -147,8 +138,8 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-container-tf"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-containerSDK-tf"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "port", "5000"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "cpu_limit", "280"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "memory_limit", "256"),
@@ -157,7 +148,7 @@ func TestAccScalewayContainer_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container.main", "timeout", "300"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "max_concurrency", "80"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "deploy", "false"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", container.ContainerProtocolHTTP1.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", containerSDK.ContainerProtocolHTTP1.String()),
 				),
 			},
 		},
@@ -189,8 +180,8 @@ func TestAccScalewayContainer_Env(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "environment_variables.test", "test"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "secret_environment_variables.test_secret", "test_secret"),
 				),
@@ -212,8 +203,8 @@ func TestAccScalewayContainer_Env(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "environment_variables.foo", "bar"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "secret_environment_variables.foo_secret", "bar_secret"),
 				),
@@ -231,8 +222,8 @@ func TestAccScalewayContainer_Env(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
 					resource.TestCheckNoResourceAttr("scaleway_container.main", "environment_variables.%"),
 					resource.TestCheckNoResourceAttr("scaleway_container.main", "secret_environment_variables.%"),
 					resource.TestCheckNoResourceAttr("scaleway_container.main", "environment_variables.foo"),
@@ -257,7 +248,7 @@ func TestAccScalewayContainer_WithIMG(t *testing.T) {
 				Config: fmt.Sprintf(`
 					resource scaleway_container_namespace main {
 						name = "%s"
-						description = "test container"
+						description = "test containerSDK"
 					}
 				`, containerNamespace),
 			},
@@ -265,22 +256,22 @@ func TestAccScalewayContainer_WithIMG(t *testing.T) {
 				Config: fmt.Sprintf(`
 					resource scaleway_container_namespace main {
 						name = "%s"
-						description = "test container"
+						description = "test containerSDK"
 					}
 				`, containerNamespace),
 				Check: resource.ComposeTestCheckFunc(
-					testConfigContainerNamespace(tt, "scaleway_container_namespace.main"),
+					checks.CheckConfigContainerNamespace(tt, "scaleway_container_namespace.main"),
 				),
 			},
 			{
 				Config: fmt.Sprintf(`
 					resource scaleway_container_namespace main {
 						name = "%s"
-						description = "test container"
+						description = "test containerSDK"
 					}
 
 					resource scaleway_container main {
-						name = "my-container-02"
+						name = "my-containerSDK-02"
 						description = "environment variables test"
 						namespace_id = scaleway_container_namespace.main.id
 						registry_image = "${scaleway_container_namespace.main.registry_endpoint}/nginx:test"
@@ -302,9 +293,9 @@ func TestAccScalewayContainer_WithIMG(t *testing.T) {
 				`, containerNamespace),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					testCheckResourceAttrUUID("scaleway_container.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container.main", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_container.main", "registry_image"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-container-02"),
+					resource.TestCheckResourceAttr("scaleway_container.main", "name", "my-containerSDK-02"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "port", "80"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "cpu_limit", "140"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "memory_limit", "256"),
@@ -313,8 +304,8 @@ func TestAccScalewayContainer_WithIMG(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container.main", "timeout", "600"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "max_concurrency", "80"),
 					resource.TestCheckResourceAttr("scaleway_container.main", "deploy", "true"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "privacy", container.ContainerPrivacyPrivate.String()),
-					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", container.ContainerProtocolH2c.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "privacy", containerSDK.ContainerPrivacyPrivate.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "protocol", containerSDK.ContainerProtocolH2c.String()),
 				),
 			},
 		},
@@ -341,7 +332,7 @@ func TestAccScalewayContainer_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", container.ContainerHTTPOptionEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", containerSDK.ContainerHTTPOptionEnabled.String()),
 				),
 			},
 			{
@@ -356,7 +347,7 @@ func TestAccScalewayContainer_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", container.ContainerHTTPOptionRedirected.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", containerSDK.ContainerHTTPOptionRedirected.String()),
 				),
 			},
 			{
@@ -370,7 +361,7 @@ func TestAccScalewayContainer_HTTPOption(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerExists(tt, "scaleway_container.main"),
-					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", container.ContainerHTTPOptionEnabled.String()),
+					resource.TestCheckResourceAttr("scaleway_container.main", "http_option", containerSDK.ContainerHTTPOptionEnabled.String()),
 				),
 			},
 		},
@@ -381,15 +372,15 @@ func testAccCheckScalewayContainerExists(tt *tests.TestTools, n string) resource
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("resource container not found: %s", n)
+			return fmt.Errorf("resource containerSDK not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetContainer(&container.GetContainerRequest{
+		_, err = api.GetContainer(&containerSDK.GetContainerRequest{
 			ContainerID: id,
 			Region:      region,
 		})
@@ -408,137 +399,23 @@ func testAccCheckScalewayContainerDestroy(tt *tests.TestTools) resource.TestChec
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteContainer(&container.DeleteContainerRequest{
+			_, err = api.DeleteContainer(&containerSDK.DeleteContainerRequest{
 				ContainerID: id,
 				Region:      region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("container (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("containerSDK (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {
 				return err
 			}
-		}
-
-		return nil
-	}
-}
-
-func testConfigContainerNamespace(tt *tests.TestTools, n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// Do not execute docker requests when running with cassettes
-		if !*tests.UpdateCassettes {
-			return nil
-		}
-
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found: %s", n)
-		}
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		ns, err := api.WaitForNamespace(&container.WaitForNamespaceRequest{
-			NamespaceID: id,
-			Region:      region,
-		})
-		if err != nil {
-			return fmt.Errorf("error waiting namespace: %v", err)
-		}
-
-		meta := tt.Meta
-		var errorMessage ErrorRegistryMessage
-
-		accessKey, _ := meta.GetScwClient().GetAccessKey()
-		secretKey, _ := meta.GetScwClient().GetSecretKey()
-		authConfig := registry.AuthConfig{
-			ServerAddress: ns.RegistryEndpoint,
-			Username:      accessKey,
-			Password:      secretKey,
-		}
-
-		cli, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
-		if err != nil {
-			return fmt.Errorf("could not connect to Docker: %v", err)
-		}
-
-		encodedJSON, err := json.Marshal(authConfig)
-		if err != nil {
-			return fmt.Errorf("could not marshal auth config: %v", err)
-		}
-
-		ctx := context.Background()
-		authStr := base64.URLEncoding.EncodeToString(encodedJSON)
-
-		out, err := cli.ImagePull(ctx, testDockerIMG, types.ImagePullOptions{})
-		if err != nil {
-			return fmt.Errorf("could not pull image: %v", err)
-		}
-
-		defer out.Close()
-
-		buffIOReader := bufio.NewReader(out)
-		for {
-			streamBytes, errPull := buffIOReader.ReadBytes('\n')
-			if errPull == io.EOF {
-				break
-			}
-			err = json.Unmarshal(streamBytes, &errorMessage)
-			if err != nil {
-				return fmt.Errorf("could not unmarshal: %v", err)
-			}
-
-			if errorMessage.Error != "" {
-				return errors.New(errorMessage.Error)
-			}
-		}
-
-		imageTag := testDockerIMG
-		scwTag := ns.RegistryEndpoint + "/nginx:test"
-
-		err = cli.ImageTag(ctx, imageTag, scwTag)
-		if err != nil {
-			return fmt.Errorf("could not tag image: %v", err)
-		}
-
-		pusher, err := cli.ImagePush(ctx, scwTag, types.ImagePushOptions{RegistryAuth: authStr})
-		if err != nil {
-			return fmt.Errorf("could not push image: %v", err)
-		}
-
-		defer pusher.Close()
-
-		buffIOReader = bufio.NewReader(pusher)
-		for {
-			streamBytes, errPush := buffIOReader.ReadBytes('\n')
-			if errPush == io.EOF {
-				break
-			}
-			err = json.Unmarshal(streamBytes, &errorMessage)
-			if err != nil {
-				return fmt.Errorf("could not unmarshal: %v", err)
-			}
-
-			if errorMessage.Error != "" {
-				return errors.New(errorMessage.Error)
-			}
-		}
-
-		_, err = api.WaitForNamespace(&container.WaitForNamespaceRequest{
-			NamespaceID: id,
-			Region:      region,
-		})
-		if err != nil {
-			return fmt.Errorf("error waiting namespace: %v", err)
 		}
 
 		return nil

@@ -14,7 +14,7 @@ func TestAccScalewayDataSourceIPAMIPs_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -99,7 +99,7 @@ func TestAccScalewayDataSourceIPAMIPs_RedisCluster(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

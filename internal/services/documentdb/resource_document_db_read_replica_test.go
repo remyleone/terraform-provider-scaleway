@@ -2,14 +2,15 @@ package documentdb_test
 
 import (
 	"fmt"
+	documentdbSDK "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBReadReplica_Basic(t *testing.T) {
@@ -220,12 +221,12 @@ func testAccCheckDocumentDBReadReplicaExists(tt *tests.TestTools, readReplica st
 			return fmt.Errorf("resource not found: %s", readReplica)
 		}
 
-		api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, readReplicaResource.Primary.ID)
+		api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), readReplicaResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetReadReplica(&documentdb.GetReadReplicaRequest{
+		_, err = api.GetReadReplica(&documentdbSDK.GetReadReplicaRequest{
 			Region:        region,
 			ReadReplicaID: id,
 		})
@@ -244,12 +245,12 @@ func testAccCheckScalewayDocumentDBReadReplicaDestroy(tt *tests.TestTools) resou
 				continue
 			}
 
-			api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.GetReadReplica(&documentdb.GetReadReplicaRequest{
+			_, err = api.GetReadReplica(&documentdbSDK.GetReadReplicaRequest{
 				ReadReplicaID: id,
 				Region:        region,
 			})

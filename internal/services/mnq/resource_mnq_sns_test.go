@@ -2,18 +2,17 @@ package mnq_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"strings"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"strings"
+	"testing"
 )
 
 func init() {
@@ -24,11 +23,11 @@ func init() {
 }
 
 func testSweepMNQSNS(_ string) error {
-	return tests.SweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+	return tests.SweepRegions((&mnqSDK.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
-		mnqAPI := mnq.NewSnsAPI(scwClient)
+		mnqAPI := mnqSDK.NewSnsAPI(scwClient)
 
-		logging.L.Debugf("sweeper: destroying the mnq sns in (%s)", region)
+		logging.L.Debugf("sweeper: destroying the mnqSDK sns in (%s)", region)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -39,7 +38,7 @@ func testSweepMNQSNS(_ string) error {
 				continue
 			}
 
-			_, err := mnqAPI.DeactivateSns(&mnq.SnsAPIDeactivateSnsRequest{
+			_, err := mnqAPI.DeactivateSns(&mnqSDK.SnsAPIDeactivateSnsRequest{
 				Region:    region,
 				ProjectID: project.ID,
 			})
@@ -74,7 +73,7 @@ func TestAccScalewayMNQSNS_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSNSExists(tt, "scaleway_mnq_sns.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sns.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sns.main", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sns.main", "endpoint"),
 				),
 			},
@@ -89,17 +88,17 @@ func testAccCheckScalewayMNQSNSExists(tt *tests.TestTools, n string) resource.Te
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqSNSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqSNSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		sns, err := api.GetSnsInfo(&mnq.SnsAPIGetSnsInfoRequest{
+		sns, err := api.GetSnsInfo(&mnqSDK.SnsAPIGetSnsInfoRequest{
 			ProjectID: id,
 			Region:    region,
 		})
 
-		if sns.Status != mnq.SnsInfoStatusEnabled {
+		if sns.Status != mnqSDK.SnsInfoStatusEnabled {
 			return fmt.Errorf("sns status should be enabled, got: %s", sns.Status)
 		}
 
@@ -118,12 +117,12 @@ func testAccCheckScalewayMNQSNSDestroy(tt *tests.TestTools) resource.TestCheckFu
 				continue
 			}
 
-			api, region, id, err := mnqSNSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqSNSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			sns, err := api.DeactivateSns(&mnq.SnsAPIDeactivateSnsRequest{
+			sns, err := api.DeactivateSns(&mnqSDK.SnsAPIDeactivateSnsRequest{
 				ProjectID: id,
 				Region:    region,
 			})
@@ -134,8 +133,8 @@ func testAccCheckScalewayMNQSNSDestroy(tt *tests.TestTools) resource.TestCheckFu
 				return err
 			}
 
-			if sns.Status != mnq.SnsInfoStatusDisabled {
-				return fmt.Errorf("mnq sns (%s) should be disabled", rs.Primary.ID)
+			if sns.Status != mnqSDK.SnsInfoStatusDisabled {
+				return fmt.Errorf("mnqSDK sns (%s) should be disabled", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

@@ -13,7 +13,7 @@ func TestAccScalewayDataSourceAvailabilityZones_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayDomainRecordDestroy(tt),
+		CheckDestroy:      CheckDomainRecordDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

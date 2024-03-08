@@ -3,13 +3,14 @@ package documentdb_test
 import (
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
+	documentdbSDK "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBPrivilege_Basic(t *testing.T) {
@@ -189,22 +190,22 @@ func testAccCheckDocumentDBPrivilegeExists(tt *tests.TestTools, instance string,
 			return fmt.Errorf("resource not found: %s", user)
 		}
 
-		api, _, _, err := documentDBAPIWithRegionAndID(tt.Meta, instanceResource.Primary.ID)
+		api, _, _, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), instanceResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		region, instanceID, userName, err := ResourceScalewayDocumentDBUserParseID(userResource.Primary.ID)
+		region, instanceID, userName, err := documentdb.ResourceScalewayDocumentDBUserParseID(userResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, databaseName, err := ResourceScalewayDocumentDBDatabaseName(databaseResource.Primary.ID)
+		_, databaseName, err := documentdb.ResourceScalewayDocumentDBDatabaseName(databaseResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		databases, err := api.ListPrivileges(&documentdb.ListPrivilegesRequest{
+		databases, err := api.ListPrivileges(&documentdbSDK.ListPrivilegesRequest{
 			Region:       region,
 			InstanceID:   instanceID,
 			DatabaseName: &databaseName,

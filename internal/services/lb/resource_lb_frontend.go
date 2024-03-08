@@ -36,7 +36,7 @@ func ResourceScalewayLbFrontend() *schema.Resource {
 		},
 		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
-			{Version: 0, Type: lbUpgradeV1SchemaType(), Upgrade: lbUpgradeV1SchemaUpgradeFunc},
+			{Version: 0, Type: LbUpgradeV1SchemaType(), Upgrade: LbUpgradeV1SchemaUpgradeFunc},
 		},
 		Schema: map[string]*schema.Schema{
 			"lb_id": {
@@ -234,7 +234,7 @@ func ResourceScalewayLbFrontend() *schema.Resource {
 }
 
 func ResourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, _, err := lbAPIWithZone(d, meta)
+	lbAPI, _, err := LbAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -303,7 +303,7 @@ func ResourceScalewayLbFrontendCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayLbFrontendRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -402,7 +402,7 @@ func ResourceScalewayLbFrontendUpdateACL(ctx context.Context, d *schema.Resource
 				stateACL.Name = apiACL.Name
 			}
 			// Verify if their values are the same and ignore if that's the case, update otherwise
-			if aclEquals(stateACL, apiACL) {
+			if AclEquals(stateACL, apiACL) {
 				continue
 			}
 			_, err = lbAPI.UpdateACL(&lbSDK.ZonedAPIUpdateACLRequest{
@@ -454,7 +454,7 @@ func expandsLBACLs(raw interface{}) []*lbSDK.ACL {
 }
 
 func ResourceScalewayLbFrontendUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -503,7 +503,7 @@ func ResourceScalewayLbFrontendUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayLbFrontendDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	lbAPI, zone, ID, err := lbAPIWithZoneAndID(meta, d.Id())
+	lbAPI, zone, ID, err := LbAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -529,7 +529,7 @@ func ResourceScalewayLbFrontendDelete(ctx context.Context, d *schema.ResourceDat
 	return nil
 }
 
-func aclEquals(aclA, aclB *lbSDK.ACL) bool {
+func AclEquals(aclA, aclB *lbSDK.ACL) bool {
 	if aclA.Name != aclB.Name {
 		return false
 	}

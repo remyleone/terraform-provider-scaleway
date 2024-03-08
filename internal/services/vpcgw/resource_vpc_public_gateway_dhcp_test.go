@@ -2,16 +2,15 @@ package vpcgw_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
+	"testing"
 )
 
 func init() {
@@ -23,10 +22,10 @@ func init() {
 
 func testSweepVPCPublicGatewayDHCP(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		api := vpcgw.NewAPI(scwClient)
+		api := vpcgwSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying public gateway dhcps in (%+v)", zone)
 
-		listDHCPsResponse, err := api.ListDHCPs(&vpcgw.ListDHCPsRequest{
+		listDHCPsResponse, err := api.ListDHCPs(&vpcgwSDK.ListDHCPsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepVPCPublicGatewayDHCP(_ string) error {
 		}
 
 		for _, dhcp := range listDHCPsResponse.Dhcps {
-			err := api.DeleteDHCP(&vpcgw.DeleteDHCPRequest{
+			err := api.DeleteDHCP(&vpcgwSDK.DeleteDHCPRequest{
 				Zone:   zone,
 				DHCPID: dhcp.ID,
 			})
@@ -54,7 +53,7 @@ func TestAccScalewayVPCPublicGatewayDHCP_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -172,51 +171,17 @@ func testAccCheckScalewayVPCPublicGatewayDHCPExists(tt *tests.TestTools, n strin
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = vpcgwAPI.GetDHCP(&vpcgw.GetDHCPRequest{
+		_, err = vpcgwAPI.GetDHCP(&vpcgwSDK.GetDHCPRequest{
 			DHCPID: ID,
 			Zone:   zone,
 		})
 		if err != nil {
 			return err
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type != "scaleway_vpc_public_gateway_dhcp" {
-				continue
-			}
-
-			vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-
-			_, err = vpcgwAPI.GetDHCP(&vpcgw.GetDHCPRequest{
-				DHCPID: ID,
-				Zone:   zone,
-			})
-
-			if err == nil {
-				return fmt.Errorf(
-					"VPC public gateway DHCP config %s still exists",
-					rs.Primary.ID,
-				)
-			}
-
-			// Unexpected api error we return it
-			if !http_errors.Is404Error(err) {
-				return err
-			}
 		}
 
 		return nil

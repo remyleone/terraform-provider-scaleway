@@ -5,17 +5,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"sort"
-"time"
+	"sort"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-"github.com/scaleway/scaleway-sdk-go/api/redis/v1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/scaleway/scaleway-sdk-go/api/redis/v1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
@@ -24,29 +24,29 @@ const (
 )
 
 // newRedisApi returns a new Redis API
-func newRedisAPI(m interface{}) *redis.API {
+func NewRedisAPI(m interface{}) *redis.API {
 	meta := m.(*meta2.Meta)
 	return redis.NewAPI(meta.GetScwClient())
 }
 
-// redisAPIWithZone returns a new Redis API and the zone for a Create request
-func redisAPIWithZone(d *schema.ResourceData, m interface{}) (*redis.API, scw.Zone, error) {
+// RedisAPIWithZone returns a new Redis API and the zone for a Create request
+func RedisAPIWithZone(d *schema.ResourceData, m interface{}) (*redis.API, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 
 	zone, err := locality.ExtractZone(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
-	return newRedisAPI(m), zone, nil
+	return NewRedisAPI(m), zone, nil
 }
 
-// redisAPIWithZoneAndID returns a Redis API with zone and ID extracted from the state
-func redisAPIWithZoneAndID(m interface{}, id string) (*redis.API, scw.Zone, string, error) {
+// RedisAPIWithZoneAndID returns a Redis API with zone and ID extracted from the state
+func RedisAPIWithZoneAndID(m interface{}, id string) (*redis.API, scw.Zone, string, error) {
 	zone, ID, err := locality.ParseZonedID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
-	return newRedisAPI(m), zone, ID, nil
+	return NewRedisAPI(m), zone, ID, nil
 }
 
 func waitForRedisCluster(ctx context.Context, api *redis.API, zone scw.Zone, id string, timeout time.Duration) (*redis.Cluster, error) {

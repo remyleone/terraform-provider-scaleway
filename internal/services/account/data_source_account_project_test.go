@@ -12,7 +12,7 @@ import (
 func TestAccScalewayDataSourceAccountProject_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
-	orgID, orgIDExists := tt.meta.GetScwClient().GetDefaultOrganizationID()
+	orgID, orgIDExists := tt.GetMeta().GetScwClient().GetDefaultOrganizationID()
 	if !orgIDExists {
 		orgID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	}
@@ -51,7 +51,7 @@ func TestAccScalewayDataSourceAccountProject_Basic(t *testing.T) {
 func TestAccScalewayDataSourceAccountProject_Default(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
-	orgID, orgIDExists := tt.meta.GetScwClient().GetDefaultOrganizationID()
+	orgID, orgIDExists := tt.GetMeta().GetScwClient().GetDefaultOrganizationID()
 	if !orgIDExists {
 		orgID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	}
@@ -94,7 +94,7 @@ func TestAccScalewayDataSourceAccountProject_Extract(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	projectID, projectIDExists := tt.meta.GetScwClient().GetDefaultProjectID()
+	projectID, projectIDExists := tt.GetMeta().GetScwClient().GetDefaultProjectID()
 	if !projectIDExists {
 		t.Skip("no default project ID")
 	}

@@ -4,16 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"net"
-"strings"
-"time"
+	"net"
+	"strings"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
@@ -22,8 +22,8 @@ const (
 	defaultDomainZoneRetryInterval = 5 * time.Second
 )
 
-// domainAPI returns a new domain API.
-func newDomainAPI(m interface{}) *domain.API {
+// NewDomainAPI returns a new domain API.
+func NewDomainAPI(m interface{}) *domain.API {
 	meta := m.(*meta2.Meta)
 
 	return domain.NewAPI(meta.GetScwClient())
@@ -294,7 +294,7 @@ func waitForDNSRecordExist(ctx context.Context, domainAPI *domain.API, dnsZone, 
 	}, scw.WithContext(ctx))
 }
 
-func findDefaultReverse(address string) string {
+func FindDefaultReverse(address string) string {
 	parts := strings.Split(address, ".")
 	for i, j := 0, len(parts)-1; i < j; i, j = i+1, j-1 {
 		parts[i], parts[j] = parts[j], parts[i]

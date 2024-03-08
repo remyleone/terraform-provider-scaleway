@@ -5,7 +5,7 @@ import (
 	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 )
 
-func accountV3ProjectAPI(m interface{}) *accountV3.ProjectAPI {
+func AccountV3ProjectAPI(m interface{}) *accountV3.ProjectAPI {
 	meta := m.(*meta2.Meta)
 	return accountV3.NewProjectAPI(meta.GetScwClient())
 }

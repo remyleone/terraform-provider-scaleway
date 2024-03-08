@@ -3,6 +3,7 @@ package lb_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/lb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -107,7 +108,7 @@ func testAccCheckScalewayLbRouteExists(tt *tests.TestTools, n string) resource.T
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -131,7 +132,7 @@ func testAccCheckScalewayLbRouteDestroy(tt *tests.TestTools) resource.TestCheckF
 				continue
 			}
 
-			lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}

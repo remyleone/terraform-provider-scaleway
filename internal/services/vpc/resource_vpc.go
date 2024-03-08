@@ -86,7 +86,7 @@ func ResourceScalewayVPCCreate(ctx context.Context, d *schema.ResourceData, meta
 }
 
 func ResourceScalewayVPCRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -119,7 +119,7 @@ func ResourceScalewayVPCRead(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func ResourceScalewayVPCUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -138,7 +138,7 @@ func ResourceScalewayVPCUpdate(ctx context.Context, d *schema.ResourceData, meta
 }
 
 func ResourceScalewayVPCDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

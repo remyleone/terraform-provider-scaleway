@@ -4,20 +4,22 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 )
 
 func TestAccScalewayContainerDomain_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "container-basic." + testDomain
+	testDNSZone := "container-basic." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayContainerDomain_Basic: test dns zone: %s", testDNSZone)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -29,7 +31,7 @@ func TestAccScalewayContainerDomain_Basic(t *testing.T) {
 				Config: `
 				resource scaleway_container_namespace main {}
 				`,
-				Check: testConfigContainerNamespace(tt, "scaleway_container_namespace.main"),
+				Check: checks.CheckConfigContainerNamespace(tt, "scaleway_container_namespace.main"),
 			},
 			{
 				Config: fmt.Sprintf(`
@@ -70,12 +72,12 @@ func testAccCheckScalewayContainerDomainExists(tt *tests.TestTools, n string) re
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetDomain(&container.GetDomainRequest{
+		_, err = api.GetDomain(&containerSDK.GetDomainRequest{
 			Region:   region,
 			DomainID: id,
 		})
@@ -94,12 +96,12 @@ func testAccCheckScalewayContainerDomainDestroy(tt *tests.TestTools) resource.Te
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.GetDomain(&container.GetDomainRequest{
+			_, err = api.GetDomain(&containerSDK.GetDomainRequest{
 				Region:   region,
 				DomainID: id,
 			})

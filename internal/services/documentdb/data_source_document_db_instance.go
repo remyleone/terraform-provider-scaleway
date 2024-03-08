@@ -31,7 +31,7 @@ func DataSourceScalewayDocumentDBInstance() *schema.Resource {
 }
 
 func DataSourceScalewayDocumentDBInstanceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := documentDBAPIWithRegion(d, meta)
+	api, region, err := DocumentDBAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -2,14 +2,13 @@ package instance_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -149,12 +148,12 @@ func testAccCheckScalewayInstancePrivateNICExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		instanceAPI, zone, innerID, outerID, err := instanceAPIWithZoneAndNestedID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, innerID, outerID, err := instance.InstanceAPIWithZoneAndNestedID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = instanceAPI.GetPrivateNIC(&instance.GetPrivateNICRequest{
+		_, err = instanceAPI.GetPrivateNIC(&instanceSDK.GetPrivateNICRequest{
 			ServerID:     outerID,
 			PrivateNicID: innerID,
 			Zone:         zone,
@@ -174,12 +173,12 @@ func testAccCheckScalewayInstancePrivateNICDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			instanceAPI, zone, innerID, outerID, err := instanceAPIWithZoneAndNestedID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, innerID, outerID, err := instance.InstanceAPIWithZoneAndNestedID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = instanceAPI.GetPrivateNIC(&instance.GetPrivateNICRequest{
+			_, err = instanceAPI.GetPrivateNIC(&instanceSDK.GetPrivateNICRequest{
 				ServerID:     outerID,
 				PrivateNicID: innerID,
 				Zone:         zone,
@@ -187,7 +186,7 @@ func testAccCheckScalewayInstancePrivateNICDestroy(tt *tests.TestTools) resource
 
 			if err == nil {
 				return fmt.Errorf(
-					"instance private NIC %s still exists",
+					"instanceSDK private NIC %s still exists",
 					rs.Primary.ID,
 				)
 			}

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepMNQNatsAccount(_ string) error {
-	return tests.SweepRegions((&mnq.NatsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		mnqAPI := mnq.NewNatsAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the mnq nats accounts in (%s)", region)
+	return tests.SweepRegions((&mnqSDK.NatsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		mnqAPI := mnqSDK.NewNatsAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the mnqSDK nats accounts in (%s)", region)
 		listNatsAccounts, err := mnqAPI.ListNatsAccounts(
-			&mnq.NatsAPIListNatsAccountsRequest{
+			&mnqSDK.NatsAPIListNatsAccountsRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepMNQNatsAccount(_ string) error {
 		}
 
 		for _, account := range listNatsAccounts.NatsAccounts {
-			err := mnqAPI.DeleteNatsAccount(&mnq.NatsAPIDeleteNatsAccountRequest{
+			err := mnqAPI.DeleteNatsAccount(&mnqSDK.NatsAPIDeleteNatsAccountRequest{
 				NatsAccountID: account.ID,
 				Region:        region,
 			})
@@ -61,12 +62,12 @@ func TestAccScalewayMNQNatsAccount_Basic(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_mnq_nats_account main {
-						name = "test-mnq-nats-account-basic"
+						name = "test-mnqSDK-nats-account-basic"
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQNatsAccountExists(tt, "scaleway_mnq_nats_account.main"),
-					resource.TestCheckResourceAttr("scaleway_mnq_nats_account.main", "name", "test-mnq-nats-account-basic"),
+					resource.TestCheckResourceAttr("scaleway_mnq_nats_account.main", "name", "test-mnqSDK-nats-account-basic"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_nats_account.main", "endpoint"),
 				),
 			},
@@ -81,12 +82,12 @@ func testAccCheckScalewayMNQNatsAccountExists(tt *tests.TestTools, n string) res
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqNatsAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqNatsAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetNatsAccount(&mnq.NatsAPIGetNatsAccountRequest{
+		_, err = api.GetNatsAccount(&mnqSDK.NatsAPIGetNatsAccountRequest{
 			NatsAccountID: id,
 			Region:        region,
 		})
@@ -105,18 +106,18 @@ func testAccCheckScalewayMNQNatsAccountDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			api, region, id, err := mnqNatsAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqNatsAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteNatsAccount(&mnq.NatsAPIDeleteNatsAccountRequest{
+			err = api.DeleteNatsAccount(&mnqSDK.NatsAPIDeleteNatsAccountRequest{
 				NatsAccountID: id,
 				Region:        region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("mnq nats account (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("mnqSDK nats account (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

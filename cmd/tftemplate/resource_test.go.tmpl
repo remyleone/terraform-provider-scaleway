@@ -62,7 +62,7 @@ func TestAccScaleway{{.Resource}}_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScaleway{{.Resource}}Exists(tt, "scaleway_{{.ResourceHCL}}.main"),
-					testCheckResourceAttrUUID("scaleway_{{.ResourceHCL}}.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_{{.ResourceHCL}}.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_{{.ResourceHCL}}.main", "name", "test-{{.API}}-{{ .ResourceCleanLow}}-basic"),
 				),
 			},

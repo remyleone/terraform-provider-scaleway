@@ -2,19 +2,19 @@ package fip_test
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	baremetalSDK "github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
+	fipSDK "github.com/scaleway/scaleway-sdk-go/api/flexibleip/v1alpha1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/baremetal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/fip"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"net"
 	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
-	flexibleip "github.com/scaleway/scaleway-sdk-go/api/flexibleip/v1alpha1"
-	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const SSHKeyFlexibleIP = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM7HUxRyQtB2rnlhQUcbDGCZcTJg7OvoznOiyC9W6IxH opensource@scaleway.com"
@@ -28,16 +28,16 @@ func init() {
 
 func testSweepFlexibleIP(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		fipAPI := flexibleip.NewAPI(scwClient)
+		fipAPI := fipSDK.NewAPI(scwClient)
 
-		listIPs, err := fipAPI.ListFlexibleIPs(&flexibleip.ListFlexibleIPsRequest{Zone: zone}, scw.WithAllPages())
+		listIPs, err := fipAPI.ListFlexibleIPs(&fipSDK.ListFlexibleIPsRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			logging.L.Warningf("error listing ips in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
 		for _, ip := range listIPs.FlexibleIPs {
-			err := fipAPI.DeleteFlexibleIP(&flexibleip.DeleteFlexibleIPRequest{
+			err := fipAPI.DeleteFlexibleIP(&fipSDK.DeleteFlexibleIPRequest{
 				FipID: ip.ID,
 				Zone:  zone,
 			})
@@ -140,7 +140,7 @@ func TestAccScalewayFlexibleIP_CreateAndAttachToBaremetalServer(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayFlexibleIPDestroy(tt),
-			testAccCheckScalewayBaremetalServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -234,7 +234,7 @@ func TestAccScalewayFlexibleIP_AttachAndDetachFromBaremetalServer(t *testing.T) 
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayFlexibleIPDestroy(tt),
-			testAccCheckScalewayBaremetalServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -336,12 +336,12 @@ func testAccCheckScalewayFlexibleIPExists(tt *tests.TestTools, name string) reso
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		fipAPI, zone, ID, err := fipAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		fipAPI, zone, ID, err := fip.FipAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = fipAPI.GetFlexibleIP(&flexibleip.GetFlexibleIPRequest{
+		_, err = fipAPI.GetFlexibleIP(&fipSDK.GetFlexibleIPRequest{
 			FipID: ID,
 			Zone:  zone,
 		})
@@ -360,12 +360,12 @@ func testAccCheckScalewayFlexibleIPDestroy(tt *tests.TestTools) resource.TestChe
 				continue
 			}
 
-			fipAPI, zone, id, err := fipAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			fipAPI, zone, id, err := fip.FipAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = fipAPI.GetFlexibleIP(&flexibleip.GetFlexibleIPRequest{
+			_, err = fipAPI.GetFlexibleIP(&fipSDK.GetFlexibleIPRequest{
 				FipID: id,
 				Zone:  zone,
 			})
@@ -397,12 +397,12 @@ func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *tests.TestTools
 			return fmt.Errorf("resource not found: %s", serverResource)
 		}
 
-		baremetalAPI, zoneID, err := baremetalAPIWithZoneAndID(tt.Meta, ipState.Primary.ID)
+		baremetalAPI, zoneID, err := baremetal.BaremetalAPIWithZoneAndID(tt.GetMeta(), ipState.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		server, err := baremetalAPI.GetServer(&baremetal.GetServerRequest{
+		server, err := baremetalAPI.GetServer(&baremetalSDK.GetServerRequest{
 			Zone:     zoneID.Zone,
 			ServerID: locality.ExpandID(serverState.Primary.ID),
 		})
@@ -410,11 +410,11 @@ func testAccCheckScalewayFlexibleIPAttachedToBaremetalServer(tt *tests.TestTools
 			return err
 		}
 
-		fipAPI, zone, ID, err := fipAPIWithZoneAndID(tt.Meta, ipState.Primary.ID)
+		fipAPI, zone, ID, err := fip.FipAPIWithZoneAndID(tt.GetMeta(), ipState.Primary.ID)
 		if err != nil {
 			return err
 		}
-		ip, err := fipAPI.GetFlexibleIP(&flexibleip.GetFlexibleIPRequest{
+		ip, err := fipAPI.GetFlexibleIP(&fipSDK.GetFlexibleIPRequest{
 			FipID: ID,
 			Zone:  zone,
 		})
@@ -437,12 +437,12 @@ func testAccCheckScalewayFlexibleIPIsIPv6(tt *tests.TestTools, resourceName stri
 			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		fipAPI, zone, ID, err := fipAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		fipAPI, zone, ID, err := fip.FipAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		flexibleIP, err := fipAPI.GetFlexibleIP(&flexibleip.GetFlexibleIPRequest{
+		flexibleIP, err := fipAPI.GetFlexibleIP(&fipSDK.GetFlexibleIPRequest{
 			Zone:  zone,
 			FipID: ID,
 		})

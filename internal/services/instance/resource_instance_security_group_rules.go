@@ -55,7 +55,7 @@ func ResourceScalewayInstanceSecurityGroupRulesCreate(ctx context.Context, d *sc
 func ResourceScalewayInstanceSecurityGroupRulesRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	securityGroupZonedID := d.Id()
 
-	instanceAPI, zone, securityGroupID, err := instanceAPIWithZoneAndID(meta, securityGroupZonedID)
+	instanceAPI, zone, securityGroupID, err := InstanceAPIWithZoneAndID(meta, securityGroupZonedID)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -79,7 +79,7 @@ func ResourceScalewayInstanceSecurityGroupRulesRead(ctx context.Context, d *sche
 
 func ResourceScalewayInstanceSecurityGroupRulesUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	securityGroupZonedID := d.Id()
-	instanceAPI, zone, securityGroupID, err := instanceAPIWithZoneAndID(meta, securityGroupZonedID)
+	instanceAPI, zone, securityGroupID, err := InstanceAPIWithZoneAndID(meta, securityGroupZonedID)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -94,7 +94,7 @@ func ResourceScalewayInstanceSecurityGroupRulesUpdate(ctx context.Context, d *sc
 
 func ResourceScalewayInstanceSecurityGroupRulesDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	securityGroupZonedID := d.Id()
-	instanceAPI, zone, securityGroupID, err := instanceAPIWithZoneAndID(meta, securityGroupZonedID)
+	instanceAPI, zone, securityGroupID, err := InstanceAPIWithZoneAndID(meta, securityGroupZonedID)
 	if err != nil {
 		return diag.FromErr(err)
 	}

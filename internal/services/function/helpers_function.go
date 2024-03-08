@@ -5,20 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"net/http"
-"net/http/httputil"
-"os"
-"strings"
-"time"
+	"net/http"
+	"net/http/httputil"
+	"os"
+	"strings"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-"github.com/hashicorp/terraform-plugin-log/tflog"
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
@@ -41,8 +41,8 @@ func functionAPIWithRegion(d *schema.ResourceData, m interface{}) (*function.API
 	return api, region, nil
 }
 
-// functionAPIWithRegionAndID returns a new container registry API, region and ID.
-func functionAPIWithRegionAndID(m interface{}, id string) (*function.API, scw.Region, string, error) {
+// FunctionAPIWithRegionAndID returns a new container registry API, region and ID.
+func FunctionAPIWithRegionAndID(m interface{}, id string) (*function.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := function.NewAPI(meta.GetScwClient())
 

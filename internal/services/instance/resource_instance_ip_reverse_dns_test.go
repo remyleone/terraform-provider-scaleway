@@ -12,7 +12,7 @@ import (
 func TestAccScalewayInstanceIPReverseDns_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
-	testDNSZone := "tf-reverse-instance." + testDomain
+	testDNSZone := "tf-reverse-instance." + tests.TestDomain
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,

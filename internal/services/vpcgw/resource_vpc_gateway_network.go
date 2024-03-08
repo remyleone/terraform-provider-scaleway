@@ -133,7 +133,7 @@ func ResourceScalewayVPCGatewayNetwork() *schema.Resource {
 }
 
 func ResourceScalewayVPCGatewayNetworkCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcgwAPI, zone, err := vpcgwAPIWithZone(d, meta)
+	vpcgwAPI, zone, err := VpcgwAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -194,7 +194,7 @@ func ResourceScalewayVPCGatewayNetworkCreate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayVPCGatewayNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(meta, d.Id())
+	vpcgwAPI, zone, ID, err := VpcgwAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -265,7 +265,7 @@ func ResourceScalewayVPCGatewayNetworkRead(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayVPCGatewayNetworkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(meta, d.Id())
+	vpcgwAPI, zone, ID, err := VpcgwAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -318,7 +318,7 @@ func ResourceScalewayVPCGatewayNetworkUpdate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayVPCGatewayNetworkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcgwAPI, zone, id, err := vpcgwAPIWithZoneAndID(meta, d.Id())
+	vpcgwAPI, zone, id, err := VpcgwAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

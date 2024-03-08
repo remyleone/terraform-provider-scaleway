@@ -165,7 +165,7 @@ func ResourceScalewayWebhosting() *schema.Resource {
 }
 
 func ResourceScalewayWebhostingCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := webhostingAPIWithRegion(d, meta)
+	api, region, err := WebhostingAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +214,7 @@ func ResourceScalewayWebhostingCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayWebhostingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := webhostingAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := WebhostingAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -252,7 +252,7 @@ func ResourceScalewayWebhostingRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func ResourceScalewayWebhostingUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := webhostingAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := WebhostingAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -304,7 +304,7 @@ func ResourceScalewayWebhostingUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayWebhostingDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := webhostingAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := WebhostingAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

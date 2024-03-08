@@ -34,7 +34,7 @@ func DataSourceScalewayRedisCluster() *schema.Resource {
 }
 
 func DataSourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, zone, err := redisAPIWithZone(d, meta)
+	api, zone, err := RedisAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

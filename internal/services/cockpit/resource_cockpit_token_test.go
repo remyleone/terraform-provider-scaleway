@@ -3,6 +3,7 @@ package cockpit_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/cockpit"
 	"strings"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
+	cockpitSDK "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -25,7 +26,7 @@ func init() {
 func testSweepCockpitToken(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
-		cockpitAPI := cockpit.NewAPI(scwClient)
+		cockpitAPI := cockpitSDK.NewAPI(scwClient)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -37,7 +38,7 @@ func testSweepCockpitToken(_ string) error {
 				continue
 			}
 
-			listTokens, err := cockpitAPI.ListTokens(&cockpit.ListTokensRequest{
+			listTokens, err := cockpitAPI.ListTokens(&cockpitSDK.ListTokensRequest{
 				ProjectID: project.ID,
 			}, scw.WithAllPages())
 			if err != nil {
@@ -49,7 +50,7 @@ func testSweepCockpitToken(_ string) error {
 			}
 
 			for _, token := range listTokens.Tokens {
-				err = cockpitAPI.DeleteToken(&cockpit.DeleteTokenRequest{
+				err = cockpitAPI.DeleteToken(&cockpitSDK.DeleteTokenRequest{
 					TokenID: token.ID,
 				})
 				if err != nil {
@@ -251,12 +252,12 @@ func testAccCheckScalewayCockpitTokenExists(tt *tests.TestTools, n string) resou
 			return fmt.Errorf("resource cockpit token not found: %s", n)
 		}
 
-		api, err := cockpitAPI(tt.Meta)
+		api, err := cockpit.NewAPI(tt.GetMeta())
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetToken(&cockpit.GetTokenRequest{
+		_, err = api.GetToken(&cockpitSDK.GetTokenRequest{
 			TokenID: rs.Primary.ID,
 		})
 		if err != nil {
@@ -274,12 +275,12 @@ func testAccCheckScalewayCockpitTokenDestroy(tt *tests.TestTools) resource.TestC
 				continue
 			}
 
-			api, err := cockpitAPI(tt.Meta)
+			api, err := cockpit.NewAPI(tt.GetMeta())
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteToken(&cockpit.DeleteTokenRequest{
+			err = api.DeleteToken(&cockpitSDK.DeleteTokenRequest{
 				TokenID: rs.Primary.ID,
 			})
 			if err == nil {
@@ -287,8 +288,7 @@ func testAccCheckScalewayCockpitTokenDestroy(tt *tests.TestTools) resource.TestC
 			}
 
 			// Currently the API returns a 403 error when we try to delete a token that does not exist
-			if !http_errors.Is404Error(err)) && !http_errors.Is403Error(err)
-			{
+			if !http_errors.Is404Error(err) && !http_errors.Is403Error(err) {
 				return err
 			}
 		}

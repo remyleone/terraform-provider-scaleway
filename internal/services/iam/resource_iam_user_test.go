@@ -4,13 +4,14 @@ import (
 	"errors"
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,24 +24,24 @@ func init() {
 
 func testSweepIamUser(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
-		api := iam.NewAPI(scwClient)
+		api := iamSDK.NewAPI(scwClient)
 
 		orgID, exists := scwClient.GetDefaultOrganizationID()
 		if !exists {
 			return errors.New("missing organizationID")
 		}
 
-		listUsers, err := api.ListUsers(&iam.ListUsersRequest{
+		listUsers, err := api.ListUsers(&iamSDK.ListUsersRequest{
 			OrganizationID: &orgID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to list users: %w", err)
 		}
 		for _, user := range listUsers.Users {
-			if !isTestResource(user.Email) {
+			if !tests.IsTestResource(user.Email) {
 				continue
 			}
-			err = api.DeleteUser(&iam.DeleteUserRequest{
+			err = api.DeleteUser(&iamSDK.DeleteUserRequest{
 				UserID: user.ID,
 			})
 			if err != nil {
@@ -66,7 +67,7 @@ func TestAccScalewayIamUser_Basic(t *testing.T) {
 					`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIamUserExists(tt, "scaleway_iam_user.user_basic"),
-					testCheckResourceAttrUUID("scaleway_iam_user.user_basic", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_iam_user.user_basic", "id"),
 					resource.TestCheckResourceAttr("scaleway_iam_user.user_basic", "email", "foo@scaleway.com"),
 				),
 			},
@@ -81,9 +82,9 @@ func testAccCheckScalewayIamUserDestroy(tt *tests.TestTools) resource.TestCheckF
 				continue
 			}
 
-			iamAPI := iamAPI(tt.Meta)
+			iamAPI := iam.IAMAPI(tt.GetMeta())
 
-			_, err := iamAPI.GetUser(&iam.GetUserRequest{
+			_, err := iamAPI.GetUser(&iamSDK.GetUserRequest{
 				UserID: rs.Primary.ID,
 			})
 

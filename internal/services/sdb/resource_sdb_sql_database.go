@@ -61,7 +61,7 @@ func ResourceScalewaySDBSQLDatabase() *schema.Resource {
 }
 
 func ResourceScalewayServerlessSQLDBDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := serverlessSQLdbAPIWithRegion(d, meta)
+	api, region, err := ServerlessSQLdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -89,7 +89,7 @@ func ResourceScalewayServerlessSQLDBDatabaseCreate(ctx context.Context, d *schem
 }
 
 func ResourceScalewayServerlessSQLDBDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := serverlessSQLdbAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := ServerlessSQLdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -114,7 +114,7 @@ func ResourceScalewayServerlessSQLDBDatabaseRead(ctx context.Context, d *schema.
 }
 
 func ResourceScalewayServerlessSQLDBDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := serverlessSQLdbAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := ServerlessSQLdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -148,7 +148,7 @@ func ResourceScalewayServerlessSQLDBDatabaseUpdate(ctx context.Context, d *schem
 }
 
 func ResourceScalewayServerlessSQLDBDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := serverlessSQLdbAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := ServerlessSQLdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

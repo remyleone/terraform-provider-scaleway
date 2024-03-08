@@ -32,7 +32,7 @@ func DataSourceScalewayInstancePlacementGroup() *schema.Resource {
 }
 
 func DataSourceScalewayInstancePlacementGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, zone, err := instanceAPIWithZone(d, meta)
+	api, zone, err := InstanceAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

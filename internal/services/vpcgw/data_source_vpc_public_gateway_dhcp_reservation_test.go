@@ -2,6 +2,7 @@ package vpcgw_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -16,7 +17,7 @@ func TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Basic(t *testing.T
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 
 		Steps: []resource.TestStep{
 			{
@@ -120,7 +121,7 @@ func TestAccScalewayDataSourceVPCPublicGatewayDHCPReservation_Static(t *testing.
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
 
 		Steps: []resource.TestStep{
 			{

@@ -2,16 +2,14 @@ package ipam_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/ipam/v1"
+	ipamSDK "github.com/scaleway/scaleway-sdk-go/api/ipam/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/ipam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,17 +21,17 @@ func init() {
 
 func testSweepIPAMIP(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		ipamAPI := ipam.NewAPI(scwClient)
+		ipamAPI := ipamSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: deleting the IPs in (%s)", region)
 
-		listIPs, err := ipamAPI.ListIPs(&ipam.ListIPsRequest{Region: region}, scw.WithAllPages())
+		listIPs, err := ipamAPI.ListIPs(&ipamSDK.ListIPsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing ips in (%s) in sweeper: %s", region, err)
 		}
 
 		for _, v := range listIPs.IPs {
-			err := ipamAPI.ReleaseIP(&ipam.ReleaseIPRequest{
+			err := ipamAPI.ReleaseIP(&ipamSDK.ReleaseIPRequest{
 				IPID:   v.ID,
 				Region: region,
 			})
@@ -54,7 +52,7 @@ func TestAccScalewayIPAMIP_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -78,7 +76,7 @@ func TestAccScalewayIPAMIP_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayIPAMIPExists(tt, "scaleway_ipam_ip.ip01"),
 					resource.TestCheckResourceAttr("scaleway_ipam_ip.ip01", "is_ipv6", "false"),
-					testAccCheckScalewayResourceRawIDMatches("scaleway_ipam_ip.ip01", "source.0.private_network_id", "scaleway_vpc_private_network.pn01", "id"),
+					tests.TestAccCheckScalewayResourceRawIDMatches("scaleway_ipam_ip.ip01", "source.0.private_network_id", "scaleway_vpc_private_network.pn01", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_ipam_ip.ip01", "source.0.subnet_id"),
 					resource.TestCheckResourceAttrSet("scaleway_ipam_ip.ip01", "address"),
 					resource.TestCheckResourceAttrSet("scaleway_ipam_ip.ip01", "created_at"),
@@ -95,7 +93,7 @@ func TestAccScalewayIPAMIP_WithStandaloneAddress(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -132,7 +130,7 @@ func TestAccScalewayIPAMIP_WithTags(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -200,47 +198,17 @@ func testAccCheckScalewayIPAMIPExists(tt *tests.TestTools, n string) resource.Te
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		ipamAPI, region, ID, err := ipamAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		ipamAPI, region, ID, err := ipam.IpamAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = ipamAPI.GetIP(&ipam.GetIPRequest{
+		_, err = ipamAPI.GetIP(&ipamSDK.GetIPRequest{
 			IPID:   ID,
 			Region: region,
 		})
 		if err != nil {
 			return err
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckScalewayIPAMIPDestroy(tt *tests.TestTools) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
-		for _, rs := range state.RootModule().Resources {
-			if rs.Type != "scaleway_ipam_ip" {
-				continue
-			}
-
-			ipamAPI, region, ID, err := ipamAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-
-			_, err = ipamAPI.GetIP(&ipam.GetIPRequest{
-				IPID:   ID,
-				Region: region,
-			})
-
-			if err == nil {
-				return fmt.Errorf("IP (%s) still exists", rs.Primary.ID)
-			}
-
-			if !http_errors.Is404Error(err) {
-				return err
-			}
 		}
 
 		return nil

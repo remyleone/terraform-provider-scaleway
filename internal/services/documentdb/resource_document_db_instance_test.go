@@ -2,16 +2,15 @@ package documentdb_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
+	documentdbSDK "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -22,11 +21,11 @@ func init() {
 }
 
 func testSweepDocumentDBInstance(_ string) error {
-	return tests.SweepRegions((&documentdb.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		api := documentdb.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the documentdb instances in (%s)", region)
+	return tests.SweepRegions((&documentdbSDK.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		api := documentdbSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the documentdbSDK instances in (%s)", region)
 		listInstances, err := api.ListInstances(
-			&documentdb.ListInstancesRequest{
+			&documentdbSDK.ListInstancesRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepDocumentDBInstance(_ string) error {
 		}
 
 		for _, instance := range listInstances.Instances {
-			_, err := api.DeleteInstance(&documentdb.DeleteInstanceRequest{
+			_, err := api.DeleteInstance(&documentdbSDK.DeleteInstanceRequest{
 				InstanceID: instance.ID,
 				Region:     region,
 			})
@@ -61,7 +60,7 @@ func TestAccScalewayDocumentDBInstance_Basic(t *testing.T) {
 			{
 				Config: `
 				resource "scaleway_documentdb_instance" "main" {
-				  name              = "test-documentdb-instance-basic"
+				  name              = "test-documentdbSDK-instance-basic"
 				  node_type         = "docdb-play2-pico"
 				  engine            = "FerretDB-1"
 				  user_name         = "my_initial_user"
@@ -72,8 +71,8 @@ func TestAccScalewayDocumentDBInstance_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBInstanceExists(tt, "scaleway_documentdb_instance.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_instance.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_documentdb_instance.main", "name", "test-documentdb-instance-basic"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_instance.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_documentdb_instance.main", "name", "test-documentdbSDK-instance-basic"),
 				),
 			},
 		},
@@ -87,12 +86,12 @@ func testAccCheckScalewayDocumentDBInstanceExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetInstance(&documentdb.GetInstanceRequest{
+		_, err = api.GetInstance(&documentdbSDK.GetInstanceRequest{
 			InstanceID: id,
 			Region:     region,
 		})
@@ -111,18 +110,18 @@ func testAccCheckScalewayDocumentDBInstanceDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteInstance(&documentdb.DeleteInstanceRequest{
+			_, err = api.DeleteInstance(&documentdbSDK.DeleteInstanceRequest{
 				InstanceID: id,
 				Region:     region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("documentdb instance (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("documentdbSDK instance (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

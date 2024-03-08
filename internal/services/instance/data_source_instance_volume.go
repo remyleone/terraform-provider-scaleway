@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/datasource"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -34,7 +34,7 @@ func DataSourceScalewayInstanceVolume() *schema.Resource {
 }
 
 func DataSourceScalewayInstanceVolumeRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, err := instanceAPIWithZone(d, meta)
+	instanceAPI, zone, err := InstanceAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -42,7 +42,7 @@ func DataSourceScalewayInstanceVolumeRead(ctx context.Context, d *schema.Resourc
 	volumeID, ok := d.GetOk("volume_id")
 	if !ok { // Get volumes by zone and name.
 		volumeName := d.Get("name").(string)
-		res, err := instanceAPI.ListVolumes(&instance.ListVolumesRequest{
+		res, err := instanceAPI.ListVolumes(&instanceSDK.ListVolumesRequest{
 			Zone:    zone,
 			Name:    types.ExpandStringPtr(volumeName),
 			Project: types.ExpandStringPtr(d.Get("project_id")),
@@ -53,7 +53,7 @@ func DataSourceScalewayInstanceVolumeRead(ctx context.Context, d *schema.Resourc
 
 		foundVolume, err := datasource.FindExact(
 			res.Volumes,
-			func(s *instance.Volume) bool { return s.Name == volumeName },
+			func(s *instanceSDK.Volume) bool { return s.Name == volumeName },
 			volumeName,
 		)
 		if err != nil {

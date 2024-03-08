@@ -2,16 +2,15 @@ package iam_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 const SSHKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICJEoOOgQBLJPs4g/XcPTKT82NywNPpxeuA20FlOPlpO opensource@scaleway.com"
@@ -25,20 +24,20 @@ func init() {
 
 func testSweepIamSSHKey(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
-		iamAPI := iam.NewAPI(scwClient)
+		iamAPI := iamSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: destroying the SSH keys")
 
-		listSSHKeys, err := iamAPI.ListSSHKeys(&iam.ListSSHKeysRequest{}, scw.WithAllPages())
+		listSSHKeys, err := iamAPI.ListSSHKeys(&iamSDK.ListSSHKeysRequest{}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing SSH keys in sweeper: %s", err)
 		}
 
 		for _, sshKey := range listSSHKeys.SSHKeys {
-			if !isTestResource(sshKey.Name) {
+			if !tests.IsTestResource(sshKey.Name) {
 				continue
 			}
-			err := iamAPI.DeleteSSHKey(&iam.DeleteSSHKeyRequest{
+			err := iamAPI.DeleteSSHKey(&iamSDK.DeleteSSHKeyRequest{
 				SSHKeyID: sshKey.ID,
 			})
 			if err != nil {
@@ -51,7 +50,7 @@ func testSweepIamSSHKey(_ string) error {
 }
 
 func TestAccScalewayIamSSHKey_basic(t *testing.T) {
-	name := "tf-test-iam-ssh-key-basic"
+	name := "tf-test-iamSDK-ssh-key-basic"
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
@@ -91,7 +90,7 @@ func TestAccScalewayIamSSHKey_basic(t *testing.T) {
 }
 
 func TestAccScalewayIamSSHKey_WithNewLine(t *testing.T) {
-	name := "tf-test-iam-ssh-key-newline"
+	name := "tf-test-iamSDK-ssh-key-newline"
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
@@ -118,7 +117,7 @@ func TestAccScalewayIamSSHKey_WithNewLine(t *testing.T) {
 }
 
 func TestAccScalewayIamSSHKey_ChangeResourceName(t *testing.T) {
-	name := "tf-test-iam-ssh-key-change-resource-name"
+	name := "tf-test-iamSDK-ssh-key-change-resource-name"
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
@@ -158,7 +157,7 @@ func TestAccScalewayIamSSHKey_ChangeResourceName(t *testing.T) {
 }
 
 func TestAccScalewayIamSSHKey_Disabled(t *testing.T) {
-	name := "tf-test-iam-ssh-key-disabled"
+	name := "tf-test-iamSDK-ssh-key-disabled"
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
@@ -222,9 +221,9 @@ func testAccCheckScalewayIamSSHKeyDestroy(tt *tests.TestTools) resource.TestChec
 				continue
 			}
 
-			iamAPI := iamAPI(tt.Meta)
+			iamAPI := iam.IAMAPI(tt.GetMeta())
 
-			_, err := iamAPI.GetSSHKey(&iam.GetSSHKeyRequest{
+			_, err := iamAPI.GetSSHKey(&iamSDK.GetSSHKeyRequest{
 				SSHKeyID: rs.Primary.ID,
 			})
 
@@ -250,9 +249,9 @@ func testAccCheckScalewayIamSSHKeyExists(tt *tests.TestTools, n string) resource
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		iamAPI := iamAPI(tt.Meta)
+		iamAPI := iam.IAMAPI(tt.GetMeta())
 
-		_, err := iamAPI.GetSSHKey(&iam.GetSSHKeyRequest{
+		_, err := iamAPI.GetSSHKey(&iamSDK.GetSSHKeyRequest{
 			SSHKeyID: rs.Primary.ID,
 		})
 		if err != nil {

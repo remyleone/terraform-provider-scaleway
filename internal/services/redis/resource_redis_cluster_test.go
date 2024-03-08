@@ -5,16 +5,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/redis/v1"
+	redisSDK "github.com/scaleway/scaleway-sdk-go/api/redis/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/redis"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -26,9 +25,9 @@ func init() {
 
 func testSweepRedisCluster(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		redisAPI := redis.NewAPI(scwClient)
+		redisAPI := redisSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the redis cluster in (%s)", zone)
-		listClusters, err := redisAPI.ListClusters(&redis.ListClustersRequest{
+		listClusters, err := redisAPI.ListClusters(&redisSDK.ListClustersRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -36,7 +35,7 @@ func testSweepRedisCluster(_ string) error {
 		}
 
 		for _, cluster := range listClusters.Clusters {
-			_, err := redisAPI.DeleteCluster(&redis.DeleteClusterRequest{
+			_, err := redisAPI.DeleteCluster(&redisSDK.DeleteClusterRequest{
 				Zone:      zone,
 				ClusterID: cluster.ID,
 			})
@@ -218,7 +217,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithIPAMEndpoint(t *testing.T
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "cluster_size", "1"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "tls_enabled", "true"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 			{
@@ -248,7 +247,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithIPAMEndpoint(t *testing.T
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "cluster_size", "3"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "tls_enabled", "true"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDChanged("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 			{
@@ -278,7 +277,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithIPAMEndpoint(t *testing.T
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "cluster_size", "5"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "tls_enabled", "true"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 		},
@@ -330,7 +329,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithStaticEndpoint(t *testing
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "tls_enabled", "true"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "private_network.0.service_ips.0", "192.168.99.1/24"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 			{
@@ -376,7 +375,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithStaticEndpoint(t *testing
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "private_network.0.service_ips.3", "192.168.99.4/24"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "private_network.0.service_ips.4", "192.168.99.5/24"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDChanged("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 			{
@@ -422,7 +421,7 @@ func TestAccScalewayRedisCluster_MigrateClusterSizeWithStaticEndpoint(t *testing
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "private_network.0.service_ips.3", "192.168.99.4/24"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "private_network.0.service_ips.4", "192.168.99.5/24"),
 					resource.TestCheckResourceAttrPair("scaleway_redis_cluster.main", "private_network.0.id", "scaleway_vpc_private_network.private_network", "id"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_redis_cluster.main", &clusterID),
 				),
 			},
 		},
@@ -604,7 +603,7 @@ func TestAccScalewayRedisCluster_Endpoints_Standalone(t *testing.T) {
 				`, latestRedisVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRedisExists(tt, "scaleway_redis_cluster.main"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "name", "test_redis_endpoints"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "version", latestRedisVersion),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "node_type", "RED1-XS"),
@@ -649,8 +648,8 @@ func TestAccScalewayRedisCluster_Endpoints_Standalone(t *testing.T) {
 				`, latestRedisVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRedisExists(tt, "scaleway_redis_cluster.main"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn2"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn2"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "name", "test_redis_endpoints"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "version", latestRedisVersion),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "node_type", "RED1-XS"),
@@ -691,7 +690,7 @@ func TestAccScalewayRedisCluster_Endpoints_Standalone(t *testing.T) {
 				`, latestRedisVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRedisExists(tt, "scaleway_redis_cluster.main"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "name", "test_redis_endpoints"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "version", latestRedisVersion),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "node_type", "RED1-XS"),
@@ -793,7 +792,7 @@ func TestAccScalewayRedisCluster_Endpoints_ClusterMode(t *testing.T) {
 				`, latestRedisVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayRedisExists(tt, "scaleway_redis_cluster.main"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "name", "test_redis_endpoints_cluster_mode"),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "version", latestRedisVersion),
 					resource.TestCheckResourceAttr("scaleway_redis_cluster.main", "node_type", "RED1-XS"),
@@ -909,12 +908,12 @@ func testAccCheckScalewayRedisClusterDestroy(tt *tests.TestTools) resource.TestC
 				continue
 			}
 
-			redisAPI, zone, ID, err := redisAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			redisAPI, zone, ID, err := redis.RedisAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = redisAPI.GetCluster(&redis.GetClusterRequest{
+			_, err = redisAPI.GetCluster(&redisSDK.GetClusterRequest{
 				ClusterID: ID,
 				Zone:      zone,
 			})
@@ -938,12 +937,12 @@ func testAccCheckScalewayRedisExists(tt *tests.TestTools, n string) resource.Tes
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		redisAPI, zone, ID, err := redisAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		redisAPI, zone, ID, err := redis.RedisAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = redisAPI.GetCluster(&redis.GetClusterRequest{
+		_, err = redisAPI.GetCluster(&redisSDK.GetClusterRequest{
 			ClusterID: ID,
 			Zone:      zone,
 		})
@@ -1034,9 +1033,9 @@ func testAccCheckScalewayRedisCertificateIsValid(name string) resource.TestCheck
 }
 
 func testAccScalewayRedisClusterGetLatestVersion(tt *tests.TestTools) string {
-	api := redis.NewAPI(tt.meta.GetScwClient())
+	api := redisSDK.NewAPI(tt.GetMeta().GetScwClient())
 
-	versions, err := api.ListClusterVersions(&redis.ListClusterVersionsRequest{})
+	versions, err := api.ListClusterVersions(&redisSDK.ListClusterVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
 	}

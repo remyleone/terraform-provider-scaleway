@@ -3,14 +3,14 @@ package webhosting
 import (
 	"context"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"time"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-webhosting "github.com/scaleway/scaleway-sdk-go/api/webhosting/v1alpha1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	webhosting "github.com/scaleway/scaleway-sdk-go/api/webhosting/v1alpha1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
@@ -18,8 +18,8 @@ const (
 	hostingRetryInterval     = 5 * time.Second
 )
 
-// webhostingAPIWithRegion returns a new Webhosting API and the region for a Create request
-func webhostingAPIWithRegion(d *schema.ResourceData, m interface{}) (*webhosting.API, scw.Region, error) {
+// WebhostingAPIWithRegion returns a new Webhosting API and the region for a Create request
+func WebhostingAPIWithRegion(d *schema.ResourceData, m interface{}) (*webhosting.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := webhosting.NewAPI(meta.GetScwClient())
 
@@ -30,8 +30,8 @@ func webhostingAPIWithRegion(d *schema.ResourceData, m interface{}) (*webhosting
 	return api, region, nil
 }
 
-// webhostingAPIWithRegionAndID returns a Webhosting API with region and ID extracted from the state
-func webhostingAPIWithRegionAndID(m interface{}, id string) (*webhosting.API, scw.Region, string, error) {
+// WebhostingAPIWithRegionAndID returns a Webhosting API with region and ID extracted from the state
+func WebhostingAPIWithRegionAndID(m interface{}, id string) (*webhosting.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := webhosting.NewAPI(meta.GetScwClient())
 

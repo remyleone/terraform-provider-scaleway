@@ -19,7 +19,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func ResourceScalewayJobDefinition() *schema.Resource {
+func ResourceDefinition() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: ResourceScalewayJobDefinitionCreate,
 		ReadContext:   ResourceScalewayJobDefinitionRead,
@@ -97,7 +97,7 @@ func ResourceScalewayJobDefinition() *schema.Resource {
 }
 
 func ResourceScalewayJobDefinitionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := jobsAPIWithRegion(d, meta)
+	api, region, err := NewAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -140,7 +140,7 @@ func ResourceScalewayJobDefinitionCreate(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewayJobDefinitionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := jobsAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := NewAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -173,7 +173,7 @@ func ResourceScalewayJobDefinitionRead(ctx context.Context, d *schema.ResourceDa
 }
 
 func ResourceScalewayJobDefinitionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := jobsAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := NewAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -239,7 +239,7 @@ func ResourceScalewayJobDefinitionUpdate(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewayJobDefinitionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := jobsAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := NewAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

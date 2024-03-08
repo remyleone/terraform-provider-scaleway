@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepFunctionTrigger(_ string) error {
-	return tests.SweepRegions((&function.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		functionAPI := function.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the function triggers in (%s)", region)
+	return tests.SweepRegions((&functionSDK.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		functionAPI := functionSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the functionSDK triggers in (%s)", region)
 		listTriggers, err := functionAPI.ListTriggers(
-			&function.ListTriggersRequest{
+			&functionSDK.ListTriggersRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepFunctionTrigger(_ string) error {
 		}
 
 		for _, trigger := range listTriggers.Triggers {
-			_, err := functionAPI.DeleteTrigger(&function.DeleteTriggerRequest{
+			_, err := functionAPI.DeleteTrigger(&functionSDK.DeleteTriggerRequest{
 				TriggerID: trigger.ID,
 				Region:    region,
 			})
@@ -59,12 +60,12 @@ func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
 					}
 
 					resource scaleway_function_namespace main {
-						name = "test-function-trigger-sqs"	
+						name = "test-functionSDK-trigger-sqs"	
 						project_id = scaleway_account_project.project.id
 					}
 
 					resource scaleway_function main {
-						name = "test-function-trigger-sqs"
+						name = "test-functionSDK-trigger-sqs"
 						namespace_id = scaleway_function_namespace.main.id
 						runtime = "node20"
 						privacy = "private"
@@ -94,7 +95,7 @@ func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
 
 					resource scaleway_function_trigger main {
 						function_id = scaleway_function.main.id
-						name = "test-function-trigger-sqs"
+						name = "test-functionSDK-trigger-sqs"
 						sqs {
 							queue = "TestQueue"
 							project_id = scaleway_mnq_sqs.main.project_id
@@ -112,8 +113,8 @@ func TestAccScalewayFunctionTrigger_SQS(t *testing.T) {
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionTriggerExists(tt, "scaleway_function_trigger.main"),
-					testCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-function-trigger-sqs"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-functionSDK-trigger-sqs"),
 					testAccCheckScalewayFunctionTriggerStatusReady(tt, "scaleway_function_trigger.main"),
 				),
 			},
@@ -131,11 +132,11 @@ func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
 
 	config := `
 					resource scaleway_function_namespace main {
-						name = "test-function-trigger-sqs"	
+						name = "test-functionSDK-trigger-sqs"	
 					}
 
 					resource scaleway_function main {
-						name = "test-function-trigger-sqs"
+						name = "test-functionSDK-trigger-sqs"
 						namespace_id = scaleway_function_namespace.main.id
 						runtime = "node20"
 						privacy = "private"
@@ -146,7 +147,7 @@ func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
 
 					resource scaleway_function_trigger main {
 						function_id = scaleway_function.main.id
-						name = "test-function-trigger-nats"
+						name = "test-functionSDK-trigger-nats"
 						nats {
 							subject = "TestSubject"
 							account_id = scaleway_mnq_nats_account.main.id
@@ -164,8 +165,8 @@ func TestAccScalewayFunctionTrigger_Nats(t *testing.T) {
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionTriggerExists(tt, "scaleway_function_trigger.main"),
-					testCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-function-trigger-nats"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-functionSDK-trigger-nats"),
 					testAccCheckScalewayFunctionTriggerStatusReady(tt, "scaleway_function_trigger.main"),
 				),
 			},
@@ -191,11 +192,11 @@ func TestAccScalewayFunctionTrigger_Error(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_function_namespace main {
-						name = "test-function-trigger-error"	
+						name = "test-functionSDK-trigger-error"	
 					}
 
 					resource scaleway_function main {
-						name = "test-function-trigger-error"
+						name = "test-functionSDK-trigger-error"
 						namespace_id = scaleway_function_namespace.main.id
 						runtime = "node14"
 						privacy = "private"
@@ -204,12 +205,12 @@ func TestAccScalewayFunctionTrigger_Error(t *testing.T) {
 
 					resource scaleway_mnq_namespace main {
 						protocol = "sqs_sns"
-						name = "test-function-trigger-error"
+						name = "test-functionSDK-trigger-error"
 					}
 
 					resource scaleway_function_trigger main {
 						function_id = scaleway_function.main.id
-						name = "test-function-trigger-error"
+						name = "test-functionSDK-trigger-error"
 						sqs {
 							namespace_id = scaleway_mnq_namespace.main.id
 							queue = "TestQueue"
@@ -220,8 +221,8 @@ func TestAccScalewayFunctionTrigger_Error(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionTriggerExists(tt, "scaleway_function_trigger.main"),
-					testCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-function-trigger-error"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_trigger.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_function_trigger.main", "name", "test-functionSDK-trigger-error"),
 				),
 			},
 		},
@@ -235,12 +236,12 @@ func testAccCheckScalewayFunctionTriggerExists(tt *tests.TestTools, n string) re
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetTrigger(&function.GetTriggerRequest{
+		_, err = api.GetTrigger(&functionSDK.GetTriggerRequest{
 			TriggerID: id,
 			Region:    region,
 		})
@@ -259,12 +260,12 @@ func testAccCheckScalewayFunctionTriggerStatusReady(tt *tests.TestTools, n strin
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		trigger, err := api.GetTrigger(&function.GetTriggerRequest{
+		trigger, err := api.GetTrigger(&functionSDK.GetTriggerRequest{
 			TriggerID: id,
 			Region:    region,
 		})
@@ -272,7 +273,7 @@ func testAccCheckScalewayFunctionTriggerStatusReady(tt *tests.TestTools, n strin
 			return err
 		}
 
-		if trigger.Status != function.TriggerStatusReady {
+		if trigger.Status != functionSDK.TriggerStatusReady {
 			return fmt.Errorf("trigger status is %s, expected ready", trigger.Status)
 		}
 
@@ -287,18 +288,18 @@ func testAccCheckScalewayFunctionTriggerDestroy(tt *tests.TestTools) resource.Te
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteTrigger(&function.DeleteTriggerRequest{
+			_, err = api.DeleteTrigger(&functionSDK.DeleteTriggerRequest{
 				TriggerID: id,
 				Region:    region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function trigger (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK trigger (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

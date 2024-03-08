@@ -2,6 +2,7 @@ package secret_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/secret"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -94,12 +95,12 @@ func TestAccScalewayDataSourceSecretVersion_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v1"),
 					resource.TestCheckResourceAttrPair("data.scaleway_secret_version.data_v1", "secret_id", "scaleway_secret.main", "id"),
-					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_v1", "data", base64Encoded([]byte(secretVersionData))),
+					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_v1", "data", secret.Base64Encoded([]byte(secretVersionData))),
 					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_v1", "revision", "1"),
 
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.v2"),
 					resource.TestCheckResourceAttrPair("data.scaleway_secret_version.data_v2", "secret_id", "scaleway_secret.main", "id"),
-					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_v2", "data", base64Encoded([]byte(secretVersionDataV2))),
+					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_v2", "data", secret.Base64Encoded([]byte(secretVersionDataV2))),
 				),
 			},
 		},
@@ -152,7 +153,7 @@ func TestAccScalewayDataSourceSecretVersion_ByNameSecret(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewaySecretVersionExists(tt, "scaleway_secret_version.main"),
 					resource.TestCheckResourceAttrPair("data.scaleway_secret_version.data_by_name", "secret_id", "scaleway_secret.main", "id"),
-					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_by_name", "data", base64Encoded([]byte(secretVersionData))),
+					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_by_name", "data", secret.Base64Encoded([]byte(secretVersionData))),
 					resource.TestCheckResourceAttr("data.scaleway_secret_version.data_by_name", "revision", "1"),
 				),
 			},

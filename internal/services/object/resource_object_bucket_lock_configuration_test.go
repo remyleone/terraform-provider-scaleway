@@ -3,7 +3,10 @@ package object_test
 import (
 	"errors"
 	"fmt"
+	scaleway "github.com/scaleway/terraform-provider-scaleway/v2/internal"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"regexp"
 	"testing"
 
@@ -30,11 +33,11 @@ func TestAccScalewayObjectBucketLockConfiguration_Basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayBucketLockConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -63,10 +66,10 @@ func TestAccScalewayObjectBucketLockConfiguration_Basic(t *testing.T) {
 							}
 						}
 					}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBucketLockConfigurationExists(tt, resourceName),
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "rule.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "rule.0.default_retention.#", "1"),
@@ -100,10 +103,10 @@ func TestAccScalewayObjectBucketLockConfiguration_Basic(t *testing.T) {
 							}
 						}
 					}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBucketLockConfigurationExists(tt, resourceName),
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "rule.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "rule.0.default_retention.#", "1"),
@@ -129,11 +132,11 @@ func TestAccScalewayObjectBucketLockConfiguration_Update(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayBucketLockConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -162,10 +165,10 @@ func TestAccScalewayObjectBucketLockConfiguration_Update(t *testing.T) {
 							}
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBucketLockConfigurationExists(tt, resourceName),
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 				),
 			},
 			{
@@ -194,10 +197,10 @@ func TestAccScalewayObjectBucketLockConfiguration_Update(t *testing.T) {
 							}
 						}
 				  	}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBucketLockConfigurationExists(tt, resourceName),
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 					resource.TestCheckResourceAttr(resourceName, "rule.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "rule.0.default_retention.#", "1"),
@@ -223,11 +226,11 @@ func TestAccScalewayObjectBucketLockConfiguration_WithBucketName(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayBucketLockConfigurationDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -256,7 +259,7 @@ func TestAccScalewayObjectBucketLockConfiguration_WithBucketName(t *testing.T) {
 							}
 						}
 					}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				ExpectError: regexp.MustCompile("NoSuchBucket: The specified bucket does not exist"),
 			},
 			{
@@ -286,10 +289,10 @@ func TestAccScalewayObjectBucketLockConfiguration_WithBucketName(t *testing.T) {
 							}
 						}
 					}
-				`, rName, objectTestsMainRegion),
+				`, rName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBucketLockConfigurationExists(tt, resourceName),
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.test", true),
 					resource.TestCheckResourceAttrPair(resourceName, "bucket", "scaleway_object_bucket.test", "name"),
 				),
 			},
@@ -307,7 +310,7 @@ func testAccCheckScalewayBucketLockConfigurationDestroy(tt *tests.TestTools) res
 			regionalID := locality.ExpandRegionalID(rs.Primary.ID)
 			bucketRegion := regionalID.Region
 			bucket := regionalID.ID
-			conn, err := NewS3ClientFromMeta(tt.Meta, bucketRegion.String())
+			conn, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion.String())
 			if err != nil {
 				return err
 			}
@@ -318,7 +321,7 @@ func testAccCheckScalewayBucketLockConfigurationDestroy(tt *tests.TestTools) res
 
 			output, err := conn.GetObjectLockConfiguration(input)
 
-			if isS3Err(err, s3.ErrCodeNoSuchBucket, "") {
+			if object.IsS3Err(err, s3.ErrCodeNoSuchBucket, "") {
 				continue
 			}
 
@@ -354,7 +357,7 @@ func testAccCheckBucketLockConfigurationExists(tt *tests.TestTools, resourceName
 		regionalID := locality.ExpandRegionalID(rs.Primary.ID)
 		bucketRegion := regionalID.Region
 		bucket := regionalID.ID
-		conn, err := NewS3ClientFromMeta(tt.Meta, bucketRegion.String())
+		conn, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion.String())
 		if err != nil {
 			return err
 		}

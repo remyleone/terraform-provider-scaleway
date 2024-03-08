@@ -24,7 +24,7 @@ func DataSourceScalewayRDBACL() *schema.Resource {
 }
 
 func DataSourceScalewayRDBACLRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	_, region, err := rdbAPIWithRegion(d, meta)
+	_, region, err := RdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -1,11 +1,9 @@
 package marketplace_test
 
 import (
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayDataSourceMarketplaceImage_Basic(t *testing.T) {
@@ -22,7 +20,7 @@ func TestAccScalewayDataSourceMarketplaceImage_Basic(t *testing.T) {
 					}
 					`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayInstanceImageExists(tt, "data.scaleway_marketplace_image.test1"),
+					CheckInstanceImageExists(tt, "data.scaleway_marketplace_image.test1"),
 					resource.TestCheckResourceAttr("data.scaleway_marketplace_image.test1", "label", "ubuntu_focal"),
 				),
 			},

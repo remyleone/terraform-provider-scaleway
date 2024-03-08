@@ -3,6 +3,7 @@ package lb_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/lb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -242,9 +243,9 @@ func TestAccScalewayLbBackend_WithFailoverHost(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayLbBackendDestroy(tt),
-			testAccCheckScalewayObjectDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
-			testAccCheckScalewayObjectBucketWebsiteConfigurationDestroy(tt),
+			CheckObjectDestroy(tt),
+			CheckObjectBucketDestroy(tt),
+			CheckObjectBucketWebsiteConfigurationDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -369,7 +370,7 @@ func TestAccScalewayLbBackend_WithFailoverHost(t *testing.T) {
 					}
 				`, rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketWebsiteConfigurationExists(tt, resourceName),
+					CheckObjectBucketWebsiteConfigurationExists(tt, resourceName),
 					testAccCheckScalewayLbBackendExists(tt, "scaleway_lb_backend.bkd01"),
 					resource.TestCheckResourceAttr(resourceName, "website_endpoint", rName+".s3-website.fr-par.scw.cloud"),
 					resource.TestCheckResourceAttrSet("scaleway_lb_backend.bkd01", "failover_host"),
@@ -489,7 +490,7 @@ func testAccCheckScalewayLbBackendExists(tt *tests.TestTools, n string) resource
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -513,7 +514,7 @@ func testAccCheckScalewayLbBackendDestroy(tt *tests.TestTools) resource.TestChec
 				continue
 			}
 
-			lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}

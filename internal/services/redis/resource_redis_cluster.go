@@ -233,7 +233,7 @@ func customizeDiffMigrateClusterSize() schema.CustomizeDiffFunc {
 }
 
 func ResourceScalewayRedisClusterCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	redisAPI, zone, err := redisAPIWithZone(d, meta)
+	redisAPI, zone, err := RedisAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -298,7 +298,7 @@ func ResourceScalewayRedisClusterCreate(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	redisAPI, zone, ID, err := redisAPIWithZoneAndID(meta, d.Id())
+	redisAPI, zone, ID, err := RedisAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -363,7 +363,7 @@ func ResourceScalewayRedisClusterRead(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayRedisClusterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	redisAPI, zone, ID, err := redisAPIWithZoneAndID(meta, d.Id())
+	redisAPI, zone, ID, err := RedisAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -531,7 +531,7 @@ func ResourceScalewayRedisClusterUpdateEndpoints(ctx context.Context, d *schema.
 }
 
 func ResourceScalewayRedisClusterDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	redisAPI, zone, ID, err := redisAPIWithZoneAndID(meta, d.Id())
+	redisAPI, zone, ID, err := RedisAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -282,12 +282,12 @@ func ResourceScalewayBaremetalServerIP() *schema.Resource {
 }
 
 func ResourceScalewayBaremetalServerCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, zone, err := baremetalAPIWithZone(d, meta)
+	baremetalAPI, zone, err := BaremetalAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	baremetalPrivateNetworkAPI, _, err := baremetalPrivateNetworkAPIWithZone(d, meta)
+	baremetalPrivateNetworkAPI, _, err := BaremetalPrivateNetworkAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -396,12 +396,12 @@ func ResourceScalewayBaremetalServerCreate(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayBaremetalServerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(meta, d.Id())
+	baremetalAPI, zonedID, err := BaremetalAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	baremetalPrivateNetworkAPI, _, err := baremetalPrivateNetworkAPIWithZone(d, meta)
+	baremetalPrivateNetworkAPI, _, err := BaremetalPrivateNetworkAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -477,12 +477,12 @@ func ResourceScalewayBaremetalServerRead(ctx context.Context, d *schema.Resource
 
 //gocyclo:ignore
 func ResourceScalewayBaremetalServerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(meta, d.Id())
+	baremetalAPI, zonedID, err := BaremetalAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	baremetalPrivateNetworkAPI, zone, err := baremetalPrivateNetworkAPIWithZone(d, meta)
+	baremetalPrivateNetworkAPI, zone, err := BaremetalPrivateNetworkAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -642,7 +642,7 @@ func ResourceScalewayBaremetalServerUpdate(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayBaremetalServerDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, zonedID, err := baremetalAPIWithZoneAndID(meta, d.Id())
+	baremetalAPI, zonedID, err := BaremetalAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -682,7 +682,7 @@ func baremetalInstallAttributeMissing(field *baremetal.OSOSField, d *schema.Reso
 
 // validateInstallConfig validates that schema contains attribute required for OS install
 func validateInstallConfig(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, zone, err := baremetalAPIWithZone(d, meta)
+	baremetalAPI, zone, err := BaremetalAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

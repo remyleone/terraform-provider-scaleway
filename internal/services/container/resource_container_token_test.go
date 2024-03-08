@@ -3,6 +3,7 @@ package container_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 )
 
 func TestAccScalewayContainerToken_Basic(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAccScalewayContainerToken_Basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource scaleway_container_namespace main {
-						name = "test-container-token-ns"
+						name = "test-containerSDK-token-ns"
 					}
 
 					resource scaleway_container main {
@@ -41,17 +42,17 @@ func TestAccScalewayContainerToken_Basic(t *testing.T) {
 						expires_at = "%s"
 					}
 
-					resource scaleway_container_token container {
+					resource scaleway_container_token containerSDK {
 						container_id = scaleway_container.main.id
 					}
 				`, expiresAt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerTokenExists(tt, "scaleway_container_token.namespace"),
-					testAccCheckScalewayContainerTokenExists(tt, "scaleway_container_token.container"),
-					testCheckResourceAttrUUID("scaleway_container_token.namespace", "id"),
-					testCheckResourceAttrUUID("scaleway_container_token.container", "id"),
+					testAccCheckScalewayContainerTokenExists(tt, "scaleway_container_token.containerSDK"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_token.namespace", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_token.containerSDK", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_container_token.namespace", "token"),
-					resource.TestCheckResourceAttrSet("scaleway_container_token.container", "token"),
+					resource.TestCheckResourceAttrSet("scaleway_container_token.containerSDK", "token"),
 				),
 			},
 		},
@@ -65,12 +66,12 @@ func testAccCheckScalewayContainerTokenExists(tt *tests.TestTools, n string) res
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetToken(&container.GetTokenRequest{
+		_, err = api.GetToken(&containerSDK.GetTokenRequest{
 			TokenID: id,
 			Region:  region,
 		})
@@ -89,18 +90,18 @@ func testAccCheckScalewayContainerTokenDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteToken(&container.DeleteTokenRequest{
+			_, err = api.DeleteToken(&containerSDK.DeleteTokenRequest{
 				TokenID: id,
 				Region:  region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("container token (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("containerSDK token (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

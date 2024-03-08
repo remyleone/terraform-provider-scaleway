@@ -3,6 +3,7 @@ package function_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 )
 
 func TestAccScalewayFunctionToken_Basic(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAccScalewayFunctionToken_Basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(`
 					resource scaleway_function_namespace main {
-						name = "test-function-token-ns"
+						name = "test-functionSDK-token-ns"
 					}
 
 					resource scaleway_function main {
@@ -44,17 +45,17 @@ func TestAccScalewayFunctionToken_Basic(t *testing.T) {
 						expires_at = "%s"
 					}
 
-					resource scaleway_function_token function {
+					resource scaleway_function_token functionSDK {
 						function_id = scaleway_function.main.id
 					}
 				`, expiresAt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionTokenExists(tt, "scaleway_function_token.namespace"),
-					testAccCheckScalewayFunctionTokenExists(tt, "scaleway_function_token.function"),
-					testCheckResourceAttrUUID("scaleway_function_token.namespace", "id"),
-					testCheckResourceAttrUUID("scaleway_function_token.function", "id"),
+					testAccCheckScalewayFunctionTokenExists(tt, "scaleway_function_token.functionSDK"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_token.namespace", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_function_token.functionSDK", "id"),
 					resource.TestCheckResourceAttrSet("scaleway_function_token.namespace", "token"),
-					resource.TestCheckResourceAttrSet("scaleway_function_token.function", "token"),
+					resource.TestCheckResourceAttrSet("scaleway_function_token.functionSDK", "token"),
 				),
 			},
 		},
@@ -68,12 +69,12 @@ func testAccCheckScalewayFunctionTokenExists(tt *tests.TestTools, n string) reso
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetToken(&function.GetTokenRequest{
+		_, err = api.GetToken(&functionSDK.GetTokenRequest{
 			TokenID: id,
 			Region:  region,
 		})
@@ -92,18 +93,18 @@ func testAccCheckScalewayFunctionTokenDestroy(tt *tests.TestTools) resource.Test
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteToken(&function.DeleteTokenRequest{
+			_, err = api.DeleteToken(&functionSDK.DeleteTokenRequest{
 				TokenID: id,
 				Region:  region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function token (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK token (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

@@ -2,16 +2,15 @@ package function_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,10 +22,10 @@ func init() {
 
 func testSweepFunctionCron(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
-		functionAPI := function.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the function cron in (%s)", region)
+		functionAPI := functionSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the functionSDK cron in (%s)", region)
 		listCron, err := functionAPI.ListCrons(
-			&function.ListCronsRequest{
+			&functionSDK.ListCronsRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepFunctionCron(_ string) error {
 		}
 
 		for _, cron := range listCron.Crons {
-			_, err := functionAPI.DeleteCron(&function.DeleteCronRequest{
+			_, err := functionAPI.DeleteCron(&functionSDK.DeleteCronRequest{
 				CronID: cron.ID,
 				Region: region,
 			})
@@ -61,7 +60,7 @@ func TestAccScalewayFunctionCron_Basic(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_function_namespace main {
-						name = "tf-tests-function-cron-basic"
+						name = "tf-tests-functionSDK-cron-basic"
 					}
 
 					resource scaleway_function main {
@@ -101,11 +100,11 @@ func TestAccScalewayFunctionCron_NameUpdate(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_function_namespace main {
-						name = "tf-tests-function-cron-name-update"
+						name = "tf-tests-functionSDK-cron-name-update"
 					}
 
 					resource scaleway_function main {
-						name = "tf-tests-function-cron-name-update"
+						name = "tf-tests-functionSDK-cron-name-update"
 						namespace_id = scaleway_function_namespace.main.id
 						runtime = "node14"
 						privacy = "private"
@@ -113,7 +112,7 @@ func TestAccScalewayFunctionCron_NameUpdate(t *testing.T) {
 					}
 
 					resource scaleway_function_cron main {
-						name = "tf-tests-function-cron-name-update"
+						name = "tf-tests-functionSDK-cron-name-update"
 						function_id = scaleway_function.main.id
 						schedule = "0 0 * * *"
 						args = jsonencode({})
@@ -122,17 +121,17 @@ func TestAccScalewayFunctionCron_NameUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayFunctionCronExists(tt, "scaleway_function_cron.main"),
 					resource.TestCheckResourceAttr("scaleway_function_cron.main", "schedule", "0 0 * * *"),
-					resource.TestCheckResourceAttr("scaleway_function_cron.main", "name", "tf-tests-function-cron-name-update"),
+					resource.TestCheckResourceAttr("scaleway_function_cron.main", "name", "tf-tests-functionSDK-cron-name-update"),
 				),
 			},
 			{
 				Config: `
 					resource scaleway_function_namespace main {
-						name = "tf-tests-function-cron-name-update"
+						name = "tf-tests-functionSDK-cron-name-update"
 					}
 
 					resource scaleway_function main {
-						name = "tf-tests-function-cron-name-update"
+						name = "tf-tests-functionSDK-cron-name-update"
 						namespace_id = scaleway_function_namespace.main.id
 						runtime = "node14"
 						privacy = "private"
@@ -167,7 +166,7 @@ func TestAccScalewayFunctionCron_WithArgs(t *testing.T) {
 			{
 				Config: `
 					resource scaleway_function_namespace main {
-						name = "tf-tests-function-cron-with-args"
+						name = "tf-tests-functionSDK-cron-with-args"
 					}
 
 					resource scaleway_function main {
@@ -203,12 +202,12 @@ func testAccCheckScalewayFunctionCronExists(tt *tests.TestTools, n string) resou
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetCron(&function.GetCronRequest{
+		_, err = api.GetCron(&functionSDK.GetCronRequest{
 			CronID: id,
 			Region: region,
 		})
@@ -227,18 +226,18 @@ func testAccCheckScalewayFunctionCronDestroy(tt *tests.TestTools) resource.TestC
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteCron(&function.DeleteCronRequest{
+			_, err = api.DeleteCron(&functionSDK.DeleteCronRequest{
 				CronID: id,
 				Region: region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function cron (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK cron (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

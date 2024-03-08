@@ -3,14 +3,13 @@ package baremetal_test
 import (
 	"context"
 	"fmt"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
+	baremetalSDK "github.com/scaleway/scaleway-sdk-go/api/baremetal/v1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/baremetal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayDataSourceBaremetalOffer_Basic(t *testing.T) {
@@ -175,8 +174,8 @@ func testAccCheckScalewayBaremetalOfferExists(tt *tests.TestTools, n string) res
 			return err
 		}
 
-		baremetalAPI := baremetal.NewAPI(tt.meta.GetScwClient())
-		_, err = baremetalFindOfferByID(context.Background(), baremetalAPI, zone, id)
+		baremetalAPI := baremetalSDK.NewAPI(tt.GetMeta().GetScwClient())
+		_, err = baremetal.BaremetalFindOfferByID(context.Background(), baremetalAPI, zone, id)
 		if err != nil {
 			return err
 		}

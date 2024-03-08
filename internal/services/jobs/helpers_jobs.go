@@ -8,8 +8,8 @@ import (
 	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 )
 
-// jobsAPIWithRegion returns a new jobs API and the region for a Create request
-func jobsAPIWithRegion(d *schema.ResourceData, m interface{}) (*jobs.API, scw.Region, error) {
+// NewAPIWithRegion returns a new jobs API and the region for a Create request
+func NewAPIWithRegion(d *schema.ResourceData, m interface{}) (*jobs.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	jobsAPI := jobs.NewAPI(meta.GetScwClient())
 
@@ -21,8 +21,8 @@ func jobsAPIWithRegion(d *schema.ResourceData, m interface{}) (*jobs.API, scw.Re
 	return jobsAPI, region, nil
 }
 
-// jobsAPIWithRegionalAndID returns a new jobs API with region and ID extracted from the state
-func jobsAPIWithRegionAndID(m interface{}, regionalID string) (*jobs.API, scw.Region, string, error) {
+// NewAPIWithRegionAndID returns a new jobs API with region and ID extracted from the state
+func NewAPIWithRegionAndID(m interface{}, regionalID string) (*jobs.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	jobsAPI := jobs.NewAPI(meta.GetScwClient())
 

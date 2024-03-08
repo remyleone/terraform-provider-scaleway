@@ -2,19 +2,21 @@ package vpcgw_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/domain"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 )
 
 func TestAccScalewayVPCPublicGatewayIPReverseDns_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
-	testDNSZone := "tf-reverse-vpcgw." + testDomain
+	testDNSZone := "tf-reverse-vpcgw." + tests.TestDomain
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
@@ -60,12 +62,12 @@ func testAccCheckScalewayVPCPublicGatewayIPDefaultReverse(tt *tests.TestTools, n
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		ip, err := vpcgwAPI.GetIP(&vpcgw.GetIPRequest{
+		ip, err := vpcgwAPI.GetIP(&vpcgwSDK.GetIPRequest{
 			IPID: ID,
 			Zone: zone,
 		})
@@ -73,7 +75,7 @@ func testAccCheckScalewayVPCPublicGatewayIPDefaultReverse(tt *tests.TestTools, n
 			return err
 		}
 
-		if *ip.Reverse != findDefaultReverse(ip.Address.String()) {
+		if *ip.Reverse != domain.FindDefaultReverse(ip.Address.String()) {
 			return fmt.Errorf("reverse should be the same, %v is different than %v", *ip.Reverse, ip.Address.String())
 		}
 

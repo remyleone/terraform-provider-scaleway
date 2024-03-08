@@ -26,7 +26,7 @@ func DataSourceScalewayVPCPublicGatewayIP() *schema.Resource {
 }
 
 func DataSourceScalewayVPCPublicGatewayIPRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	_, zone, err := vpcgwAPIWithZone(d, meta)
+	_, zone, err := VpcgwAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

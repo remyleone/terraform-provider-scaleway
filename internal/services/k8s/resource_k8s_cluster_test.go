@@ -4,6 +4,8 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/k8s"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpc"
 	"strings"
 	"testing"
 
@@ -11,7 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/k8s/v1"
+	k8sSDK "github.com/scaleway/scaleway-sdk-go/api/k8s/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,8 +25,8 @@ func init() {
 }
 
 func testAccScalewayK8SClusterGetLatestK8SVersion(tt *tests.TestTools) string {
-	api := k8s.NewAPI(tt.meta.GetScwClient())
-	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
+	api := k8sSDK.NewAPI(tt.GetMeta().GetScwClient())
+	versions, err := api.ListVersions(&k8sSDK.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
 	}
@@ -36,22 +38,22 @@ func testAccScalewayK8SClusterGetLatestK8SVersion(tt *tests.TestTools) string {
 }
 
 func testAccScalewayK8SClusterGetLatestK8SVersionMinor(tt *tests.TestTools) string {
-	api := k8s.NewAPI(tt.meta.GetScwClient())
-	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
+	api := k8sSDK.NewAPI(tt.GetMeta().GetScwClient())
+	versions, err := api.ListVersions(&k8sSDK.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
 	}
 	if len(versions.Versions) > 1 {
 		latestK8SVersion := versions.Versions[0].Name
-		latestK8SVersionMinor, _ := k8sGetMinorVersionFromFull(latestK8SVersion)
+		latestK8SVersionMinor, _ := k8s.K8sGetMinorVersionFromFull(latestK8SVersion)
 		return latestK8SVersionMinor
 	}
 	return ""
 }
 
 func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *tests.TestTools) string {
-	api := k8s.NewAPI(tt.meta.GetScwClient())
-	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
+	api := k8sSDK.NewAPI(tt.GetMeta().GetScwClient())
+	versions, err := api.ListVersions(&k8sSDK.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
 	}
@@ -63,14 +65,14 @@ func testAccScalewayK8SClusterGetPreviousK8SVersion(tt *tests.TestTools) string 
 }
 
 func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *tests.TestTools) string {
-	api := k8s.NewAPI(tt.meta.GetScwClient())
-	versions, err := api.ListVersions(&k8s.ListVersionsRequest{})
+	api := k8sSDK.NewAPI(tt.GetMeta().GetScwClient())
+	versions, err := api.ListVersions(&k8sSDK.ListVersionsRequest{})
 	if err != nil {
 		tt.T.Fatalf("Could not get latestK8SVersion: %s", err)
 	}
 	if len(versions.Versions) > 1 {
 		previousK8SVersion := versions.Versions[1].Name
-		previousK8SVersionMinor, _ := k8sGetMinorVersionFromFull(previousK8SVersion)
+		previousK8SVersionMinor, _ := k8s.K8sGetMinorVersionFromFull(previousK8SVersion)
 		return previousK8SVersionMinor
 	}
 	return ""
@@ -78,17 +80,17 @@ func testAccScalewayK8SClusterGetPreviousK8SVersionMinor(tt *tests.TestTools) st
 
 func testSweepK8SCluster(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar, scw.RegionNlAms}, func(scwClient *scw.Client, region scw.Region) error {
-		k8sAPI := k8s.NewAPI(scwClient)
+		k8sAPI := k8sSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: destroying the k8s cluster in (%s)", region)
-		listClusters, err := k8sAPI.ListClusters(&k8s.ListClustersRequest{Region: region}, scw.WithAllPages())
+		listClusters, err := k8sAPI.ListClusters(&k8sSDK.ListClustersRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing clusters in (%s) in sweeper: %s", region, err)
 		}
 
 		for _, cluster := range listClusters.Clusters {
 			// remove pools
-			listPools, err := k8sAPI.ListPools(&k8s.ListPoolsRequest{
+			listPools, err := k8sAPI.ListPools(&k8sSDK.ListPoolsRequest{
 				Region:    region,
 				ClusterID: cluster.ID,
 			}, scw.WithAllPages())
@@ -97,7 +99,7 @@ func testSweepK8SCluster(_ string) error {
 			}
 
 			for _, pool := range listPools.Pools {
-				_, err := k8sAPI.DeletePool(&k8s.DeletePoolRequest{
+				_, err := k8sAPI.DeletePool(&k8sSDK.DeletePoolRequest{
 					Region: region,
 					PoolID: pool.ID,
 				})
@@ -105,7 +107,7 @@ func testSweepK8SCluster(_ string) error {
 					return fmt.Errorf("error deleting pool in sweeper: %s", err)
 				}
 			}
-			_, err = k8sAPI.DeleteCluster(&k8s.DeleteClusterRequest{
+			_, err = k8sAPI.DeleteCluster(&k8sSDK.DeleteClusterRequest{
 				Region:    region,
 				ClusterID: cluster.ID,
 			})
@@ -132,7 +134,7 @@ func TestAccScalewayK8SCluster_Basic(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -141,7 +143,7 @@ func TestAccScalewayK8SCluster_Basic(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.minimal"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "version", previousK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "cni", "calico"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.cluster_ca_certificate"),
@@ -159,7 +161,7 @@ func TestAccScalewayK8SCluster_Basic(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.minimal"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "version", latestK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "cni", "calico"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.minimal", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.minimal", "kubeconfig.0.cluster_ca_certificate"),
@@ -188,7 +190,7 @@ func TestAccScalewayK8SCluster_Autoscaling(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -197,7 +199,7 @@ func TestAccScalewayK8SCluster_Autoscaling(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.autoscaler"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "version", latestK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "cni", "calico"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.cluster_ca_certificate"),
@@ -225,7 +227,7 @@ func TestAccScalewayK8SCluster_Autoscaling(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.autoscaler"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "version", latestK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "cni", "calico"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.autoscaler", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.autoscaler", "kubeconfig.0.cluster_ca_certificate"),
@@ -264,7 +266,7 @@ func TestAccScalewayK8SCluster_OIDC(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -273,7 +275,7 @@ func TestAccScalewayK8SCluster_OIDC(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.oidc"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "version", latestK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "cni", "cilium"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.cluster_ca_certificate"),
@@ -297,7 +299,7 @@ func TestAccScalewayK8SCluster_OIDC(t *testing.T) {
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.oidc"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "version", latestK8SVersion),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "cni", "cilium"),
-					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "status", k8s.ClusterStatusPoolRequired.String()),
+					resource.TestCheckResourceAttr("scaleway_k8s_cluster.oidc", "status", k8sSDK.ClusterStatusPoolRequired.String()),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.config_file"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.host"),
 					resource.TestCheckResourceAttrSet("scaleway_k8s_cluster.oidc", "kubeconfig.0.cluster_ca_certificate"),
@@ -334,7 +336,7 @@ func TestAccScalewayK8SCluster_AutoUpgrade(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -416,26 +418,26 @@ func TestAccScalewayK8SCluster_PrivateNetwork(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckScalewayK8SClusterConfigPrivateNetworkLinked(latestK8SVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.private_network"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network"),
 					testAccCheckScalewayK8sClusterPrivateNetworkID(tt, "scaleway_k8s_cluster.private_network", "scaleway_vpc_private_network.private_network"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.private_network", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.private_network", &clusterID),
 				),
 			},
 			{
 				Config: testAccCheckScalewayK8SClusterConfigPrivateNetworkChange(latestK8SVersion),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.private_network"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network_2"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.private_network_2"),
 					testAccCheckScalewayK8sClusterPrivateNetworkID(tt, "scaleway_k8s_cluster.private_network", "scaleway_vpc_private_network.private_network_2"),
-					testAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.private_network", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.private_network", &clusterID),
 				),
 			},
 		},
@@ -481,7 +483,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayK8SClusterDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -490,7 +492,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "kapsule"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -499,7 +501,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "kapsule-dedicated-4"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -508,7 +510,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "kapsule-dedicated-8"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -517,7 +519,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "multicloud-dedicated-4"),
-					testAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -526,7 +528,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "multicloud-dedicated-8"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -535,7 +537,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "multicloud-dedicated-4"),
-					testAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 			{
@@ -544,7 +546,7 @@ func TestAccScalewayK8SCluster_TypeChange(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayK8SClusterExists(tt, "scaleway_k8s_cluster.type-change"),
 					resource.TestCheckResourceAttr("scaleway_k8s_cluster.type-change", "type", "multicloud"),
-					testAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_k8s_cluster.type-change", &clusterID),
 				),
 			},
 		},
@@ -558,12 +560,12 @@ func testAccCheckScalewayK8SClusterDestroy(tt *tests.TestTools) resource.TestChe
 				continue
 			}
 
-			k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			k8sAPI, region, clusterID, err := k8s.K8sAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = k8sAPI.GetCluster(&k8s.GetClusterRequest{
+			_, err = k8sAPI.GetCluster(&k8sSDK.GetClusterRequest{
 				Region:    region,
 				ClusterID: clusterID,
 			})
@@ -589,12 +591,12 @@ func testAccCheckScalewayK8SClusterExists(tt *tests.TestTools, n string) resourc
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		k8sAPI, region, clusterID, err := k8s.K8sAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = k8sAPI.GetCluster(&k8s.GetClusterRequest{
+		_, err = k8sAPI.GetCluster(&k8sSDK.GetClusterRequest{
 			Region:    region,
 			ClusterID: clusterID,
 		})
@@ -613,12 +615,12 @@ func testAccCheckScalewayK8sClusterPrivateNetworkID(tt *tests.TestTools, cluster
 			return fmt.Errorf("resource not found: %s", clusterName)
 		}
 
-		k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		k8sAPI, region, clusterID, err := k8s.K8sAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		cluster, err := k8sAPI.GetCluster(&k8s.GetClusterRequest{
+		cluster, err := k8sAPI.GetCluster(&k8sSDK.GetClusterRequest{
 			Region:    region,
 			ClusterID: clusterID,
 		})
@@ -633,7 +635,7 @@ func testAccCheckScalewayK8sClusterPrivateNetworkID(tt *tests.TestTools, cluster
 			return fmt.Errorf("resource not found: %s", pnName)
 		}
 
-		_, _, pnID, err := vpcAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		_, _, pnID, err := vpc.VpcAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}

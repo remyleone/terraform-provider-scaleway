@@ -42,7 +42,7 @@ func ResourceScalewaySecretVersion() *schema.Resource {
 				Sensitive:   true,
 				ForceNew:    true,
 				StateFunc: func(i interface{}) string {
-					return base64Encoded([]byte(i.(string)))
+					return Base64Encoded([]byte(i.(string)))
 				},
 			},
 			"description": {
@@ -76,7 +76,7 @@ func ResourceScalewaySecretVersion() *schema.Resource {
 }
 
 func ResourceScalewaySecretVersionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := secretAPIWithRegion(d, meta)
+	api, region, err := SecretAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -98,7 +98,7 @@ func ResourceScalewaySecretVersionCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("data", base64Encoded(payloadSecretRaw))
+	_ = d.Set("data", Base64Encoded(payloadSecretRaw))
 
 	d.SetId(locality.NewRegionalIDString(region, fmt.Sprintf("%s/%d", secretResponse.SecretID, secretResponse.Revision)))
 
@@ -106,7 +106,7 @@ func ResourceScalewaySecretVersionCreate(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewaySecretVersionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, revision, err := secretVersionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, revision, err := SecretVersionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -137,7 +137,7 @@ func ResourceScalewaySecretVersionRead(ctx context.Context, d *schema.ResourceDa
 }
 
 func ResourceScalewaySecretVersionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, revision, err := secretVersionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, revision, err := SecretVersionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,7 +166,7 @@ func ResourceScalewaySecretVersionUpdate(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewaySecretVersionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, revision, err := secretVersionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, revision, err := SecretVersionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

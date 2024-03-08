@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/datasource"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -35,7 +35,7 @@ func DataSourceScalewayInstanceServer() *schema.Resource {
 }
 
 func DataSourceScalewayInstanceServerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, err := instanceAPIWithZone(d, meta)
+	instanceAPI, zone, err := InstanceAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -43,7 +43,7 @@ func DataSourceScalewayInstanceServerRead(ctx context.Context, d *schema.Resourc
 	serverID, ok := d.GetOk("server_id")
 	if !ok {
 		serverName := d.Get("name").(string)
-		res, err := instanceAPI.ListServers(&instance.ListServersRequest{
+		res, err := instanceAPI.ListServers(&instanceSDK.ListServersRequest{
 			Zone:    zone,
 			Name:    types.ExpandStringPtr(serverName),
 			Project: types.ExpandStringPtr(d.Get("project_id")),
@@ -54,7 +54,7 @@ func DataSourceScalewayInstanceServerRead(ctx context.Context, d *schema.Resourc
 
 		foundServer, err := datasource.FindExact(
 			res.Servers,
-			func(s *instance.Server) bool { return s.Name == serverName },
+			func(s *instanceSDK.Server) bool { return s.Name == serverName },
 			serverName,
 		)
 		if err != nil {

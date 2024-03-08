@@ -14,7 +14,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func newMNQNatsAPI(d *schema.ResourceData, m interface{}) (*mnq.NatsAPI, scw.Region, error) {
+func NewMNQNatsAPI(d *schema.ResourceData, m interface{}) (*mnq.NatsAPI, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewNatsAPI(meta.GetScwClient())
 	region, err := locality.ExtractRegion(d, meta)
@@ -25,7 +25,7 @@ func newMNQNatsAPI(d *schema.ResourceData, m interface{}) (*mnq.NatsAPI, scw.Reg
 	return api, region, nil
 }
 
-func mnqNatsAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.NatsAPI, scw.Region, string, error) {
+func MnqNatsAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.NatsAPI, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewNatsAPI(meta.GetScwClient())
 
@@ -37,7 +37,7 @@ func mnqNatsAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.NatsAPI, 
 	return api, region, ID, nil
 }
 
-func newMNQSQSAPI(d *schema.ResourceData, m any) (*mnq.SqsAPI, scw.Region, error) {
+func NewSQSAPI(d *schema.ResourceData, m any) (*mnq.SqsAPI, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewSqsAPI(meta.GetScwClient())
 
@@ -49,7 +49,7 @@ func newMNQSQSAPI(d *schema.ResourceData, m any) (*mnq.SqsAPI, scw.Region, error
 	return api, region, nil
 }
 
-func mnqSQSAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.SqsAPI, scw.Region, string, error) {
+func MnqSQSAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.SqsAPI, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewSqsAPI(meta.GetScwClient())
 
@@ -61,7 +61,7 @@ func mnqSQSAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.SqsAPI, sc
 	return api, region, ID, nil
 }
 
-func newMNQSNSAPI(d *schema.ResourceData, m any) (*mnq.SnsAPI, scw.Region, error) {
+func NewSNSAPI(d *schema.ResourceData, m any) (*mnq.SnsAPI, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewSnsAPI(meta.GetScwClient())
 
@@ -73,7 +73,7 @@ func newMNQSNSAPI(d *schema.ResourceData, m any) (*mnq.SnsAPI, scw.Region, error
 	return api, region, nil
 }
 
-func mnqSNSAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.SnsAPI, scw.Region, string, error) {
+func MnqSNSAPIWithRegionAndID(m interface{}, regionalID string) (*mnq.SnsAPI, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := mnq.NewSnsAPI(meta.GetScwClient())
 
@@ -89,7 +89,7 @@ func composeMNQID(region scw.Region, projectID string, queueName string) string 
 	return fmt.Sprintf("%s/%s/%s", region, projectID, queueName)
 }
 
-func decomposeMNQID(id string) (region scw.Region, projectID string, name string, err error) {
+func DecomposeMNQID(id string) (region scw.Region, projectID string, name string, err error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 3 {
 		return "", "", "", fmt.Errorf("invalid ID format: %q", id)
@@ -118,10 +118,10 @@ func (a ARN) String() string {
 	return fmt.Sprintf("arn:scw:%s:%s:project-%s:%s:%s", a.Subject, a.Region, a.ProjectID, a.ResourceName, a.ExtraResourceID)
 }
 
-// decomposeARN decomposes an arn with a potential extra-resource-id
+// DecomposeARN decomposes an arn with a potential extra-resource-id
 // example: arn:scw:sns:fr-par:project-d4730602-0495-4bb6-bb94-de3a9b000660:test-mnq-sns-topic-basic:b9f52ee5-fa03-42ad-9065-587e3e22efd9
 // the last id may be omitted
-func decomposeARN(arn string) (*ARN, error) {
+func DecomposeARN(arn string) (*ARN, error) {
 	elems := strings.Split(arn, ":")
 	if len(elems) < 6 || len(elems) > 7 {
 		return nil, fmt.Errorf("wrong number of parts in arn, expected 6 or 7, got %d", len(elems))
@@ -155,7 +155,7 @@ func decomposeARN(arn string) (*ARN, error) {
 	return a, nil
 }
 
-func composeARN(subject string, region scw.Region, projectID string, resourceName string) string {
+func ComposeARN(subject string, region scw.Region, projectID string, resourceName string) string {
 	return ARN{
 		Subject:      subject,
 		Region:       region,
@@ -164,8 +164,8 @@ func composeARN(subject string, region scw.Region, projectID string, resourceNam
 	}.String()
 }
 
-func composeSNSARN(region scw.Region, projectID string, resourceName string) string {
-	return composeARN("sns", region, projectID, resourceName)
+func ComposeSNSARN(region scw.Region, projectID string, resourceName string) string {
+	return ComposeARN("sns", region, projectID, resourceName)
 }
 
 // Set the value inside values at the resource path (e.g. a.0.b sets b's value)

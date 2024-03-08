@@ -231,7 +231,7 @@ func ResourceScalewayVPCPrivateNetworkCreate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -272,7 +272,7 @@ func ResourceScalewayVPCPrivateNetworkRead(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayVPCPrivateNetworkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -291,7 +291,7 @@ func ResourceScalewayVPCPrivateNetworkUpdate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayVPCPrivateNetworkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, region, ID, err := vpcAPIWithRegionAndID(meta, d.Id())
+	vpcAPI, region, ID, err := VpcAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

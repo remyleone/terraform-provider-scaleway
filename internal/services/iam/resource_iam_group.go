@@ -85,7 +85,7 @@ func ResourceScalewayIamGroup() *schema.Resource {
 }
 
 func ResourceScalewayIamGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 	req := &iam.CreateGroupRequest{
 		OrganizationID: d.Get("organization_id").(string),
 		Name:           types.ExpandOrGenerateString(d.Get("name"), "group"),
@@ -116,7 +116,7 @@ func ResourceScalewayIamGroupCreate(ctx context.Context, d *schema.ResourceData,
 }
 
 func ResourceScalewayIamGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 	group, err := api.GetGroup(&iam.GetGroupRequest{
 		GroupID: d.Id(),
 	}, scw.WithContext(ctx))
@@ -144,7 +144,7 @@ func ResourceScalewayIamGroupRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func ResourceScalewayIamGroupUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	group, err := api.GetGroup(&iam.GetGroupRequest{
 		GroupID: d.Id(),
@@ -203,7 +203,7 @@ func ResourceScalewayIamGroupUpdate(ctx context.Context, d *schema.ResourceData,
 }
 
 func ResourceScalewayIamGroupDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	err := api.DeleteGroup(&iam.DeleteGroupRequest{
 		GroupID: d.Id(),

@@ -2,17 +2,15 @@ package instance_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -25,24 +23,24 @@ func init() {
 
 func testSweepInstanceImage(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		api := instance.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying instance images in (%+v)", zone)
+		api := instanceSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying instanceSDK images in (%+v)", zone)
 
-		listImagesResponse, err := api.ListImages(&instance.ListImagesRequest{
+		listImagesResponse, err := api.ListImages(&instanceSDK.ListImagesRequest{
 			Zone:   zone,
 			Public: scw.BoolPtr(false),
 		}, scw.WithAllPages())
 		if err != nil {
-			return fmt.Errorf("error listing instance images in sweeper: %w", err)
+			return fmt.Errorf("error listing instanceSDK images in sweeper: %w", err)
 		}
 
 		for _, image := range listImagesResponse.Images {
-			err := api.DeleteImage(&instance.DeleteImageRequest{
+			err := api.DeleteImage(&instanceSDK.DeleteImageRequest{
 				Zone:    zone,
 				ImageID: image.ID,
 			})
 			if err != nil {
-				return fmt.Errorf("error deleting instance image in sweeper: %w", err)
+				return fmt.Errorf("error deleting instanceSDK image in sweeper: %w", err)
 			}
 		}
 
@@ -85,7 +83,7 @@ func TestAccScalewayInstanceImage_BlockVolume(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayInstanceVolumeExists(tt, "scaleway_instance_volume.main"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.main"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "name", "test_image_basic"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "tags.0", "tag1"),
@@ -127,7 +125,7 @@ func TestAccScalewayInstanceImage_BlockVolume(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayInstanceVolumeExists(tt, "scaleway_instance_volume.main"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.main"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "name", "test_image_renamed"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "tags.#", "1"),
@@ -155,7 +153,7 @@ func TestAccScalewayInstanceImage_Server(t *testing.T) {
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayInstanceImageDestroy(tt),
 			testAccCheckScalewayInstanceSnapshotDestroy(tt),
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -179,7 +177,7 @@ func TestAccScalewayInstanceImage_Server(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayInstanceServerExists(tt, "scaleway_instance_server.main"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.main"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "tags.0", "test_remove_tags"),
 					resource.TestCheckResourceAttrSet("scaleway_instance_image.main", "name"),
@@ -207,7 +205,7 @@ func TestAccScalewayInstanceImage_Server(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayInstanceServerExists(tt, "scaleway_instance_server.main"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.main"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "tags.#", "0"),
 					resource.TestCheckNoResourceAttr("scaleway_instance_image.main", "tags.0"),
@@ -230,7 +228,7 @@ func TestAccScalewayInstanceImage_ServerWithBlockVolume(t *testing.T) {
 			testAccCheckScalewayInstanceImageDestroy(tt),
 			testAccCheckScalewayInstanceSnapshotDestroy(tt),
 			testAccCheckScalewayInstanceVolumeDestroy(tt),
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -292,7 +290,7 @@ func TestAccScalewayInstanceImage_ServerWithBlockVolume(t *testing.T) {
 					testAccCheckScalewayInstanceServerExists(tt, "scaleway_instance_server.server"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.block01"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.server"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.server", "id"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "additional_volumes.0.id", "scaleway_instance_snapshot.block01", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "additional_volumes.0.volume_type", "b_ssd"),
@@ -349,7 +347,7 @@ func TestAccScalewayInstanceImage_ServerWithBlockVolume(t *testing.T) {
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.block01"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.block02"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.server"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.server", "id"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "additional_volumes.0.id", "scaleway_instance_snapshot.block02", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "additional_volumes.0.volume_type", "b_ssd"),
@@ -373,7 +371,7 @@ func TestAccScalewayInstanceImage_ServerWithLocalVolume(t *testing.T) {
 			testAccCheckScalewayInstanceImageDestroy(tt),
 			testAccCheckScalewayInstanceSnapshotDestroy(tt),
 			testAccCheckScalewayInstanceVolumeDestroy(tt),
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -473,7 +471,7 @@ func TestAccScalewayInstanceImage_ServerWithLocalVolume(t *testing.T) {
 					testAccCheckScalewayInstanceServerExists(tt, "scaleway_instance_server.server02"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.local01"),
 					testAccCheckScalewayInstanceSnapShotExists(tt, "scaleway_instance_snapshot.local02"),
-					testAccCheckScalewayInstanceImageExists(tt, "scaleway_instance_image.main"),
+					CheckImageExists(tt, "scaleway_instance_image.main"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "root_volume_id", "scaleway_instance_snapshot.local01", "id"),
 					resource.TestCheckResourceAttrPair("scaleway_instance_image.main", "additional_volumes.0.id", "scaleway_instance_snapshot.local02", "id"),
 					resource.TestCheckResourceAttr("scaleway_instance_image.main", "additional_volumes.0.volume_type", "l_ssd"),
@@ -484,39 +482,17 @@ func TestAccScalewayInstanceImage_ServerWithLocalVolume(t *testing.T) {
 	})
 }
 
-func testAccCheckScalewayInstanceImageExists(tt *tests.TestTools, n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found: %s", n)
-		}
-		zone, ID, err := locality.ParseZonedID(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-		instanceAPI := instance.NewAPI(tt.meta.GetScwClient())
-		_, err = instanceAPI.GetImage(&instance.GetImageRequest{
-			ImageID: ID,
-			Zone:    zone,
-		})
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
 func testAccCheckScalewayInstanceImageDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_instance_image" {
 				continue
 			}
-			instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
-			_, err = instanceAPI.GetImage(&instance.GetImageRequest{
+			_, err = instanceAPI.GetImage(&instanceSDK.GetImageRequest{
 				ImageID: ID,
 				Zone:    zone,
 			})

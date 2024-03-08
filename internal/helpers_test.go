@@ -3,15 +3,14 @@ package scaleway
 import (
 	"fmt"
 	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"net"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -165,52 +164,8 @@ func TestGetRandomName(t *testing.T) {
 	assert.True(t, strings.HasPrefix(name, "tf-test-"))
 }
 
-func testCheckResourceAttrFunc(name string, key string, test func(string) error) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("resource not found: %s", name)
-		}
-		value, ok := rs.Primary.Attributes[key]
-		if !ok {
-			return fmt.Errorf("key not found: %s", key)
-		}
-		err := test(value)
-		if err != nil {
-			return fmt.Errorf("test for %s %s did not pass test: %s", name, key, err)
-		}
-		return nil
-	}
-}
-
-var UUIDRegex = regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-
-func testCheckResourceAttrUUID(name string, key string) resource.TestCheckFunc {
-	return resource.TestMatchResourceAttr(name, key, UUIDRegex)
-}
-
-func testCheckResourceAttrIPv4(name string, key string) resource.TestCheckFunc {
-	return testCheckResourceAttrFunc(name, key, func(value string) error {
-		ip := net.ParseIP(value)
-		if ip.To4() == nil {
-			return fmt.Errorf("%s is not a valid IPv4", value)
-		}
-		return nil
-	})
-}
-
-func testCheckResourceAttrIPv6(name string, key string) resource.TestCheckFunc {
-	return testCheckResourceAttrFunc(name, key, func(value string) error {
-		ip := net.ParseIP(value)
-		if ip.To16() == nil {
-			return fmt.Errorf("%s is not a valid IPv6", value)
-		}
-		return nil
-	})
-}
-
 func testCheckResourceAttrIP(name string, key string) resource.TestCheckFunc {
-	return testCheckResourceAttrFunc(name, key, func(value string) error {
+	return tests.TestCheckResourceAttrFunc(name, key, func(value string) error {
 		ip := net.ParseIP(value)
 		if ip == nil {
 			return fmt.Errorf("%s is not a valid IP", value)

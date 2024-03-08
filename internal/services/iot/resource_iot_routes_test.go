@@ -2,6 +2,8 @@ package iot_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iot"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -9,14 +11,14 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iot "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	iotSDK "github.com/scaleway/scaleway-sdk-go/api/iot/v1"
 )
 
 func TestAccScalewayIotRoute_RDB(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
@@ -24,7 +26,7 @@ func TestAccScalewayIotRoute_RDB(t *testing.T) {
 		// Destruction is done via the hub destruction.
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayIotHubDestroy(tt),
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -82,7 +84,7 @@ func TestAccScalewayIotRoute_S3(t *testing.T) {
 	}
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
-	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iot-route-s3")
+	bucketName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iotSDK-route-s3")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
@@ -90,7 +92,7 @@ func TestAccScalewayIotRoute_S3(t *testing.T) {
 		// Destruction is done via the hub destruction.
 		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
 			testAccCheckScalewayIotHubDestroy(tt),
-			testAccCheckScalewayObjectBucketDestroy(tt),
+			checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -120,7 +122,7 @@ func TestAccScalewayIotRoute_S3(t *testing.T) {
 						}
 						`, bucketName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.minimal", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.minimal", true),
 					testAccCheckScalewayIotHubExists(tt, "scaleway_iot_hub.minimal"),
 					testAccCheckScalewayIotRouteExists(tt, "scaleway_iot_route.default"),
 					resource.TestCheckResourceAttrSet("scaleway_iot_route.default", "id"),
@@ -188,12 +190,12 @@ func testAccCheckScalewayIotRouteExists(tt *tests.TestTools, n string) resource.
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		iotAPI, region, routeID, err := iotAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		iotAPI, region, routeID, err := iot.NewAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = iotAPI.GetRoute(&iot.GetRouteRequest{
+		_, err = iotAPI.GetRoute(&iotSDK.GetRouteRequest{
 			Region:  region,
 			RouteID: routeID,
 		})

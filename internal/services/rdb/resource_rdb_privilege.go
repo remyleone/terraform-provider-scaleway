@@ -34,7 +34,7 @@ func ResourceScalewayRdbPrivilege() *schema.Resource {
 		},
 		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
-			{Version: 0, Type: rdbPrivilegeUpgradeV1SchemaType(), Upgrade: rdbPrivilegeV1SchemaUpgradeFunc},
+			{Version: 0, Type: rdbPrivilegeUpgradeV1SchemaType(), Upgrade: RdbPrivilegeV1SchemaUpgradeFunc},
 		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -74,7 +74,7 @@ func ResourceScalewayRdbPrivilege() *schema.Resource {
 }
 
 func ResourceScalewayRdbPrivilegeCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := rdbAPIWithRegion(d, meta)
+	api, region, err := RdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -125,7 +125,7 @@ func ResourceScalewayRdbPrivilegeCreate(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayRdbPrivilegeRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := newRdbAPI(meta)
+	api := NewRdbAPI(meta)
 
 	region, instanceID, databaseName, userName, err := ResourceScalewayRdbUserPrivilegeParseID(d.Id())
 	if err != nil {
@@ -187,7 +187,7 @@ func ResourceScalewayRdbPrivilegeRead(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayRdbPrivilegeUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	region, instanceID, databaseName, userName, err := ResourceScalewayRdbUserPrivilegeParseID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -252,7 +252,7 @@ func ResourceScalewayRdbPrivilegeUpdate(ctx context.Context, d *schema.ResourceD
 
 //gocyclo:ignore
 func ResourceScalewayRdbPrivilegeDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	region, instanceID, databaseName, userName, err := ResourceScalewayRdbUserPrivilegeParseID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)

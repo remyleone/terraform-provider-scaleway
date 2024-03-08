@@ -2,16 +2,15 @@ package sdb_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	serverless_sqldb "github.com/scaleway/scaleway-sdk-go/api/serverless_sqldb/v1alpha1"
+	serverless_sqldbSDK "github.com/scaleway/scaleway-sdk-go/api/serverless_sqldb/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/sdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -22,11 +21,11 @@ func init() {
 }
 
 func testSweepServerlessSQLDBDatabase(_ string) error {
-	return tests.SweepRegions((&serverless_sqldb.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		sdbAPI := serverless_sqldb.NewAPI(scwClient)
+	return tests.SweepRegions((&serverless_sqldbSDK.API{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		sdbAPI := serverless_sqldbSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the serverless sql database in (%s)", region)
 		listServerlessSQLDBDatabases, err := sdbAPI.ListDatabases(
-			&serverless_sqldb.ListDatabasesRequest{
+			&serverless_sqldbSDK.ListDatabasesRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepServerlessSQLDBDatabase(_ string) error {
 		}
 
 		for _, database := range listServerlessSQLDBDatabases.Databases {
-			_, err := sdbAPI.DeleteDatabase(&serverless_sqldb.DeleteDatabaseRequest{
+			_, err := sdbAPI.DeleteDatabase(&serverless_sqldbSDK.DeleteDatabaseRequest{
 				DatabaseID: database.ID,
 				Region:     region,
 			})
@@ -66,7 +65,7 @@ func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayServerlessSQLDBDatabaseExists(tt, "scaleway_sdb_sql_database.main"),
-					testCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "name", "test-sdb-sql-database-basic"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "min_cpu", "0"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "max_cpu", "15"),
@@ -83,7 +82,7 @@ func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayServerlessSQLDBDatabaseExists(tt, "scaleway_sdb_sql_database.main"),
-					testCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "min_cpu", "2"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "max_cpu", "6"),
 				),
@@ -96,7 +95,7 @@ func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayServerlessSQLDBDatabaseExists(tt, "scaleway_sdb_sql_database.main"),
-					testCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "min_cpu", "0"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "max_cpu", "15"),
 				),
@@ -111,7 +110,7 @@ func TestAccScalewayServerlessSQLDBDatabase_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayServerlessSQLDBDatabaseExists(tt, "scaleway_sdb_sql_database.main"),
-					testCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_sdb_sql_database.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "min_cpu", "4"),
 					resource.TestCheckResourceAttr("scaleway_sdb_sql_database.main", "max_cpu", "8"),
 				),
@@ -127,12 +126,12 @@ func testAccCheckScalewayServerlessSQLDBDatabaseExists(tt *tests.TestTools, n st
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := serverlessSQLdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := sdb.ServerlessSQLdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetDatabase(&serverless_sqldb.GetDatabaseRequest{
+		_, err = api.GetDatabase(&serverless_sqldbSDK.GetDatabaseRequest{
 			DatabaseID: id,
 			Region:     region,
 		})
@@ -151,12 +150,12 @@ func testAccCheckScalewayServerlessSQLDBDatabaseDestroy(tt *tests.TestTools) res
 				continue
 			}
 
-			api, region, id, err := serverlessSQLdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := sdb.ServerlessSQLdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteDatabase(&serverless_sqldb.DeleteDatabaseRequest{
+			_, err = api.DeleteDatabase(&serverless_sqldbSDK.DeleteDatabaseRequest{
 				DatabaseID: id,
 				Region:     region,
 			})

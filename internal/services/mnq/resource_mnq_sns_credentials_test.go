@@ -2,16 +2,15 @@ package mnq_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -22,11 +21,11 @@ func init() {
 }
 
 func testSweepMNQSNSCredentials(_ string) error {
-	return tests.SweepRegions((&mnq.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
-		mnqAPI := mnq.NewSnsAPI(scwClient)
+	return tests.SweepRegions((&mnqSDK.SnsAPI{}).Regions(), func(scwClient *scw.Client, region scw.Region) error {
+		mnqAPI := mnqSDK.NewSnsAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the mnq sns credentials in (%s)", region)
 		listSnsCredentials, err := mnqAPI.ListSnsCredentials(
-			&mnq.SnsAPIListSnsCredentialsRequest{
+			&mnqSDK.SnsAPIListSnsCredentialsRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepMNQSNSCredentials(_ string) error {
 		}
 
 		for _, credentials := range listSnsCredentials.SnsCredentials {
-			err := mnqAPI.DeleteSnsCredentials(&mnq.SnsAPIDeleteSnsCredentialsRequest{
+			err := mnqAPI.DeleteSnsCredentials(&mnqSDK.SnsAPIDeleteSnsCredentialsRequest{
 				SnsCredentialsID: credentials.ID,
 				Region:           region,
 			})
@@ -75,7 +74,7 @@ func TestAccScalewayMNQSNSCredentials_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSNSCredentialsExists(tt, "scaleway_mnq_sns_credentials.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sns_credentials.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sns_credentials.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sns_credentials.main", "name", "test-mnq-sns-credentials-basic"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sns_credentials.main", "access_key"),
 					resource.TestCheckResourceAttrSet("scaleway_mnq_sns_credentials.main", "secret_key"),
@@ -146,12 +145,12 @@ func testAccCheckScalewayMNQSNSCredentialsExists(tt *tests.TestTools, n string) 
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqSNSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqSNSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetSnsCredentials(&mnq.SnsAPIGetSnsCredentialsRequest{
+		_, err = api.GetSnsCredentials(&mnqSDK.SnsAPIGetSnsCredentialsRequest{
 			SnsCredentialsID: id,
 			Region:           region,
 		})
@@ -170,12 +169,12 @@ func testAccCheckScalewayMNQSNSCredentialsDestroy(tt *tests.TestTools) resource.
 				continue
 			}
 
-			api, region, id, err := mnqSNSAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqSNSAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteSnsCredentials(&mnq.SnsAPIDeleteSnsCredentialsRequest{
+			err = api.DeleteSnsCredentials(&mnqSDK.SnsAPIDeleteSnsCredentialsRequest{
 				SnsCredentialsID: id,
 				Region:           region,
 			})

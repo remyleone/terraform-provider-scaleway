@@ -11,7 +11,7 @@ import (
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 )
 
-func DataSourceScalewayInstanceSecurityGroup() *schema.Resource {
+func DataSourceSecurityGroup() *schema.Resource {
 	// Generate datasource schema from resource
 	dsSchema := datasource.DatasourceSchemaFromResourceSchema(ResourceScalewayInstanceSecurityGroup().Schema)
 
@@ -35,7 +35,7 @@ func DataSourceScalewayInstanceSecurityGroup() *schema.Resource {
 }
 
 func DataSourceScalewayInstanceSecurityGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	instanceAPI, zone, err := instanceAPIWithZone(d, meta)
+	instanceAPI, zone, err := InstanceAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

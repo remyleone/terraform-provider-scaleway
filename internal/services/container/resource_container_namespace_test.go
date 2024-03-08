@@ -4,14 +4,16 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/registry"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
-	"github.com/scaleway/scaleway-sdk-go/api/registry/v1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	registrySDK "github.com/scaleway/scaleway-sdk-go/api/registry/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -25,10 +27,10 @@ func init() {
 
 func testSweepContainerNamespace(_ string) error {
 	return tests.SweepRegions([]scw.Region{scw.RegionFrPar}, func(scwClient *scw.Client, region scw.Region) error {
-		containerAPI := container.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying the container namespaces in (%s)", region)
+		containerAPI := containerSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying the containerSDK namespaces in (%s)", region)
 		listNamespaces, err := containerAPI.ListNamespaces(
-			&container.ListNamespacesRequest{
+			&containerSDK.ListNamespacesRequest{
 				Region: region,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -36,7 +38,7 @@ func testSweepContainerNamespace(_ string) error {
 		}
 
 		for _, ns := range listNamespaces.Namespaces {
-			_, err := containerAPI.DeleteNamespace(&container.DeleteNamespaceRequest{
+			_, err := containerAPI.DeleteNamespace(&containerSDK.DeleteNamespaceRequest{
 				NamespaceID: ns.ID,
 				Region:      region,
 			})
@@ -68,21 +70,21 @@ func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerNamespaceExists(tt, "scaleway_container_namespace.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 			{
 				Config: `
 					resource scaleway_container_namespace main {
 						name = "test-cr-ns-01"
-						description = "test container namespace 01"
+						description = "test containerSDK namespace 01"
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerNamespaceExists(tt, "scaleway_container_namespace.main"),
-					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "description", "test container namespace 01"),
+					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "description", "test containerSDK namespace 01"),
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "name", "test-cr-ns-01"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 			{
@@ -104,7 +106,7 @@ func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "environment_variables.test", "test"),
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "secret_environment_variables.test_secret", "test_secret"),
 
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 			{
@@ -137,7 +139,7 @@ func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "environment_variables.test", "test"),
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "secret_environment_variables.test_secret", "test_secret"),
 
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 			{
@@ -158,7 +160,7 @@ func TestAccScalewayContainerNamespace_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "environment_variables.foo", "bar"),
 					resource.TestCheckResourceAttr("scaleway_container_namespace.main", "secret_environment_variables.foo_secret", "bar_secret"),
 
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 		},
@@ -187,7 +189,7 @@ func TestAccScalewayContainerNamespace_DestroyRegistry(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayContainerNamespaceExists(tt, "scaleway_container_namespace.main"),
-					testCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_container_namespace.main", "id"),
 				),
 			},
 		},
@@ -201,12 +203,12 @@ func testAccCheckScalewayContainerNamespaceExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetNamespace(&container.GetNamespaceRequest{
+		_, err = api.GetNamespace(&containerSDK.GetNamespaceRequest{
 			NamespaceID: id,
 			Region:      region,
 		})
@@ -225,18 +227,18 @@ func testAccCheckScalewayContainerNamespaceDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteNamespace(&container.DeleteNamespaceRequest{
+			_, err = api.DeleteNamespace(&containerSDK.DeleteNamespaceRequest{
 				NamespaceID: id,
 				Region:      region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("container namespace (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("containerSDK namespace (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {
@@ -255,18 +257,18 @@ func testAccCheckScalewayContainerRegistryDestroy(tt *tests.TestTools) resource.
 				continue
 			}
 
-			api, region, _, err := registryAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, _, err := registry.RegistryAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteNamespace(&registry.DeleteNamespaceRequest{
+			_, err = api.DeleteNamespace(&registrySDK.DeleteNamespaceRequest{
 				NamespaceID: rs.Primary.Attributes["registry_namespace_id"],
 				Region:      region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("registry namespace (%s) still exists", rs.Primary.Attributes["registry_namespace_id"])
+				return fmt.Errorf("registrySDK namespace (%s) still exists", rs.Primary.Attributes["registry_namespace_id"])
 			}
 
 			if !http_errors.Is404Error(err) {

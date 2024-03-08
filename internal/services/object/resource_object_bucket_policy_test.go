@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	scaleway "github.com/scaleway/terraform-provider-scaleway/v2/internal"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 	"regexp"
 	"testing"
@@ -54,7 +57,7 @@ func TestAccScalewayObjectBucketPolicy_Basic(t *testing.T) {
 					Version = "2012-10-17"
 				}
 			)
-		}`, bucketName, objectTestsMainRegion)
+		}`, bucketName, object.ObjectTestsMainRegion)
 
 	expectedPolicyText := `{
 	"Version":"2012-10-17",
@@ -79,14 +82,14 @@ func TestAccScalewayObjectBucketPolicy_Basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: tfConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.bucket", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.bucket", true),
 					resource.TestCheckResourceAttrPair("scaleway_object_bucket_policy.bucket", "region", "scaleway_object_bucket.bucket", "region"),
 					testAccCheckBucketHasPolicy(tt, "scaleway_object_bucket.bucket", expectedPolicyText),
 				),
@@ -141,7 +144,7 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketID(t *testing.T) {
 					Version = "2023-04-17"
 				}
 			)
-		}`, bucketName, objectTestsSecondaryRegion)
+		}`, bucketName, object.ObjectTestsSecondaryRegion)
 
 	expectedPolicyText := `{
 	"Version":"2023-04-17",
@@ -165,14 +168,14 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketID(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: tfConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.bucket", true),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.bucket", true),
 					resource.TestCheckResourceAttrPair("scaleway_object_bucket_policy.bucket", "region", "scaleway_object_bucket.bucket", "region"),
 					testAccCheckBucketHasPolicy(tt, "scaleway_object_bucket.bucket", expectedPolicyText),
 				),
@@ -199,9 +202,9 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketName(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
-		ErrorCheck:        ErrorCheck(t, EndpointsID),
+		ErrorCheck:        scaleway.ErrorCheck(t, scaleway.EndpointsID),
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -237,7 +240,7 @@ func TestAccScalewayObjectBucketPolicy_OtherRegionWithBucketName(t *testing.T) {
 								Version = "2023-04-17"
 							}
 						)
-					}`, bucketName, objectTestsSecondaryRegion),
+					}`, bucketName, object.ObjectTestsSecondaryRegion),
 				ExpectError: regexp.MustCompile("error putting SCW bucket policy: NoSuchBucket: The specified bucket does not exist"),
 			},
 		},
@@ -252,7 +255,7 @@ func testAccCheckBucketHasPolicy(tt *tests.TestTools, n string, expectedPolicyTe
 		}
 
 		bucketRegion := rs.Primary.Attributes["region"]
-		s3Client, err := NewS3ClientFromMeta(tt.Meta, bucketRegion)
+		s3Client, err := object.NewS3ClientFromMeta(tt.GetMeta(), bucketRegion)
 		if err != nil {
 			return err
 		}

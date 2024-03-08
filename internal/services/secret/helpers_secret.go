@@ -17,8 +17,8 @@ const (
 	defaultSecretTimeout = 5 * time.Minute
 )
 
-// secretAPIWithRegion returns a new Secret API and the region for a Create request
-func secretAPIWithRegion(d *schema.ResourceData, m interface{}) (*secret.API, scw.Region, error) {
+// SecretAPIWithRegion returns a new Secret API and the region for a Create request
+func SecretAPIWithRegion(d *schema.ResourceData, m interface{}) (*secret.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := secret.NewAPI(meta.GetScwClient())
 
@@ -29,8 +29,8 @@ func secretAPIWithRegion(d *schema.ResourceData, m interface{}) (*secret.API, sc
 	return api, region, nil
 }
 
-// secretAPIWithRegionAndDefault returns a new Secret API and the region for a Create request
-func secretAPIWithRegionAndDefault(d *schema.ResourceData, m interface{}, defaultRegion scw.Region) (*secret.API, scw.Region, error) {
+// SecretAPIWithRegionAndDefault returns a new Secret API and the region for a Create request
+func SecretAPIWithRegionAndDefault(d *schema.ResourceData, m interface{}, defaultRegion scw.Region) (*secret.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := secret.NewAPI(meta.GetScwClient())
 
@@ -41,8 +41,8 @@ func secretAPIWithRegionAndDefault(d *schema.ResourceData, m interface{}, defaul
 	return api, region, nil
 }
 
-// secretAPIWithRegionAndProjectID returns a new Secret API, with region and projectID
-func secretAPIWithRegionAndProjectID(d *schema.ResourceData, m interface{}) (*secret.API, scw.Region, string, error) {
+// SecretAPIWithRegionAndProjectID returns a new Secret API, with region and projectID
+func SecretAPIWithRegionAndProjectID(d *schema.ResourceData, m interface{}) (*secret.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := secret.NewAPI(meta.GetScwClient())
 
@@ -59,8 +59,8 @@ func secretAPIWithRegionAndProjectID(d *schema.ResourceData, m interface{}) (*se
 	return api, region, projectID, nil
 }
 
-// secretAPIWithRegionAndID returns a Secret API with locality and ID extracted from the state
-func secretAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw.Region, string, error) {
+// SecretAPIWithRegionAndID returns a Secret API with locality and ID extracted from the state
+func SecretAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := secret.NewAPI(meta.GetScwClient())
 
@@ -71,8 +71,8 @@ func secretAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw.Region
 	return api, region, id, nil
 }
 
-// secretVersionAPIWithRegionAndID returns a Secret API with locality and Nested ID extracted from the state
-func secretVersionAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw.Region, string, string, error) {
+// SecretVersionAPIWithRegionAndID returns a Secret API with locality and Nested ID extracted from the state
+func SecretVersionAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw.Region, string, string, error) {
 	meta := m.(*meta2.Meta)
 
 	region, id, revision, err := locality.ParseLocalizedNestedID(id)
@@ -84,13 +84,13 @@ func secretVersionAPIWithRegionAndID(m interface{}, id string) (*secret.API, scw
 	return api, scw.Region(region), id, revision, nil
 }
 
-func isBase64Encoded(data []byte) bool {
+func IsBase64Encoded(data []byte) bool {
 	_, err := base64.StdEncoding.DecodeString(string(data))
 	return err == nil
 }
 
-func base64Encoded(data []byte) string {
-	if isBase64Encoded(data) {
+func Base64Encoded(data []byte) string {
+	if IsBase64Encoded(data) {
 		return string(data)
 	}
 	return base64.StdEncoding.EncodeToString(data)

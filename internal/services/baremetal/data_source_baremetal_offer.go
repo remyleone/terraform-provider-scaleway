@@ -12,7 +12,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
-func DataSourceScalewayBaremetalOffer() *schema.Resource {
+func DataSourceOffer() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: DataSourceScalewayBaremetalOfferRead,
 
@@ -145,7 +145,7 @@ func DataSourceScalewayBaremetalOffer() *schema.Resource {
 }
 
 func DataSourceScalewayBaremetalOfferRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	baremetalAPI, fallBackZone, err := baremetalAPIWithZone(d, meta)
+	baremetalAPI, fallBackZone, err := BaremetalAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -156,7 +156,7 @@ func DataSourceScalewayBaremetalOfferRead(ctx context.Context, d *schema.Resourc
 
 	if offerID != "" {
 		// Temporary fix because GetOffer doesn't fetch monthly subscription offers
-		offer, err = baremetalFindOfferByID(ctx, baremetalAPI, zone, offerID)
+		offer, err = BaremetalFindOfferByID(ctx, baremetalAPI, zone, offerID)
 		if err != nil {
 			return diag.FromErr(err)
 		}

@@ -4,24 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/provider"
-	"regexp"
-	"strings"
-	"testing"
-
-	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/provider"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"github.com/stretchr/testify/require"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 func init() {
@@ -33,28 +31,28 @@ func init() {
 
 func testSweepInstanceServer(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		instanceAPI := instance.NewAPI(scwClient)
+		instanceAPI := instanceSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the instance server in (%s)", zone)
-		listServers, err := instanceAPI.ListServers(&instance.ListServersRequest{Zone: zone}, scw.WithAllPages())
+		listServers, err := instanceAPI.ListServers(&instanceSDK.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			logging.L.Warningf("error listing servers in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
 		for _, srv := range listServers.Servers {
-			if srv.State == instance.ServerStateStopped || srv.State == instance.ServerStateStoppedInPlace {
-				err := instanceAPI.DeleteServer(&instance.DeleteServerRequest{
+			if srv.State == instanceSDK.ServerStateStopped || srv.State == instanceSDK.ServerStateStoppedInPlace {
+				err := instanceAPI.DeleteServer(&instanceSDK.DeleteServerRequest{
 					Zone:     zone,
 					ServerID: srv.ID,
 				})
 				if err != nil {
 					return fmt.Errorf("error deleting server in sweeper: %s", err)
 				}
-			} else if srv.State == instance.ServerStateRunning {
-				_, err := instanceAPI.ServerAction(&instance.ServerActionRequest{
+			} else if srv.State == instanceSDK.ServerStateRunning {
+				_, err := instanceAPI.ServerAction(&instanceSDK.ServerActionRequest{
 					Zone:     zone,
 					ServerID: srv.ID,
-					Action:   instance.ServerActionTerminate,
+					Action:   instanceSDK.ServerActionTerminate,
 				})
 				if err != nil {
 					return fmt.Errorf("error terminating server in sweeper: %s", err)
@@ -72,7 +70,7 @@ func TestAccScalewayInstanceServer_Minimal1(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -128,7 +126,7 @@ func TestAccScalewayInstanceServer_Minimal2(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -198,7 +196,7 @@ func TestAccScalewayInstanceServer_RootVolume1(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -226,7 +224,7 @@ func TestAccScalewayInstanceServer_RootVolume_Boot(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -274,7 +272,7 @@ func TestAccScalewayInstanceServer_RootVolume_ID(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -310,7 +308,7 @@ func TestAccScalewayInstanceServer_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				// DEV1-M
@@ -371,7 +369,7 @@ func TestAccScalewayInstanceServer_State1(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				// started
@@ -440,7 +438,7 @@ func TestAccScalewayInstanceServer_State2(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				// stopped
@@ -490,7 +488,7 @@ func TestAccScalewayInstanceServer_UserData_WithCloudInitAtStart(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -523,7 +521,7 @@ func TestAccScalewayInstanceServer_UserData_WithoutCloudInitAtStart(t *testing.T
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				// Without cloud-init
@@ -574,7 +572,7 @@ func TestAccScalewayInstanceServer_AdditionalVolumes(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				// With additional local
@@ -652,7 +650,7 @@ func TestAccScalewayInstanceServer_AdditionalVolumesDetach(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayInstanceVolumeDestroy(tt),
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -717,7 +715,7 @@ func TestAccScalewayInstanceServer_WithPlacementGroup(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -753,7 +751,7 @@ func TestAccScalewayInstanceServer_Ipv6(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -795,7 +793,7 @@ func TestAccScalewayInstanceServer_Basic2(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -825,7 +823,7 @@ func TestAccScalewayInstanceServer_WithReservedIP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -907,12 +905,12 @@ func testAccCheckScalewayInstanceServerExists(tt *tests.TestTools, n string) res
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = instanceAPI.GetServer(&instance.GetServerRequest{ServerID: ID, Zone: zone})
+		_, err = instanceAPI.GetServer(&instanceSDK.GetServerRequest{ServerID: ID, Zone: zone})
 		if err != nil {
 			return err
 		}
@@ -928,12 +926,12 @@ func testAccCheckScalewayInstancePrivateNICsExists(tt *tests.TestTools, n string
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		res, err := instanceAPI.ListPrivateNICs(&instance.ListPrivateNICsRequest{ServerID: ID, Zone: zone})
+		res, err := instanceAPI.ListPrivateNICs(&instanceSDK.ListPrivateNICsRequest{ServerID: ID, Zone: zone})
 		if err != nil {
 			return err
 		}
@@ -963,19 +961,19 @@ func testAccCheckScalewayInstancePrivateNICsExists(tt *tests.TestTools, n string
 	}
 }
 
-func testAccCheckScalewayInstanceServerDestroy(tt *tests.TestTools) resource.TestCheckFunc {
+func CheckServerDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		for _, rs := range state.RootModule().Resources {
 			if rs.Type != "scaleway_instance_server" {
 				continue
 			}
 
-			instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = instanceAPI.GetServer(&instance.GetServerRequest{
+			_, err = instanceAPI.GetServer(&instanceSDK.GetServerRequest{
 				ServerID: ID,
 				Zone:     zone,
 			})
@@ -1026,7 +1024,7 @@ func TestAccScalewayInstanceServer_Bootscript(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -1052,7 +1050,7 @@ func TestAccScalewayInstanceServer_AlterTags(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1093,7 +1091,7 @@ func TestAccScalewayInstanceServer_WithDefaultRootVolumeAndAdditionalVolume(t *t
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1125,7 +1123,7 @@ func TestAccScalewayInstanceServer_Enterprise(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1149,7 +1147,7 @@ func TestAccScalewayInstanceServer_ServerWithBlockNonDefaultZone(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1185,7 +1183,7 @@ func TestAccScalewayInstanceServer_PrivateNetwork(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1337,7 +1335,7 @@ func TestAccScalewayInstanceServer_Migrate(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1385,7 +1383,7 @@ func TestAccScalewayInstanceServer_MigrateInvalidLocalVolumeSize(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1423,7 +1421,7 @@ func TestAccScalewayInstanceServer_CustomDiffImage(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1553,7 +1551,7 @@ func TestAccScalewayInstanceServer_RoutedIPEnable(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1592,7 +1590,7 @@ func TestAccScalewayInstanceServer_RoutedIPEnableWithIP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1639,7 +1637,7 @@ func TestAccScalewayInstanceServer_IPs(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1720,7 +1718,7 @@ func TestAccScalewayInstanceServer_IPRemoved(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1766,7 +1764,7 @@ func TestAccScalewayInstanceServer_IPsRemoved(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -1830,12 +1828,12 @@ func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
 	temporarySecretKey := ""
 	customProviderFactory := map[string]func() (*schema.Provider, error){
 		"scaleway": func() (*schema.Provider, error) {
-			meta, err := buildMeta(context.Background(), &meta2.metaConfig{
-				providerSchema:   nil,
-				terraformVersion: "terraform-tests",
-				httpClient:       tt.Meta.httpClient,
-				forceAccessKey:   temporaryAccessKey,
-				forceSecretKey:   temporarySecretKey,
+			meta, err := meta2.BuildMeta(context.Background(), &meta2.MetaConfig{
+				ProviderSchema:   nil,
+				TerraformVersion: "terraform-tests",
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
+				ForceAccessKey:   temporaryAccessKey,
+				ForceSecretKey:   temporarySecretKey,
 			})
 			if err != nil {
 				return nil, err
@@ -1850,7 +1848,7 @@ func TestAccScalewayInstanceServer_IPMigrate(t *testing.T) {
 			func(_ *terraform.State) error {
 				return terminateFakeSideProject()
 			},
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -1986,7 +1984,7 @@ func TestAccScalewayInstanceServer_BlockExternal(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

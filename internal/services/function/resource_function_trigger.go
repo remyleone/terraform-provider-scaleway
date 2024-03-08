@@ -182,7 +182,7 @@ func ResourceScalewayFunctionTriggerCreate(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayFunctionTriggerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -217,7 +217,7 @@ func ResourceScalewayFunctionTriggerRead(ctx context.Context, d *schema.Resource
 }
 
 func ResourceScalewayFunctionTriggerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -252,7 +252,7 @@ func ResourceScalewayFunctionTriggerUpdate(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayFunctionTriggerDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

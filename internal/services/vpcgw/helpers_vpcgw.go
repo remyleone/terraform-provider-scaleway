@@ -20,8 +20,8 @@ const (
 	defaultVPCPublicGatewayIPReverseDNSTimeout = 10 * time.Minute
 )
 
-// vpcgwAPIWithZone returns a new VPC API and the zone for a Create request
-func vpcgwAPIWithZone(d *schema.ResourceData, m interface{}) (*vpcgw.API, scw.Zone, error) {
+// VpcgwAPIWithZone returns a new VPC API and the zone for a Create request
+func VpcgwAPIWithZone(d *schema.ResourceData, m interface{}) (*vpcgw.API, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 	vpcgwAPI := vpcgw.NewAPI(meta.GetScwClient())
 
@@ -32,8 +32,8 @@ func vpcgwAPIWithZone(d *schema.ResourceData, m interface{}) (*vpcgw.API, scw.Zo
 	return vpcgwAPI, zone, nil
 }
 
-// vpcgwAPIWithZoneAndID
-func vpcgwAPIWithZoneAndID(m interface{}, id string) (*vpcgw.API, scw.Zone, string, error) {
+// VpcgwAPIWithZoneAndID
+func VpcgwAPIWithZoneAndID(m interface{}, id string) (*vpcgw.API, scw.Zone, string, error) {
 	meta := m.(*meta2.Meta)
 	vpcgwAPI := vpcgw.NewAPI(meta.GetScwClient())
 

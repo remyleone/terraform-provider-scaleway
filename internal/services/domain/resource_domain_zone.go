@@ -85,7 +85,7 @@ func ResourceScalewayDomainZone() *schema.Resource {
 }
 
 func ResourceScalewayDomainZoneCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	domainName := strings.ToLower(d.Get("domain").(string))
 	subdomainName := strings.ToLower(d.Get("subdomain").(string))
@@ -126,7 +126,7 @@ func ResourceScalewayDomainZoneCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayDomainZoneRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	var zone *domain.DNSZone
 
@@ -166,7 +166,7 @@ func ResourceScalewayDomainZoneRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func ResourceScalewayDomainZoneUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	if d.HasChangesExcept("subdomain") {
 		_, err := domainAPI.UpdateDNSZone(&domain.UpdateDNSZoneRequest{
@@ -182,7 +182,7 @@ func ResourceScalewayDomainZoneUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayDomainZoneDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	domainAPI := newDomainAPI(meta)
+	domainAPI := NewDomainAPI(meta)
 
 	_, err := waitForDNSZone(ctx, domainAPI, d.Id(), d.Timeout(schema.TimeoutDelete))
 	if err != nil {

@@ -3,16 +3,16 @@ package iot
 import (
 	"context"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"io"
-"net/http"
-"time"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
+	"io"
+	"net/http"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-"github.com/scaleway/scaleway-sdk-go/api/iot/v1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/scaleway/scaleway-sdk-go/api/iot/v1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	mqttCaFileName          = "iot-hub-ca.pem"
 )
 
-func iotAPIWithRegion(d *schema.ResourceData, m interface{}) (*iot.API, scw.Region, error) {
+func NewAPIWithRegion(d *schema.ResourceData, m interface{}) (*iot.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	iotAPI := iot.NewAPI(meta.GetScwClient())
 
@@ -31,7 +31,7 @@ func iotAPIWithRegion(d *schema.ResourceData, m interface{}) (*iot.API, scw.Regi
 	return iotAPI, region, err
 }
 
-func iotAPIWithRegionAndID(m interface{}, id string) (*iot.API, scw.Region, string, error) {
+func NewAPIWithRegionAndID(m interface{}, id string) (*iot.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	iotAPI := iot.NewAPI(meta.GetScwClient())
 

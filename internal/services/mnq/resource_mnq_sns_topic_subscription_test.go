@@ -2,6 +2,7 @@ package mnq_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -68,12 +69,12 @@ func TestAccScalewayMNQSNSTopicSubscription_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSNSTopicSubscriptionExists(tt, "scaleway_mnq_sns_topic_subscription.by_id"),
-					testCheckResourceAttrUUID("scaleway_mnq_sns_topic_subscription.by_id", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sns_topic_subscription.by_id", "id"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sns_topic_subscription.by_id", "protocol", "http"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sns_topic_subscription.by_id", "endpoint", "http://scaleway.com"),
 
 					testAccCheckScalewayMNQSNSTopicSubscriptionExists(tt, "scaleway_mnq_sns_topic_subscription.by_arn"),
-					testCheckResourceAttrUUID("scaleway_mnq_sns_topic_subscription.by_arn", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sns_topic_subscription.by_arn", "id"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sns_topic_subscription.by_arn", "protocol", "http"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sns_topic_subscription.by_arn", "endpoint", "http://scaleway.com"),
 				),
@@ -89,12 +90,12 @@ func testAccCheckScalewayMNQSNSTopicSubscriptionExists(tt *tests.TestTools, n st
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		arn, err := decomposeMNQSubscriptionID(rs.Primary.ID)
+		arn, err := mnq.DecomposeMNQSubscriptionID(rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("failed to parse id: %w", err)
 		}
 
-		snsClient, err := newSNSClient(tt.Meta.httpClient, arn.Region.String(), rs.Primary.Attributes["sns_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
+		snsClient, err := mnq.NewSNSClient(tt.GetMeta().GetHTTPClient(), arn.Region.String(), rs.Primary.Attributes["sns_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
 		if err != nil {
 			return err
 		}
@@ -117,12 +118,12 @@ func testAccCheckScalewayMNQSNSTopicSubscriptionDestroy(tt *tests.TestTools) res
 				continue
 			}
 
-			arn, err := decomposeMNQSubscriptionID(rs.Primary.ID)
+			arn, err := mnq.DecomposeMNQSubscriptionID(rs.Primary.ID)
 			if err != nil {
 				return fmt.Errorf("failed to parse id: %w", err)
 			}
 
-			snsClient, err := newSNSClient(tt.Meta.httpClient, arn.Region.String(), rs.Primary.Attributes["sns_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
+			snsClient, err := mnq.NewSNSClient(tt.GetMeta().GetHTTPClient(), arn.Region.String(), rs.Primary.Attributes["sns_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
 			if err != nil {
 				return err
 			}

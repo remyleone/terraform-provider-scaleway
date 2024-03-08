@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	applesilicon "github.com/scaleway/scaleway-sdk-go/api/applesilicon/v1alpha1"
+	applesiliconSDK "github.com/scaleway/scaleway-sdk-go/api/applesilicon/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/applesilicon"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"testing"
 )
@@ -21,15 +22,15 @@ func init() {
 
 func testSweepAppleSiliconServer(_ string) error {
 	return tests.SweepZones([]scw.Zone{scw.ZoneFrPar1}, func(scwClient *scw.Client, zone scw.Zone) error {
-		asAPI := applesilicon.NewAPI(scwClient)
+		asAPI := applesiliconSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the apple silicon instance in (%s)", zone)
-		listServers, err := asAPI.ListServers(&applesilicon.ListServersRequest{Zone: zone}, scw.WithAllPages())
+		listServers, err := asAPI.ListServers(&applesiliconSDK.ListServersRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing apple silicon servers in (%s) in sweeper: %s", zone, err)
 		}
 
 		for _, server := range listServers.Servers {
-			errDelete := asAPI.DeleteServer(&applesilicon.DeleteServerRequest{
+			errDelete := asAPI.DeleteServer(&applesiliconSDK.DeleteServerRequest{
 				ServerID: server.ID,
 				Zone:     zone,
 			})
@@ -80,12 +81,12 @@ func testAccCheckScalewayAppleSiliconExists(tt *tests.TestTools, n string) resou
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		asAPI, zone, ID, err := asAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		asAPI, zone, ID, err := applesilicon.NewAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = asAPI.GetServer(&applesilicon.GetServerRequest{
+		_, err = asAPI.GetServer(&applesiliconSDK.GetServerRequest{
 			ServerID: ID,
 			Zone:     zone,
 		})
@@ -104,12 +105,12 @@ func testAccCheckScalewayAppleSiliconServerDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			asAPI, zone, ID, err := asAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			asAPI, zone, ID, err := applesilicon.NewAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = asAPI.GetServer(&applesilicon.GetServerRequest{
+			_, err = asAPI.GetServer(&applesiliconSDK.GetServerRequest{
 				ServerID: ID,
 				Zone:     zone,
 			})

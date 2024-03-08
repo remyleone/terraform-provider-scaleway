@@ -2,15 +2,16 @@ package instance_test
 
 import (
 	"fmt"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -23,23 +24,23 @@ func init() {
 
 func testSweepInstanceSnapshot(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		api := instance.NewAPI(scwClient)
-		logging.L.Debugf("sweeper: destroying instance snapshots in (%+v)", zone)
+		api := instanceSDK.NewAPI(scwClient)
+		logging.L.Debugf("sweeper: destroying instanceSDK snapshots in (%+v)", zone)
 
-		listSnapshotsResponse, err := api.ListSnapshots(&instance.ListSnapshotsRequest{
+		listSnapshotsResponse, err := api.ListSnapshots(&instanceSDK.ListSnapshotsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
-			return fmt.Errorf("error listing instance snapshots in sweeper: %w", err)
+			return fmt.Errorf("error listing instanceSDK snapshots in sweeper: %w", err)
 		}
 
 		for _, snapshot := range listSnapshotsResponse.Snapshots {
-			err := api.DeleteSnapshot(&instance.DeleteSnapshotRequest{
+			err := api.DeleteSnapshot(&instanceSDK.DeleteSnapshotRequest{
 				Zone:       zone,
 				SnapshotID: snapshot.ID,
 			})
 			if err != nil {
-				return fmt.Errorf("error deleting instance snapshot in sweeper: %w", err)
+				return fmt.Errorf("error deleting instanceSDK snapshot in sweeper: %w", err)
 			}
 		}
 
@@ -149,7 +150,7 @@ func TestAccScalewayInstanceSnapshot_ServerWithBlockVolume(t *testing.T) {
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayInstanceVolumeDestroy(tt),
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 			testAccCheckScalewayInstanceSnapshotDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -235,12 +236,12 @@ func testAccCheckScalewayInstanceSnapShotExists(tt *tests.TestTools, n string) r
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = instanceAPI.GetSnapshot(&instance.GetSnapshotRequest{
+		_, err = instanceAPI.GetSnapshot(&instanceSDK.GetSnapshotRequest{
 			Zone:       zone,
 			SnapshotID: ID,
 		})
@@ -259,12 +260,12 @@ func testAccCheckScalewayInstanceSnapshotDestroy(tt *tests.TestTools) resource.T
 				continue
 			}
 
-			instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = instanceAPI.GetSnapshot(&instance.GetSnapshotRequest{
+			_, err = instanceAPI.GetSnapshot(&instanceSDK.GetSnapshotRequest{
 				SnapshotID: ID,
 				Zone:       zone,
 			})

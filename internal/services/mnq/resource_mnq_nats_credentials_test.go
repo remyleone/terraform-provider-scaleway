@@ -3,13 +3,14 @@ package mnq_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
 )
 
 func TestAccScalewayMNQNatsCredentials_Basic(t *testing.T) {
@@ -47,12 +48,12 @@ func testAccCheckScalewayMNQNatsCredentialsExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := mnqNatsAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := mnq.MnqNatsAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetNatsCredentials(&mnq.NatsAPIGetNatsCredentialsRequest{
+		_, err = api.GetNatsCredentials(&mnqSDK.NatsAPIGetNatsCredentialsRequest{
 			NatsCredentialsID: id,
 			Region:            region,
 		})
@@ -71,12 +72,12 @@ func testAccCheckScalewayMNQNatsCredentialsDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			api, region, id, err := mnqNatsAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := mnq.MnqNatsAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteNatsCredentials(&mnq.NatsAPIDeleteNatsCredentialsRequest{
+			err = api.DeleteNatsCredentials(&mnqSDK.NatsAPIDeleteNatsCredentialsRequest{
 				NatsCredentialsID: id,
 				Region:            region,
 			})

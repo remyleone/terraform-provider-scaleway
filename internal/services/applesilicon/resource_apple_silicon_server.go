@@ -82,7 +82,7 @@ func ResourceScalewayAppleSiliconServer() *schema.Resource {
 }
 
 func ResourceScalewayAppleSiliconServerCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	asAPI, zone, err := asAPIWithZone(d, meta)
+	asAPI, zone, err := NewAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -109,7 +109,7 @@ func ResourceScalewayAppleSiliconServerCreate(ctx context.Context, d *schema.Res
 }
 
 func ResourceScalewayAppleSiliconServerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	asAPI, zone, ID, err := asAPIWithZoneAndID(meta, d.Id())
+	asAPI, zone, ID, err := NewAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -143,7 +143,7 @@ func ResourceScalewayAppleSiliconServerRead(ctx context.Context, d *schema.Resou
 }
 
 func ResourceScalewayAppleSiliconServerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	asAPI, zone, ID, err := asAPIWithZoneAndID(meta, d.Id())
+	asAPI, zone, ID, err := NewAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,7 +166,7 @@ func ResourceScalewayAppleSiliconServerUpdate(ctx context.Context, d *schema.Res
 }
 
 func ResourceScalewayAppleSiliconServerDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	asAPI, zone, ID, err := asAPIWithZoneAndID(meta, d.Id())
+	asAPI, zone, ID, err := NewAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

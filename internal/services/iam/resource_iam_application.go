@@ -65,7 +65,7 @@ func ResourceScalewayIamApplication() *schema.Resource {
 }
 
 func ResourceScalewayIamApplicationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 	app, err := api.CreateApplication(&iam.CreateApplicationRequest{
 		Name:           types.ExpandOrGenerateString(d.Get("name"), "application"),
 		Description:    d.Get("description").(string),
@@ -82,7 +82,7 @@ func ResourceScalewayIamApplicationCreate(ctx context.Context, d *schema.Resourc
 }
 
 func ResourceScalewayIamApplicationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 	app, err := api.GetApplication(&iam.GetApplicationRequest{
 		ApplicationID: d.Id(),
 	}, scw.WithContext(ctx))
@@ -105,7 +105,7 @@ func ResourceScalewayIamApplicationRead(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayIamApplicationUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	req := &iam.UpdateApplicationRequest{
 		ApplicationID: d.Id(),
@@ -137,7 +137,7 @@ func ResourceScalewayIamApplicationUpdate(ctx context.Context, d *schema.Resourc
 }
 
 func ResourceScalewayIamApplicationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	err := api.DeleteApplication(&iam.DeleteApplicationRequest{
 		ApplicationID: d.Id(),

@@ -126,7 +126,7 @@ func ResourceScalewayIamPolicy() *schema.Resource {
 }
 
 func ResourceScalewayIamPolicyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	pol, err := api.CreatePolicy(&iam.CreatePolicyRequest{
 		Name:           types.ExpandOrGenerateString(d.Get("name"), "policy"),
@@ -149,7 +149,7 @@ func ResourceScalewayIamPolicyCreate(ctx context.Context, d *schema.ResourceData
 }
 
 func ResourceScalewayIamPolicyRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 	pol, err := api.GetPolicy(&iam.GetPolicyRequest{
 		PolicyID: d.Id(),
 	}, scw.WithContext(ctx))
@@ -193,7 +193,7 @@ func ResourceScalewayIamPolicyRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayIamPolicyUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	req := &iam.UpdatePolicyRequest{
 		PolicyID: d.Id(),
@@ -250,7 +250,7 @@ func ResourceScalewayIamPolicyUpdate(ctx context.Context, d *schema.ResourceData
 }
 
 func ResourceScalewayIamPolicyDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	err := api.DeletePolicy(&iam.DeletePolicyRequest{
 		PolicyID: d.Id(),

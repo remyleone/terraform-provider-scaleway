@@ -2,16 +2,15 @@ package vpcgw_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,10 +22,10 @@ func init() {
 
 func testSweepVPCPublicGatewayIP(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		vpcgwAPI := vpcgw.NewAPI(scwClient)
+		vpcgwAPI := vpcgwSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the public gateways ip in (%s)", zone)
 
-		listIPResponse, err := vpcgwAPI.ListIPs(&vpcgw.ListIPsRequest{
+		listIPResponse, err := vpcgwAPI.ListIPs(&vpcgwSDK.ListIPsRequest{
 			Zone: zone,
 		}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +33,7 @@ func testSweepVPCPublicGatewayIP(_ string) error {
 		}
 
 		for _, ip := range listIPResponse.IPs {
-			err := vpcgwAPI.DeleteIP(&vpcgw.DeleteIPRequest{
+			err := vpcgwAPI.DeleteIP(&vpcgwSDK.DeleteIPRequest{
 				Zone: zone,
 				IPID: ip.ID,
 			})
@@ -138,12 +137,12 @@ func testAccCheckScalewayVPCPublicGatewayIPExists(tt *tests.TestTools, n string)
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = vpcgwAPI.GetIP(&vpcgw.GetIPRequest{
+		_, err = vpcgwAPI.GetIP(&vpcgwSDK.GetIPRequest{
 			IPID: ID,
 			Zone: zone,
 		})
@@ -162,12 +161,12 @@ func testAccCheckScalewayVPCPublicGatewayIPDestroy(tt *tests.TestTools) resource
 				continue
 			}
 
-			vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = vpcgwAPI.GetIP(&vpcgw.GetIPRequest{
+			_, err = vpcgwAPI.GetIP(&vpcgwSDK.GetIPRequest{
 				IPID: ID,
 				Zone: zone,
 			})

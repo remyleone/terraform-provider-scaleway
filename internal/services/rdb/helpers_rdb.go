@@ -25,39 +25,30 @@ const (
 	defaultWaitRDBRetryInterval = 30 * time.Second
 )
 
-// newRdbAPI returns a new RDB API
-func newRdbAPI(m interface{}) *rdb.API {
+// NewRdbAPI returns a new RDB API
+func NewRdbAPI(m interface{}) *rdb.API {
 	meta := m.(*meta2.Meta)
 	return rdb.NewAPI(meta.GetScwClient())
 }
 
-// rdbAPIWithRegion returns a new lb API and the region for a Create request
-func rdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*rdb.API, scw.Region, error) {
+// RdbAPIWithRegion returns a new lb API and the region for a Create request
+func RdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*rdb.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 
 	region, err := locality.ExtractRegion(d, meta)
 	if err != nil {
 		return nil, "", err
 	}
-	return newRdbAPI(m), region, nil
+	return NewRdbAPI(m), region, nil
 }
 
-// rdbAPIWithRegionAndID returns an lb API with region and ID extracted from the state
-func rdbAPIWithRegionAndID(m interface{}, id string) (*rdb.API, scw.Region, string, error) {
+// RdbAPIWithRegionAndID returns an lb API with region and ID extracted from the state
+func RdbAPIWithRegionAndID(m interface{}, id string) (*rdb.API, scw.Region, string, error) {
 	region, ID, err := locality.ParseRegionalID(id)
 	if err != nil {
 		return nil, "", "", err
 	}
-	return newRdbAPI(m), region, ID, nil
-}
-
-func flattenInstanceSettings(settings []*rdb.InstanceSetting) interface{} {
-	res := make(map[string]string)
-	for _, value := range settings {
-		res[value.Name] = value.Value
-	}
-
-	return res
+	return NewRdbAPI(m), region, ID, nil
 }
 
 func expandInstanceSettings(i interface{}) []*rdb.InstanceSetting {
@@ -71,34 +62,6 @@ func expandInstanceSettings(i interface{}) []*rdb.InstanceSetting {
 	}
 
 	return res
-}
-
-func waitForRDBInstance(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.Instance, error) {
-	retryInterval := defaultWaitRDBRetryInterval
-	if transport.DefaultWaitRetryInterval != nil {
-		retryInterval = *transport.DefaultWaitRetryInterval
-	}
-
-	return api.WaitForInstance(&rdb.WaitForInstanceRequest{
-		Region:        region,
-		Timeout:       scw.TimeDurationPtr(timeout),
-		InstanceID:    id,
-		RetryInterval: &retryInterval,
-	}, scw.WithContext(ctx))
-}
-
-func waitForRDBDatabaseBackup(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.DatabaseBackup, error) {
-	retryInterval := defaultWaitRDBRetryInterval
-	if transport.DefaultWaitRetryInterval != nil {
-		retryInterval = *transport.DefaultWaitRetryInterval
-	}
-
-	return api.WaitForDatabaseBackup(&rdb.WaitForDatabaseBackupRequest{
-		Region:           region,
-		Timeout:          scw.TimeDurationPtr(timeout),
-		DatabaseBackupID: id,
-		RetryInterval:    &retryInterval,
-	}, scw.WithContext(ctx))
 }
 
 func waitForRDBReadReplica(ctx context.Context, api *rdb.API, region scw.Region, id string, timeout time.Duration) (*rdb.ReadReplica, error) {
@@ -151,43 +114,6 @@ func expandPrivateNetwork(data interface{}, exist bool, ipamConfig *bool, static
 	}
 
 	return res, diags
-}
-
-func expandLoadBalancer() *rdb.EndpointSpec {
-	return &rdb.EndpointSpec{
-		LoadBalancer: &rdb.EndpointSpecLoadBalancer{},
-	}
-}
-
-func flattenPrivateNetwork(endpoints []*rdb.Endpoint, enableIpam bool) (interface{}, bool) {
-	pnI := []map[string]interface{}(nil)
-	for _, endpoint := range endpoints {
-		if endpoint.PrivateNetwork != nil {
-			pn := endpoint.PrivateNetwork
-			fetchRegion, err := pn.Zone.Region()
-			if err != nil {
-				return diag.FromErr(err), false
-			}
-			pnRegionalID := locality.NewRegionalIDString(fetchRegion, pn.PrivateNetworkID)
-			serviceIP, err := types.FlattenIPNet(pn.ServiceIP)
-			if err != nil {
-				return pnI, false
-			}
-			pnI = append(pnI, map[string]interface{}{
-				"endpoint_id": endpoint.ID,
-				"ip":          types.FlattenIPPtr(endpoint.IP),
-				"port":        int(endpoint.Port),
-				"name":        endpoint.Name,
-				"ip_net":      serviceIP,
-				"pn_id":       pnRegionalID,
-				"hostname":    types.FlattenStringPtr(endpoint.Hostname),
-				"enable_ipam": enableIpam,
-			})
-			return pnI, true
-		}
-	}
-
-	return pnI, false
 }
 
 func flattenLoadBalancer(endpoints []*rdb.Endpoint) (interface{}, bool) {
@@ -295,8 +221,8 @@ func flattenReadReplicaEndpoints(endpoints []*rdb.Endpoint, enableIpam bool) (di
 	return directAccess, privateNetwork
 }
 
-// rdbPrivilegeV1SchemaUpgradeFunc allow upgrade the privilege ID on schema V1
-func rdbPrivilegeV1SchemaUpgradeFunc(_ context.Context, rawState map[string]interface{}, m interface{}) (map[string]interface{}, error) {
+// RdbPrivilegeV1SchemaUpgradeFunc allow upgrade the privilege ID on schema V1
+func RdbPrivilegeV1SchemaUpgradeFunc(_ context.Context, rawState map[string]interface{}, m interface{}) (map[string]interface{}, error) {
 	idRaw, exist := rawState["id"]
 	if !exist {
 		return nil, errors.New("upgrade: id not exist")

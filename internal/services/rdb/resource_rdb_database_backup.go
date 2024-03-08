@@ -86,7 +86,7 @@ func ResourceScalewayRdbDatabaseBackup() *schema.Resource {
 }
 
 func ResourceScalewayRdbDatabaseBackupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, err := rdbAPIWithRegion(d, meta)
+	rdbAPI, region, err := RdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -117,7 +117,7 @@ func ResourceScalewayRdbDatabaseBackupCreate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayRdbDatabaseBackupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, id, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, id, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -147,7 +147,7 @@ func ResourceScalewayRdbDatabaseBackupRead(ctx context.Context, d *schema.Resour
 }
 
 func ResourceScalewayRdbDatabaseBackupUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, id, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, id, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -184,7 +184,7 @@ func ResourceScalewayRdbDatabaseBackupUpdate(ctx context.Context, d *schema.Reso
 }
 
 func ResourceScalewayRdbDatabaseBackupDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, id, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, id, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

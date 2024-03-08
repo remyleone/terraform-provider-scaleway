@@ -293,7 +293,7 @@ func ResourceScalewayRdbInstance() *schema.Resource {
 }
 
 func ResourceScalewayRdbInstanceCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, err := rdbAPIWithRegion(d, meta)
+	rdbAPI, region, err := RdbAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -399,7 +399,7 @@ func ResourceScalewayRdbInstanceCreate(ctx context.Context, d *schema.ResourceDa
 }
 
 func ResourceScalewayRdbInstanceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, ID, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, ID, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -494,7 +494,7 @@ func ResourceScalewayRdbInstanceRead(ctx context.Context, d *schema.ResourceData
 
 //gocyclo:ignore
 func ResourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, ID, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, ID, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -779,7 +779,7 @@ func ResourceScalewayRdbInstanceUpdate(ctx context.Context, d *schema.ResourceDa
 }
 
 func ResourceScalewayRdbInstanceDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI, region, ID, err := rdbAPIWithRegionAndID(meta, d.Id())
+	rdbAPI, region, ID, err := RdbAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

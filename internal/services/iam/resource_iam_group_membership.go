@@ -48,7 +48,7 @@ func ResourceScalewayIamGroupMembership() *schema.Resource {
 }
 
 func ResourceScalewayIamGroupMembershipCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
+	api := IAMAPI(meta)
 
 	userID := types.ExpandStringPtr(d.Get("user_id"))
 	applicationID := types.ExpandStringPtr(d.Get("application_id"))
@@ -62,14 +62,14 @@ func ResourceScalewayIamGroupMembershipCreate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	d.SetId(groupMembershipID(group.ID, userID, applicationID))
+	d.SetId(GroupMembershipID(group.ID, userID, applicationID))
 
 	return ResourceScalewayIamGroupMembershipRead(ctx, d, meta)
 }
 
 func ResourceScalewayIamGroupMembershipRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
-	groupID, userID, applicationID, err := expandGroupMembershipID(d.Id())
+	api := IAMAPI(meta)
+	groupID, userID, applicationID, err := ExpandGroupMembershipID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -118,8 +118,8 @@ func ResourceScalewayIamGroupMembershipRead(ctx context.Context, d *schema.Resou
 }
 
 func ResourceScalewayIamGroupMembershipDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := iamAPI(meta)
-	groupID, userID, applicationID, err := expandGroupMembershipID(d.Id())
+	api := IAMAPI(meta)
+	groupID, userID, applicationID, err := ExpandGroupMembershipID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -147,7 +147,7 @@ func ResourceScalewayIamGroupMembershipDelete(ctx context.Context, d *schema.Res
 	return nil
 }
 
-func groupMembershipID(groupID string, userID *string, applicationID *string) string {
+func GroupMembershipID(groupID string, userID *string, applicationID *string) string {
 	if userID != nil {
 		return fmt.Sprintf("%s/user/%s", groupID, *userID)
 	}
@@ -155,7 +155,7 @@ func groupMembershipID(groupID string, userID *string, applicationID *string) st
 	return fmt.Sprintf("%s/app/%s", groupID, *applicationID)
 }
 
-func expandGroupMembershipID(id string) (groupID string, userID string, applicationID string, err error) {
+func ExpandGroupMembershipID(id string) (groupID string, userID string, applicationID string, err error) {
 	elems := strings.Split(id, "/")
 	if len(elems) != 3 {
 		return "", "", "", fmt.Errorf("invalid group member id format, expected {groupID}/{type}/{memberID}, got: %s", id)

@@ -10,7 +10,7 @@ import (
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
 )
 
-func DataSourceScalewayVPCPublicGatewayPATRule() *schema.Resource {
+func DataSourcePATRule() *schema.Resource {
 	// Generate datasource schema from resource
 	dsSchema := datasource.DatasourceSchemaFromResourceSchema(ResourceScalewayVPCPublicGatewayPATRule().Schema)
 
@@ -31,7 +31,7 @@ func DataSourceScalewayVPCPublicGatewayPATRule() *schema.Resource {
 }
 
 func DataSourceScalewayVPCPublicGatewayPATRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcgwAPI, zone, err := vpcgwAPIWithZone(d, meta)
+	vpcgwAPI, zone, err := VpcgwAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

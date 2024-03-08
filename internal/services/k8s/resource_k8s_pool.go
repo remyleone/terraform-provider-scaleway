@@ -340,7 +340,7 @@ func ResourceScalewayK8SPoolCreate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayK8SPoolRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, poolID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, poolID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -403,7 +403,7 @@ func ResourceScalewayK8SPoolRead(ctx context.Context, d *schema.ResourceData, me
 }
 
 func ResourceScalewayK8SPoolUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, poolID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, poolID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -473,7 +473,7 @@ func ResourceScalewayK8SPoolUpdate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayK8SPoolDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, poolID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, poolID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

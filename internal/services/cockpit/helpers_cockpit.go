@@ -3,34 +3,34 @@ package cockpit
 import (
 	"context"
 	"fmt"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"strconv"
-"strings"
-"time"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
+	"strconv"
+	"strings"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
-	defaultCockpitTimeout       = 5 * time.Minute
+	DefaultCockpitTimeout       = 5 * time.Minute
 	defaultCockpitRetryInterval = 5 * time.Second
 	pathMetricsURL              = "/api/v1/push"
 	pathLogsURL                 = "/loki/api/v1/push"
 )
 
-// cockpitAPI returns a new cockpit API.
-func cockpitAPI(m interface{}) (*cockpit.API, error) {
+// NewAPI returns a new cockpit API.
+func NewAPI(m interface{}) (*cockpit.API, error) {
 	meta := m.(*meta2.Meta)
 	api := cockpit.NewAPI(meta.GetScwClient())
 
 	return api, nil
 }
 
-// cockpitAPIGrafanaUserID returns a new cockpit API with the Grafana user ID and the project ID.
-func cockpitAPIGrafanaUserID(m interface{}, id string) (*cockpit.API, string, uint32, error) {
+// CockpitAPIGrafanaUserID returns a new cockpit API with the Grafana user ID and the project ID.
+func CockpitAPIGrafanaUserID(m interface{}, id string) (*cockpit.API, string, uint32, error) {
 	projectID, resourceIDString, err := parseCockpitID(id)
 	if err != nil {
 		return nil, "", 0, err
@@ -41,7 +41,7 @@ func cockpitAPIGrafanaUserID(m interface{}, id string) (*cockpit.API, string, ui
 		return nil, "", 0, err
 	}
 
-	api, err := cockpitAPI(m)
+	api, err := NewAPI(m)
 	if err != nil {
 		return nil, "", 0, err
 	}
@@ -49,8 +49,8 @@ func cockpitAPIGrafanaUserID(m interface{}, id string) (*cockpit.API, string, ui
 	return api, projectID, uint32(grafanaUserID), nil
 }
 
-// cockpitIDWithProjectID returns a cockpit ID with a project ID.
-func cockpitIDWithProjectID(projectID string, id string) string {
+// CockpitIDWithProjectID returns a cockpit ID with a project ID.
+func CockpitIDWithProjectID(projectID string, id string) string {
 	return projectID + "/" + id
 }
 

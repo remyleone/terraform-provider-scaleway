@@ -1,6 +1,7 @@
 package vpcgw_test
 
 import (
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -14,7 +15,7 @@ func TestAccScalewayDataSourceVPCGatewayNetwork_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCGatewayNetworkDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayVPCGatewayNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/account"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -32,7 +33,7 @@ func testSweepAccountProject(_ string) error {
 			return fmt.Errorf("failed to list projects: %w", err)
 		}
 		for _, project := range listProjects.Projects {
-			if project.Name == "default" || !isTestResource(project.Name) {
+			if project.Name == "default" || !tests.IsTestResource(project.Name) {
 				continue
 			}
 			err = accountAPI.DeleteProject(&accountV3.ProjectAPIDeleteProjectRequest{
@@ -121,7 +122,7 @@ func testAccCheckScalewayAccountProjectExists(tt *tests.TestTools, name string) 
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		accountAPI := accountV3ProjectAPI(tt.Meta)
+		accountAPI := account.AccountV3ProjectAPI(tt.GetMeta())
 
 		_, err := accountAPI.GetProject(&accountV3.ProjectAPIGetProjectRequest{
 			ProjectID: rs.Primary.ID,
@@ -141,7 +142,7 @@ func testAccCheckScalewayAccountProjectDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			accountAPI := accountV3ProjectAPI(tt.Meta)
+			accountAPI := account.AccountV3ProjectAPI(tt.GetMeta())
 
 			_, err := accountAPI.GetProject(&accountV3.ProjectAPIGetProjectRequest{
 				ProjectID: rs.Primary.ID,

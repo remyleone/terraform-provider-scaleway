@@ -3,13 +3,14 @@ package container_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/container"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	container "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
+	containerSDK "github.com/scaleway/scaleway-sdk-go/api/container/v1beta1"
 )
 
 func TestAccScalewayContainerCron_Basic(t *testing.T) {
@@ -27,12 +28,12 @@ func TestAccScalewayContainerCron_Basic(t *testing.T) {
 					}
 
 					resource scaleway_container main {
-						name = "my-container-with-cron-tf"
+						name = "my-containerSDK-with-cron-tf"
 						namespace_id = scaleway_container_namespace.main.id
 					}
 
 					resource scaleway_container_cron main {
-						name = "tf-tests-container-cron-basic"
+						name = "tf-tests-containerSDK-cron-basic"
 						container_id = scaleway_container.main.id
 						schedule = "5 4 * * *" #cron at 04:05
 						args = jsonencode({test = "scw"})
@@ -42,7 +43,7 @@ func TestAccScalewayContainerCron_Basic(t *testing.T) {
 					testAccCheckScalewayContainerCronExists(tt, "scaleway_container_cron.main"),
 					resource.TestCheckResourceAttr("scaleway_container_cron.main", "schedule", "5 4 * * *"),
 					resource.TestCheckResourceAttr("scaleway_container_cron.main", "args", "{\"test\":\"scw\"}"),
-					resource.TestCheckResourceAttr("scaleway_container_cron.main", "name", "tf-tests-container-cron-basic"),
+					resource.TestCheckResourceAttr("scaleway_container_cron.main", "name", "tf-tests-containerSDK-cron-basic"),
 				),
 			},
 			{
@@ -51,12 +52,12 @@ func TestAccScalewayContainerCron_Basic(t *testing.T) {
 					}
 
 					resource scaleway_container main {
-						name = "my-container-with-cron-tf"
+						name = "my-containerSDK-with-cron-tf"
 						namespace_id = scaleway_container_namespace.main.id
 					}
 
 					resource scaleway_container_cron main {
-						name = "tf-tests-container-cron-basic-changed"
+						name = "tf-tests-containerSDK-cron-basic-changed"
 						container_id = scaleway_container.main.id
 						schedule = "5 4 * * *" #cron at 04:05
 						args = jsonencode({test = "scw"})
@@ -66,7 +67,7 @@ func TestAccScalewayContainerCron_Basic(t *testing.T) {
 					testAccCheckScalewayContainerCronExists(tt, "scaleway_container_cron.main"),
 					resource.TestCheckResourceAttr("scaleway_container_cron.main", "schedule", "5 4 * * *"),
 					resource.TestCheckResourceAttr("scaleway_container_cron.main", "args", "{\"test\":\"scw\"}"),
-					resource.TestCheckResourceAttr("scaleway_container_cron.main", "name", "tf-tests-container-cron-basic-changed"),
+					resource.TestCheckResourceAttr("scaleway_container_cron.main", "name", "tf-tests-containerSDK-cron-basic-changed"),
 				),
 			},
 		},
@@ -88,7 +89,7 @@ func TestAccScalewayContainerCron_WithMultiArgs(t *testing.T) {
 					}
 
 					resource scaleway_container main {
-						name = "my-container-with-cron-tf"
+						name = "my-containerSDK-with-cron-tf"
 						namespace_id = scaleway_container_namespace.main.id
 					}
 
@@ -121,7 +122,7 @@ func TestAccScalewayContainerCron_WithMultiArgs(t *testing.T) {
 					}
 
 					resource scaleway_container main {
-					name = "my-container-with-cron-tf"
+					name = "my-containerSDK-with-cron-tf"
 						namespace_id = scaleway_container_namespace.main.id
 					}
 
@@ -144,15 +145,15 @@ func testAccCheckScalewayContainerCronExists(tt *tests.TestTools, n string) reso
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("resource container cron not found: %s", n)
+			return fmt.Errorf("resource containerSDK cron not found: %s", n)
 		}
 
-		api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetCron(&container.GetCronRequest{
+		_, err = api.GetCron(&containerSDK.GetCronRequest{
 			CronID: id,
 			Region: region,
 		})
@@ -171,18 +172,18 @@ func testAccCheckScalewayContainerCronDestroy(tt *tests.TestTools) resource.Test
 				continue
 			}
 
-			api, region, id, err := ContainerAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := container.ContainerAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteCron(&container.DeleteCronRequest{
+			_, err = api.DeleteCron(&containerSDK.DeleteCronRequest{
 				CronID: id,
 				Region: region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("container cron (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("containerSDK cron (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

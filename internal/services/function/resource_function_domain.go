@@ -89,7 +89,7 @@ func ResourceScalewayFunctionDomainCreate(ctx context.Context, d *schema.Resourc
 }
 
 func ResourceScalewayFunctionDomainRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -112,7 +112,7 @@ func ResourceScalewayFunctionDomainRead(ctx context.Context, d *schema.ResourceD
 }
 
 func ResourceScalewayFunctionDomainDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, id, err := functionAPIWithRegionAndID(meta, d.Id())
+	api, region, id, err := FunctionAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

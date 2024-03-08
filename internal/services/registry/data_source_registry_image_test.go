@@ -2,13 +2,14 @@ package registry_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/registry"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/registry/v1"
+	registrySDK "github.com/scaleway/scaleway-sdk-go/api/registry/v1"
 )
 
 func TestAccScalewayDataSourceRegistryImage_Basic(t *testing.T) {
@@ -65,12 +66,12 @@ func testAccCheckScalewayRegistryImageExists(tt *tests.TestTools, n string) reso
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := registryAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := registry.RegistryAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetImage(&registry.GetImageRequest{
+		_, err = api.GetImage(&registrySDK.GetImageRequest{
 			ImageID: id,
 			Region:  region,
 		})

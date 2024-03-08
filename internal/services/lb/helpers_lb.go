@@ -3,7 +3,6 @@ package lb
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	locality2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
@@ -16,22 +15,20 @@ import (
 
 	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	lbSDK "github.com/scaleway/scaleway-sdk-go/api/lb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
-	validator "github.com/scaleway/scaleway-sdk-go/validation"
 )
 
 const (
 	defaultLbLbTimeout = 10 * time.Minute
-	retryLbIPInterval  = 5 * time.Second
+	RetryLbIPInterval  = 5 * time.Second
 )
 
-// lbAPIWithZone returns an lb API WITH zone for a Create request
-func lbAPIWithZone(d *schema.ResourceData, m interface{}) (*lbSDK.ZonedAPI, scw.Zone, error) {
+// LbAPIWithZone returns an lb API WITH zone for a Create request
+func LbAPIWithZone(d *schema.ResourceData, m interface{}) (*lbSDK.ZonedAPI, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 	lbAPI := lbSDK.NewZonedAPI(meta.GetScwClient())
 
@@ -42,8 +39,8 @@ func lbAPIWithZone(d *schema.ResourceData, m interface{}) (*lbSDK.ZonedAPI, scw.
 	return lbAPI, zone, nil
 }
 
-// lbAPIWithZoneAndID returns an lb API with zone and ID extracted from the state
-func lbAPIWithZoneAndID(m interface{}, id string) (*lbSDK.ZonedAPI, scw.Zone, string, error) {
+// LbAPIWithZoneAndID returns an lb API with zone and ID extracted from the state
+func LbAPIWithZoneAndID(m interface{}, id string) (*lbSDK.ZonedAPI, scw.Zone, string, error) {
 	meta := m.(*meta2.Meta)
 	lbAPI := lbSDK.NewZonedAPI(meta.GetScwClient())
 
@@ -161,7 +158,7 @@ func expandPrivateNetworks(data interface{}) ([]*lbSDK.PrivateNetwork, error) {
 	return pns, nil
 }
 
-func isPrivateNetworkEqual(a, b interface{}) bool {
+func IsPrivateNetworkEqual(a, b interface{}) bool {
 	// Find out the diff Private Network or not
 	if _, ok := a.(*lbSDK.PrivateNetwork); ok {
 		if _, ok := b.(*lbSDK.PrivateNetwork); ok {
@@ -192,7 +189,7 @@ func privateNetworksCompare(slice1, slice2 []*lbSDK.PrivateNetwork) []*lbSDK.Pri
 	}
 	// find the differences
 	for _, pn := range slice2 {
-		if _, foundID := m[pn.PrivateNetworkID]; !foundID || (foundID && !isPrivateNetworkEqual(slice1, slice2)) {
+		if _, foundID := m[pn.PrivateNetworkID]; !foundID || (foundID && !IsPrivateNetworkEqual(slice1, slice2)) {
 			diff = append(diff, pn)
 		}
 	}
@@ -403,42 +400,6 @@ func flattenLbProxyProtocol(pp lbSDK.ProxyProtocol) interface{} {
 	return strings.TrimPrefix(pp.String(), "proxy_protocol_")
 }
 
-func lbUpgradeV1SchemaType() cty.Type {
-	return cty.Object(map[string]cty.Type{
-		"id": cty.String,
-	})
-}
-
-// lbUpgradeV1UpgradeFunc allow upgrade the from regional to a zoned resource.
-func lbUpgradeV1SchemaUpgradeFunc(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
-	var err error
-	// element id: upgrade
-	ID, exist := rawState["id"]
-	if !exist {
-		return nil, errors.New("upgrade: id not exist")
-	}
-	rawState["id"], err = lbUpgradeV1RegionalToZonedID(ID.(string))
-	if err != nil {
-		return nil, err
-	}
-	// return rawState updated
-	return rawState, nil
-}
-
-func lbUpgradeV1RegionalToZonedID(element string) (string, error) {
-	locality, id, err := locality2.ParseLocalizedID(element)
-	// return error if can't parse
-	if err != nil {
-		return "", fmt.Errorf("upgrade: could not retrieve the locality from `%s`", element)
-	}
-	// if locality is already zoned return
-	if validator.IsZone(locality) {
-		return element, nil
-	}
-	//  append zone 1 as default: e.g. fr-par-1
-	return fmt.Sprintf("%s-1/%s", locality, id), nil
-}
-
 func expandLbPrivateNetworkStaticConfig(raw interface{}) *lbSDK.PrivateNetworkStaticConfig {
 	if raw == nil || len(raw.([]interface{})) < 1 {
 		return nil
@@ -464,7 +425,7 @@ func expandLbPrivateNetworkDHCPConfig(raw interface{}) *lbSDK.PrivateNetworkDHCP
 }
 
 func waitForLB(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) (*lbSDK.LB, error) {
-	retryInterval := defaultWaitLBRetryInterval
+	retryInterval := DefaultWaitLBRetryInterval
 	if transport.DefaultWaitRetryInterval != nil {
 		retryInterval = *transport.DefaultWaitRetryInterval
 	}
@@ -480,7 +441,7 @@ func waitForLB(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID s
 }
 
 func waitForLbInstances(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) (*lbSDK.LB, error) {
-	retryInterval := defaultWaitLBRetryInterval
+	retryInterval := DefaultWaitLBRetryInterval
 	if transport.DefaultWaitRetryInterval != nil {
 		retryInterval = *transport.DefaultWaitRetryInterval
 	}
@@ -496,7 +457,7 @@ func waitForLbInstances(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zon
 }
 
 func waitForLBPN(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID string, timeout time.Duration) ([]*lbSDK.PrivateNetwork, error) {
-	retryInterval := defaultWaitLBRetryInterval
+	retryInterval := DefaultWaitLBRetryInterval
 	if transport.DefaultWaitRetryInterval != nil {
 		retryInterval = *transport.DefaultWaitRetryInterval
 	}
@@ -512,7 +473,7 @@ func waitForLBPN(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, lbID
 }
 
 func waitForLBCertificate(ctx context.Context, lbAPI *lbSDK.ZonedAPI, zone scw.Zone, id string, timeout time.Duration) (*lbSDK.Certificate, error) {
-	retryInterval := defaultWaitLBRetryInterval
+	retryInterval := DefaultWaitLBRetryInterval
 	if transport.DefaultWaitRetryInterval != nil {
 		retryInterval = *transport.DefaultWaitRetryInterval
 	}

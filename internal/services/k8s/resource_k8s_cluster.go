@@ -295,7 +295,7 @@ func ResourceScalewayK8SCluster() *schema.Resource {
 			},
 			func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
 				if diff.HasChange("type") && diff.Id() != "" {
-					k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(i, diff.Id())
+					k8sAPI, region, clusterID, err := K8sAPIWithRegionAndID(i, diff.Id())
 					if err != nil {
 						return err
 					}
@@ -529,7 +529,7 @@ func ResourceScalewayK8SClusterCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, clusterID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -567,7 +567,7 @@ func ResourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceData,
 	// if autoupgrade is enabled, we only set the minor k8s version (x.y)
 	version := cluster.Version
 	if cluster.AutoUpgrade != nil && cluster.AutoUpgrade.Enabled {
-		version, err = k8sGetMinorVersionFromFull(version)
+		version, err = K8sGetMinorVersionFromFull(version)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -616,7 +616,7 @@ func ResourceScalewayK8SClusterRead(ctx context.Context, d *schema.ResourceData,
 
 //gocyclo:ignore
 func ResourceScalewayK8SClusterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, clusterID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -889,7 +889,7 @@ func ResourceScalewayK8SClusterUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayK8SClusterDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	k8sAPI, region, clusterID, err := k8sAPIWithRegionAndID(meta, d.Id())
+	k8sAPI, region, clusterID, err := K8sAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -5,9 +5,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	cockpit "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
+	cockpitSDK "github.com/scaleway/scaleway-sdk-go/api/cockpit/v1beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/cockpit"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"strings"
 	"testing"
@@ -23,7 +24,7 @@ func init() {
 func testSweepCockpit(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
 		accountAPI := accountV3.NewProjectAPI(scwClient)
-		cockpitAPI := cockpit.NewAPI(scwClient)
+		cockpitAPI := cockpitSDK.NewAPI(scwClient)
 
 		listProjects, err := accountAPI.ListProjects(&accountV3.ProjectAPIListProjectsRequest{}, scw.WithAllPages())
 		if err != nil {
@@ -35,9 +36,9 @@ func testSweepCockpit(_ string) error {
 				continue
 			}
 
-			_, err = cockpitAPI.WaitForCockpit(&cockpit.WaitForCockpitRequest{
+			_, err = cockpitAPI.WaitForCockpit(&cockpitSDK.WaitForCockpitRequest{
 				ProjectID: project.ID,
-				Timeout:   scw.TimeDurationPtr(defaultCockpitTimeout),
+				Timeout:   scw.TimeDurationPtr(cockpit.DefaultCockpitTimeout),
 			})
 			if err != nil {
 				if !http_errors.Is404Error(err) {
@@ -45,7 +46,7 @@ func testSweepCockpit(_ string) error {
 				}
 			}
 
-			_, err = cockpitAPI.DeactivateCockpit(&cockpit.DeactivateCockpitRequest{
+			_, err = cockpitAPI.DeactivateCockpit(&cockpitSDK.DeactivateCockpitRequest{
 				ProjectID: project.ID,
 			})
 			if err != nil {
@@ -207,12 +208,12 @@ func testAccCheckScalewayCockpitExists(tt *tests.TestTools, n string) resource.T
 			return fmt.Errorf("resource cockpit not found: %s", n)
 		}
 
-		api, err := cockpitAPI(tt.Meta)
+		api, err := cockpit.NewAPI(tt.GetMeta())
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetCockpit(&cockpit.GetCockpitRequest{
+		_, err = api.GetCockpit(&cockpitSDK.GetCockpitRequest{
 			ProjectID: rs.Primary.ID,
 		})
 		if err != nil {
@@ -230,12 +231,12 @@ func testAccCheckScalewayCockpitDestroy(tt *tests.TestTools) resource.TestCheckF
 				continue
 			}
 
-			api, err := cockpitAPI(tt.Meta)
+			api, err := cockpit.NewAPI(tt.GetMeta())
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeactivateCockpit(&cockpit.DeactivateCockpitRequest{
+			_, err = api.DeactivateCockpit(&cockpitSDK.DeactivateCockpitRequest{
 				ProjectID: rs.Primary.ID,
 			})
 			if err == nil {

@@ -16,8 +16,8 @@ const (
 	defaultFunctionRetryInterval = 5 * time.Second
 )
 
-// serverlessSQLdbAPIWithRegion returns a new serverless_sqldb API and the region for a Create request
-func serverlessSQLdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*serverless_sqldb.API, scw.Region, error) {
+// ServerlessSQLdbAPIWithRegion returns a new serverless_sqldb API and the region for a Create request
+func ServerlessSQLdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*serverless_sqldb.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	sdbAPI := serverless_sqldb.NewAPI(meta.GetScwClient())
 
@@ -29,8 +29,8 @@ func serverlessSQLdbAPIWithRegion(d *schema.ResourceData, m interface{}) (*serve
 	return sdbAPI, region, nil
 }
 
-// serverlessSQLdbAPIWithRegionalAndID returns a new serverless_sqldb API with region and ID extracted from the state
-func serverlessSQLdbAPIWithRegionAndID(m interface{}, regionalID string) (*serverless_sqldb.API, scw.Region, string, error) {
+// ServerlessSQLdbAPIWithRegionAndID returns a new serverless_sqldb API with region and ID extracted from the state
+func ServerlessSQLdbAPIWithRegionAndID(m interface{}, regionalID string) (*serverless_sqldb.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	sdbAPI := serverless_sqldb.NewAPI(meta.GetScwClient())
 

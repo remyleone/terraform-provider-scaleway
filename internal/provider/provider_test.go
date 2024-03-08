@@ -3,6 +3,7 @@ package provider_test
 import (
 	"context"
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/provider"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 	"testing"
 
@@ -18,13 +19,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type FakeSideProjectTerminateFunc func() error
-
 // createFakeSideProject creates a temporary project with a temporary IAM application and policy.
 //
 // The returned function is a cleanup function that should be called when to delete the project.
-func createFakeSideProject(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey, FakeSideProjectTerminateFunc, error) {
-	terminateFunctions := []FakeSideProjectTerminateFunc{}
+func createFakeSideProject(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey, tests.FakeSideProjectTerminateFunc, error) {
+	terminateFunctions := []tests.FakeSideProjectTerminateFunc{}
 	terminate := func() error {
 		for i := len(terminateFunctions) - 1; i >= 0; i-- {
 			err := terminateFunctions[i]()
@@ -40,7 +39,7 @@ func createFakeSideProject(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey
 	iamApplicationName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iam-app")
 	iamPolicyName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iam-policy")
 
-	projectAPI := accountV3.NewProjectAPI(tt.meta.GetScwClient())
+	projectAPI := accountV3.NewProjectAPI(tt.GetMeta().GetScwClient())
 	project, err := projectAPI.CreateProject(&accountV3.ProjectAPICreateProjectRequest{
 		Name: projectName,
 	})
@@ -57,7 +56,7 @@ func createFakeSideProject(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey
 		})
 	})
 
-	iamAPI := iam.NewAPI(tt.meta.GetScwClient())
+	iamAPI := iam.NewAPI(tt.GetMeta().GetScwClient())
 	iamApplication, err := iamAPI.CreateApplication(&iam.CreateApplicationRequest{
 		Name: iamApplicationName,
 	})
@@ -117,103 +116,6 @@ func createFakeSideProject(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey
 	return project, iamAPIKey, terminate, nil
 }
 
-// createFakeIAMManager creates a temporary project with a temporary IAM application and policy manager.
-//
-// The returned function is a cleanup function that should be called when to delete the project.
-func createFakeIAMManager(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey, FakeSideProjectTerminateFunc, error) {
-	terminateFunctions := []FakeSideProjectTerminateFunc{}
-	terminate := func() error {
-		for i := len(terminateFunctions) - 1; i >= 0; i-- {
-			err := terminateFunctions[i]()
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
-	projectName := sdkacctest.RandomWithPrefix("test-acc-scaleway-project")
-	iamApplicationName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iam-app")
-	iamPolicyName := sdkacctest.RandomWithPrefix("test-acc-scaleway-iam-policy")
-
-	projectAPI := accountV3.NewProjectAPI(tt.meta.GetScwClient())
-	project, err := projectAPI.CreateProject(&accountV3.ProjectAPICreateProjectRequest{
-		Name: projectName,
-	})
-	if err != nil {
-		if err := terminate(); err != nil {
-			return nil, nil, nil, err
-		}
-
-		return nil, nil, nil, err
-	}
-	terminateFunctions = append(terminateFunctions, func() error {
-		return projectAPI.DeleteProject(&accountV3.ProjectAPIDeleteProjectRequest{
-			ProjectID: project.ID,
-		})
-	})
-
-	iamAPI := iam.NewAPI(tt.meta.GetScwClient())
-	iamApplication, err := iamAPI.CreateApplication(&iam.CreateApplicationRequest{
-		Name: iamApplicationName,
-	})
-	if err != nil {
-		if err := terminate(); err != nil {
-			return nil, nil, nil, err
-		}
-
-		return nil, nil, nil, err
-	}
-	terminateFunctions = append(terminateFunctions, func() error {
-		return iamAPI.DeleteApplication(&iam.DeleteApplicationRequest{
-			ApplicationID: iamApplication.ID,
-		})
-	})
-
-	iamPolicy, err := iamAPI.CreatePolicy(&iam.CreatePolicyRequest{
-		Name:          iamPolicyName,
-		ApplicationID: types.ExpandStringPtr(iamApplication.ID),
-		Rules: []*iam.RuleSpecs{
-			{
-				OrganizationID:     &project.OrganizationID,
-				PermissionSetNames: &[]string{"IAMManager"},
-			},
-		},
-	})
-	if err != nil {
-		if err := terminate(); err != nil {
-			return nil, nil, nil, err
-		}
-
-		return nil, nil, nil, err
-	}
-	terminateFunctions = append(terminateFunctions, func() error {
-		return iamAPI.DeletePolicy(&iam.DeletePolicyRequest{
-			PolicyID: iamPolicy.ID,
-		})
-	})
-
-	iamAPIKey, err := iamAPI.CreateAPIKey(&iam.CreateAPIKeyRequest{
-		ApplicationID:    types.ExpandStringPtr(iamApplication.ID),
-		DefaultProjectID: &project.ID,
-	})
-	if err != nil {
-		if err := terminate(); err != nil {
-			return nil, nil, nil, err
-		}
-
-		return nil, nil, nil, err
-	}
-	terminateFunctions = append(terminateFunctions, func() error {
-		return iamAPI.DeleteAPIKey(&iam.DeleteAPIKeyRequest{
-			AccessKey: iamAPIKey.AccessKey,
-		})
-	})
-
-	return project, iamAPIKey, terminate, nil
-}
-
 // fakeSideProjectProviders creates a new provider alias "side" with a new metaConfig that will use the
 // given project and API key as default profile configuration.
 //
@@ -221,19 +123,19 @@ func createFakeIAMManager(tt *tests.TestTools) (*accountV3.Project, *iam.APIKey,
 func fakeSideProjectProviders(ctx context.Context, tt *tests.TestTools, project *accountV3.Project, iamAPIKey *iam.APIKey) map[string]func() (*schema.Provider, error) {
 	t := tt.T
 
-	metaSide, err := buildMeta(ctx, &meta.metaConfig{
-		terraformVersion:    "terraform-tests",
-		httpClient:          tt.Meta.httpClient,
-		forceProjectID:      project.ID,
-		forceOrganizationID: project.OrganizationID,
-		forceAccessKey:      iamAPIKey.AccessKey,
-		forceSecretKey:      *iamAPIKey.SecretKey,
+	metaSide, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+		TerraformVersion:    "terraform-tests",
+		HttpClient:          tt.GetMeta().GetHTTPClient(),
+		ForceProjectID:      project.ID,
+		ForceOrganizationID: project.OrganizationID,
+		ForceAccessKey:      iamAPIKey.AccessKey,
+		ForceSecretKey:      *iamAPIKey.SecretKey,
 	})
 	require.NoError(t, err)
 
 	providers := map[string]func() (*schema.Provider, error){
 		"side": func() (*schema.Provider, error) {
-			return Provider(&ProviderConfig{Meta: metaSide})(), nil
+			return provider.Provider(&provider.ProviderConfig{Meta: metaSide})(), nil
 		},
 	}
 
@@ -256,28 +158,28 @@ func TestAccScalewayProvider_SSHKeys(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: func() map[string]func() (*schema.Provider, error) {
-			metaProd, err := buildMeta(ctx, &meta.metaConfig{
-				terraformVersion: "terraform-tests",
-				httpClient:       tt.Meta.httpClient,
+			metaProd, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+				TerraformVersion: "terraform-tests",
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
 			})
 			require.NoError(t, err)
 
-			metaDev, err := buildMeta(ctx, &meta.metaConfig{
-				terraformVersion: "terraform-tests",
-				httpClient:       tt.Meta.httpClient,
+			metaDev, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+				TerraformVersion: "terraform-tests",
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
 			})
 			require.NoError(t, err)
 
 			return map[string]func() (*schema.Provider, error){
 				"prod": func() (*schema.Provider, error) {
-					return Provider(&ProviderConfig{Meta: metaProd})(), nil
+					return provider.Provider(&provider.ProviderConfig{Meta: metaProd})(), nil
 				},
 				"dev": func() (*schema.Provider, error) {
-					return Provider(&ProviderConfig{Meta: metaDev})(), nil
+					return provider.Provider(&provider.ProviderConfig{Meta: metaDev})(), nil
 				},
 			}
 		}(),
-		CheckDestroy: testAccCheckScalewayIamSSHKeyDestroy(tt),
+		CheckDestroy: CheckIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -294,8 +196,8 @@ func TestAccScalewayProvider_SSHKeys(t *testing.T) {
 					}
 				`, SSHKeyName, SSHKey),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayIamSSHKeyExists(tt, "scaleway_account_ssh_key.prod"),
-					testAccCheckScalewayIamSSHKeyExists(tt, "scaleway_account_ssh_key.dev"),
+					CheckIamSSHKeyExists(tt, "scaleway_account_ssh_key.prod"),
+					CheckIamSSHKeyExists(tt, "scaleway_account_ssh_key.dev"),
 				),
 			},
 		},
@@ -311,30 +213,30 @@ func TestAccScalewayProvider_InstanceIPZones(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: func() map[string]func() (*schema.Provider, error) {
-			metaProd, err := buildMeta(ctx, &meta.metaConfig{
-				terraformVersion: "terraform-tests",
-				forceZone:        scw.ZoneFrPar2,
-				httpClient:       tt.Meta.httpClient,
+			metaProd, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+				TerraformVersion: "terraform-tests",
+				ForceZone:        scw.ZoneFrPar2,
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
 			})
 			require.NoError(t, err)
 
-			metaDev, err := buildMeta(ctx, &meta.metaConfig{
-				terraformVersion: "terraform-tests",
-				forceZone:        scw.ZoneFrPar1,
-				httpClient:       tt.Meta.httpClient,
+			metaDev, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+				TerraformVersion: "terraform-tests",
+				ForceZone:        scw.ZoneFrPar1,
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
 			})
 			require.NoError(t, err)
 
 			return map[string]func() (*schema.Provider, error){
 				"prod": func() (*schema.Provider, error) {
-					return Provider(&ProviderConfig{Meta: metaProd})(), nil
+					return provider.Provider(&provider.ProviderConfig{Meta: metaProd})(), nil
 				},
 				"dev": func() (*schema.Provider, error) {
-					return Provider(&ProviderConfig{Meta: metaDev})(), nil
+					return provider.Provider(&provider.ProviderConfig{Meta: metaDev})(), nil
 				},
 			}
 		}(),
-		CheckDestroy: testAccCheckScalewayIamSSHKeyDestroy(tt),
+		CheckDestroy: CheckIamSSHKeyDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -347,8 +249,8 @@ func TestAccScalewayProvider_InstanceIPZones(t *testing.T) {
 					}
 `,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayInstanceIPExists(tt, "scaleway_instance_ip.prod"),
-					testAccCheckScalewayInstanceIPExists(tt, "scaleway_instance_ip.dev"),
+					CheckInstanceIPExists(tt, "scaleway_instance_ip.prod"),
+					CheckInstanceIPExists(tt, "scaleway_instance_ip.dev"),
 					resource.TestCheckResourceAttr("scaleway_instance_ip.prod", "zone", "fr-par-2"),
 					resource.TestCheckResourceAttr("scaleway_instance_ip.dev", "zone", "fr-par-1"),
 				),

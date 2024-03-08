@@ -3,13 +3,14 @@ package documentdb_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/documentdb"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	documentdb "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
+	documentdbSDK "github.com/scaleway/scaleway-sdk-go/api/documentdb/v1beta1"
 )
 
 func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
@@ -45,7 +46,7 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBInstanceEndpointExists(tt, "scaleway_documentdb_private_network_endpoint.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_documentdb_instance.main", "name", "test-documentdb-instance-endpoint-basic"),
 					resource.TestCheckResourceAttr(
 						"scaleway_documentdb_private_network_endpoint.main", "ip_net", "172.16.32.3/22"),
@@ -87,7 +88,7 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBInstanceEndpointExists(tt, "scaleway_documentdb_private_network_endpoint.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_documentdb_instance.main", "name", "test-documentdb-instance-endpoint-basic"),
 					resource.TestCheckResourceAttr(
 						"scaleway_documentdb_private_network_endpoint.main", "ip_net", "172.16.32.3/22"),
@@ -129,7 +130,7 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBInstanceEndpointExists(tt, "scaleway_documentdb_private_network_endpoint.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_documentdb_instance.main", "name", "test-documentdb-instance-endpoint-basic"),
 					resource.TestCheckResourceAttr(
 						"scaleway_documentdb_private_network_endpoint.main", "ip_net", "172.16.64.4/22"),
@@ -197,7 +198,7 @@ func TestAccScalewayDocumentDBPrivateNetworkEndpoint_Migration(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDocumentDBInstanceEndpointExists(tt, "scaleway_documentdb_private_network_endpoint.main"),
-					testCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_documentdb_private_network_endpoint.main", "id"),
 					resource.TestCheckResourceAttr(
 						"scaleway_documentdb_private_network_endpoint.main", "ip_net", "10.10.64.4/22"),
 				),
@@ -227,12 +228,12 @@ func testAccCheckScalewayDocumentDBInstanceEndpointDestroy(tt *tests.TestTools) 
 				continue
 			}
 
-			api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteEndpoint(&documentdb.DeleteEndpointRequest{
+			err = api.DeleteEndpoint(&documentdbSDK.DeleteEndpointRequest{
 				Region:     region,
 				EndpointID: id,
 			})
@@ -257,12 +258,12 @@ func testAccCheckScalewayDocumentDBInstanceEndpointExists(tt *tests.TestTools, n
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := documentDBAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := documentdb.DocumentDBAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetEndpoint(&documentdb.GetEndpointRequest{
+		_, err = api.GetEndpoint(&documentdbSDK.GetEndpointRequest{
 			EndpointID: id,
 			Region:     region,
 		})

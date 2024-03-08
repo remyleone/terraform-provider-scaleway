@@ -16,7 +16,7 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -39,7 +39,7 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_Basic(t *testing.T) {
 					}
 				`, pnName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn_test"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn_test"),
 					resource.TestCheckResourceAttrPair(
 						"data.scaleway_vpc_private_network.pn_test_by_name", "name",
 						"scaleway_vpc_private_network.pn_test", "name"),
@@ -82,7 +82,7 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_VpcID(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
+		CheckDestroy:      CheckPrivateNetworkDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -136,7 +136,7 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_VpcID(t *testing.T) {
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn01"),
 					resource.TestCheckResourceAttrPair(
 						"data.scaleway_vpc_private_network.by_vpc_id", "name",
 						"scaleway_vpc_private_network.pn01", "name"),
@@ -147,7 +147,7 @@ func TestAccScalewayDataSourceVPCPrivateNetwork_VpcID(t *testing.T) {
 						"data.scaleway_vpc_private_network.by_vpc_id", "vpc_id",
 						"scaleway_vpc.vpc01", "id"),
 
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
+					CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.pn02"),
 					resource.TestCheckResourceAttrPair(
 						"data.scaleway_vpc_private_network.by_vpc_id_2", "name",
 						"scaleway_vpc_private_network.pn02", "name"),

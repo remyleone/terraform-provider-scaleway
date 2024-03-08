@@ -17,10 +17,10 @@ type MetaConfig struct {
 	ProviderSchema      *schema.ResourceData
 	TerraformVersion    string
 	ForceZone           scw.Zone
-	forceProjectID      string
-	forceOrganizationID string
-	forceAccessKey      string
-	forceSecretKey      string
+	ForceProjectID      string
+	ForceOrganizationID string
+	ForceAccessKey      string
+	ForceSecretKey      string
 	HttpClient          *http.Client
 }
 
@@ -59,17 +59,17 @@ func BuildMeta(ctx context.Context, config *MetaConfig) (*Meta, error) {
 		profile.DefaultRegion = scw.StringPtr(region.String())
 		profile.DefaultZone = scw.StringPtr(config.ForceZone.String())
 	}
-	if config.forceProjectID != "" {
-		profile.DefaultProjectID = scw.StringPtr(config.forceProjectID)
+	if config.ForceProjectID != "" {
+		profile.DefaultProjectID = scw.StringPtr(config.ForceProjectID)
 	}
-	if config.forceOrganizationID != "" {
-		profile.DefaultOrganizationID = scw.StringPtr(config.forceOrganizationID)
+	if config.ForceOrganizationID != "" {
+		profile.DefaultOrganizationID = scw.StringPtr(config.ForceOrganizationID)
 	}
-	if config.forceAccessKey != "" {
-		profile.AccessKey = scw.StringPtr(config.forceAccessKey)
+	if config.ForceAccessKey != "" {
+		profile.AccessKey = scw.StringPtr(config.ForceAccessKey)
 	}
-	if config.forceSecretKey != "" {
-		profile.SecretKey = scw.StringPtr(config.forceSecretKey)
+	if config.ForceSecretKey != "" {
+		profile.SecretKey = scw.StringPtr(config.ForceSecretKey)
 	}
 
 	// TODO validated profile

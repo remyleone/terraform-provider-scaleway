@@ -3,9 +3,8 @@ package vpc_test
 import (
 	"testing"
 
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 )
 
 func TestAccScalewayDataSourceVPCs_Basic(t *testing.T) {
@@ -14,7 +13,7 @@ func TestAccScalewayDataSourceVPCs_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

@@ -53,7 +53,7 @@ func DataSourceScalewaySecretVersion() *schema.Resource {
 
 func datasourceSchemaFromResourceVersionSchema(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	secretID, existSecretID := d.GetOk("secret_id")
-	api, region, err := secretAPIWithRegionAndDefault(d, meta, locality.ExpandRegionalID(secretID).Region)
+	api, region, err := SecretAPIWithRegionAndDefault(d, meta, locality.ExpandRegionalID(secretID).Region)
 	if err != nil {
 		return diag.FromErr(err)
 	}

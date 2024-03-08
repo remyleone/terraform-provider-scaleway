@@ -148,7 +148,7 @@ func ResourceScalewayIPAMIP() *schema.Resource {
 }
 
 func ResourceScalewayIPAMIPCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	ipamAPI, region, err := ipamAPIWithRegion(d, meta)
+	ipamAPI, region, err := IpamAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -188,7 +188,7 @@ func ResourceScalewayIPAMIPCreate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func ResourceScalewayIPAMIPRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	ipamAPI, region, ID, err := ipamAPIWithRegionAndID(meta, d.Id())
+	ipamAPI, region, ID, err := IpamAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -260,7 +260,7 @@ func ResourceScalewayIPAMIPRead(ctx context.Context, d *schema.ResourceData, met
 }
 
 func ResourceScalewayIPAMIPUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	ipamAPI, region, ID, err := ipamAPIWithRegionAndID(meta, d.Id())
+	ipamAPI, region, ID, err := IpamAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -278,7 +278,7 @@ func ResourceScalewayIPAMIPUpdate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func ResourceScalewayIPAMIPDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	ipamAPI, region, ID, err := ipamAPIWithRegionAndID(meta, d.Id())
+	ipamAPI, region, ID, err := IpamAPIWithRegionAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

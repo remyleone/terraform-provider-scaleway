@@ -4,20 +4,22 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/function"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	function "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
+	functionSDK "github.com/scaleway/scaleway-sdk-go/api/function/v1beta1"
 )
 
 func TestAccScalewayFunctionDomain_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "function-basic." + testDomain
+	testDNSZone := "functionSDK-basic." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayContainerDomain_Basic: test dns zone: %s", testDNSZone)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -38,7 +40,7 @@ func TestAccScalewayFunctionDomain_Basic(t *testing.T) {
 						deploy = true
 				}
 				`,
-				Check: testConfigContainerNamespace(tt, "scaleway_function_namespace.main"),
+				Check: checks.CheckConfigContainerNamespace(tt, "scaleway_function_namespace.main"),
 			},
 			{
 				Config: fmt.Sprintf(`
@@ -53,7 +55,7 @@ func TestAccScalewayFunctionDomain_Basic(t *testing.T) {
 						deploy = true
 					}
 
-					resource scaleway_domain_record "function" {
+					resource scaleway_domain_record "functionSDK" {
 				  		dns_zone = "%s"
 				  		name     = "container"
 				  		type     = "CNAME"
@@ -63,7 +65,7 @@ func TestAccScalewayFunctionDomain_Basic(t *testing.T) {
 
 					resource "scaleway_function_domain" "main" {
 					  function_id = scaleway_function.main.id
-					  hostname    = "${scaleway_domain_record.function.name}.${scaleway_domain_record.function.dns_zone}"
+					  hostname    = "${scaleway_domain_record.functionSDK.name}.${scaleway_domain_record.functionSDK.dns_zone}"
 					}
 				`, testDNSZone),
 				Check: resource.ComposeTestCheckFunc(
@@ -81,12 +83,12 @@ func testAccCheckScalewayFunctionDomainExists(tt *tests.TestTools, n string) res
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetDomain(&function.GetDomainRequest{
+		_, err = api.GetDomain(&functionSDK.GetDomainRequest{
 			DomainID: id,
 			Region:   region,
 		})
@@ -105,18 +107,18 @@ func testAccCheckScalewayFunctionDomainDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			api, region, id, err := functionAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			api, region, id, err := function.FunctionAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = api.DeleteDomain(&function.DeleteDomainRequest{
+			_, err = api.DeleteDomain(&functionSDK.DeleteDomainRequest{
 				DomainID: id,
 				Region:   region,
 			})
 
 			if err == nil {
-				return fmt.Errorf("function domain (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("functionSDK domain (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

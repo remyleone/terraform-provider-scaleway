@@ -2,17 +2,17 @@ package instance_test
 
 import (
 	"fmt"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"net"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/instance/v1"
+	instanceSDK "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"net"
+	"testing"
 )
 
 func init() {
@@ -24,16 +24,16 @@ func init() {
 
 func testSweepInstanceIP(_ string) error {
 	return tests.SweepZones(scw.AllZones, func(scwClient *scw.Client, zone scw.Zone) error {
-		instanceAPI := instance.NewAPI(scwClient)
+		instanceAPI := instanceSDK.NewAPI(scwClient)
 
-		listIPs, err := instanceAPI.ListIPs(&instance.ListIPsRequest{Zone: zone}, scw.WithAllPages())
+		listIPs, err := instanceAPI.ListIPs(&instanceSDK.ListIPsRequest{Zone: zone}, scw.WithAllPages())
 		if err != nil {
 			logging.L.Warningf("error listing ips in (%s) in sweeper: %s", zone, err)
 			return nil
 		}
 
 		for _, ip := range listIPs.IPs {
-			err := instanceAPI.DeleteIP(&instance.DeleteIPRequest{
+			err := instanceAPI.DeleteIP(&instanceSDK.DeleteIPRequest{
 				IP:   ip.ID,
 				Zone: zone,
 			})
@@ -313,12 +313,12 @@ func testAccCheckScalewayInstanceIPExists(tt *tests.TestTools, name string) reso
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = instanceAPI.GetIP(&instance.GetIPRequest{
+		_, err = instanceAPI.GetIP(&instanceSDK.GetIPRequest{
 			IP:   ID,
 			Zone: zone,
 		})
@@ -341,12 +341,12 @@ func testAccCheckScalewayInstanceIPPairWithServer(tt *tests.TestTools, ipResourc
 			return fmt.Errorf("resource not found: %s", serverResource)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, ipState.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), ipState.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		server, err := instanceAPI.GetServer(&instance.GetServerRequest{
+		server, err := instanceAPI.GetServer(&instanceSDK.GetServerRequest{
 			Zone:     zone,
 			ServerID: locality.ExpandID(serverState.Primary.ID),
 		})
@@ -354,7 +354,7 @@ func testAccCheckScalewayInstanceIPPairWithServer(tt *tests.TestTools, ipResourc
 			return err
 		}
 
-		ip, err := instanceAPI.GetIP(&instance.GetIPRequest{
+		ip, err := instanceAPI.GetIP(&instanceSDK.GetIPRequest{
 			IP:   ID,
 			Zone: zone,
 		})
@@ -377,12 +377,12 @@ func testAccCheckScalewayInstanceServerNoIPAssigned(tt *tests.TestTools, serverR
 			return fmt.Errorf("resource not found: %s", serverResource)
 		}
 
-		instanceAPI, zone, ID, err := instanceAPIWithZoneAndID(tt.Meta, serverState.Primary.ID)
+		instanceAPI, zone, ID, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), serverState.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		server, err := instanceAPI.GetServer(&instance.GetServerRequest{
+		server, err := instanceAPI.GetServer(&instanceSDK.GetServerRequest{
 			Zone:     zone,
 			ServerID: ID,
 		})
@@ -405,12 +405,12 @@ func testAccCheckScalewayInstanceIPDestroy(tt *tests.TestTools) resource.TestChe
 				continue
 			}
 
-			instanceAPI, zone, id, err := instanceAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			instanceAPI, zone, id, err := instance.InstanceAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, errIP := instanceAPI.GetIP(&instance.GetIPRequest{
+			_, errIP := instanceAPI.GetIP(&instanceSDK.GetIPRequest{
 				Zone: zone,
 				IP:   id,
 			})
@@ -422,7 +422,7 @@ func testAccCheckScalewayInstanceIPDestroy(tt *tests.TestTools) resource.TestChe
 
 			// Unexpected api error we return it
 			// We check for 403 because instance API return 403 for deleted IP
-			if !Is404Error(errIP) && !Is403Error(errIP) {
+			if !errs.Is404Error(errIP) && !errs.Is403Error(errIP) {
 				return errIP
 			}
 		}

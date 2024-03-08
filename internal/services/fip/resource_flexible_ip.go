@@ -96,7 +96,7 @@ func ResourceScalewayFlexibleIP() *schema.Resource {
 }
 
 func ResourceScalewayFlexibleIPCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fipAPI, zone, err := fipAPIWithZone(d, meta)
+	fipAPI, zone, err := FipAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -124,7 +124,7 @@ func ResourceScalewayFlexibleIPCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayFlexibleIPRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fipAPI, zone, ID, err := fipAPIWithZoneAndID(meta, d.Id())
+	fipAPI, zone, ID, err := FipAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -168,7 +168,7 @@ func ResourceScalewayFlexibleIPRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func ResourceScalewayFlexibleIPUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fipAPI, zone, ID, err := fipAPIWithZoneAndID(meta, d.Id())
+	fipAPI, zone, ID, err := FipAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -241,7 +241,7 @@ func ResourceScalewayFlexibleIPUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func ResourceScalewayFlexibleIPDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	fipAPI, zone, ID, err := fipAPIWithZoneAndID(meta, d.Id())
+	fipAPI, zone, ID, err := FipAPIWithZoneAndID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

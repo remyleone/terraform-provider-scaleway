@@ -5,6 +5,7 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/lb"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 	"testing"
 
@@ -159,7 +160,7 @@ func testAccCheckScalewayFrontendCertificateExist(tt *tests.TestTools, f, c stri
 			return fmt.Errorf("resource not found: %s", c)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -189,7 +190,7 @@ func testAccCheckScalewayLbFrontendExists(tt *tests.TestTools, n string) resourc
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -213,7 +214,7 @@ func testAccCheckScalewayLbFrontendDestroy(tt *tests.TestTools) resource.TestChe
 				continue
 			}
 
-			lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
@@ -539,7 +540,7 @@ func testAccCheckScalewayACLAreCorrect(tt *tests.TestTools, frontendName string,
 			if testAcl.Name == "" {
 				testAcl.Name = apiAcl.Name
 			}
-			return aclEquals(&testAcl, &apiAcl)
+			return lb.AclEquals(&testAcl, &apiAcl)
 		}
 
 		rs, ok := s.RootModule().Resources[frontendName]
@@ -551,7 +552,7 @@ func testAccCheckScalewayACLAreCorrect(tt *tests.TestTools, frontendName string,
 			return errors.New("resource id is not set")
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -615,24 +616,24 @@ func TestAclEqual(t *testing.T) {
 		Frontend: nil,
 		Index:    1,
 	}
-	assert.True(t, aclEquals(aclA, aclB))
+	assert.True(t, lb.AclEquals(aclA, aclB))
 
 	// change name
 	aclA.Name = "nope"
-	assert.False(t, aclEquals(aclA, aclB))
+	assert.False(t, lb.AclEquals(aclA, aclB))
 	aclA.Name = aclB.Name
 
 	// check action
 	aclA.Action = nil
-	assert.False(t, aclEquals(aclA, aclB))
+	assert.False(t, lb.AclEquals(aclA, aclB))
 	aclA.Action = &lbSDK.ACLAction{Type: lbSDK.ACLActionTypeAllow}
-	assert.True(t, aclEquals(aclA, aclB))
+	assert.True(t, lb.AclEquals(aclA, aclB))
 	aclA.Action = &lbSDK.ACLAction{Type: lbSDK.ACLActionTypeDeny}
-	assert.False(t, aclEquals(aclA, aclB))
+	assert.False(t, lb.AclEquals(aclA, aclB))
 	aclA.Action = &lbSDK.ACLAction{Type: lbSDK.ACLActionTypeAllow}
-	assert.True(t, aclEquals(aclA, aclB))
+	assert.True(t, lb.AclEquals(aclA, aclB))
 
 	// check match
 	aclA.Match.IPSubnet = scw.StringSlicePtr([]string{"192.168.0.1", "192.168.0.2", "192.168.10.0/24", "0.0.0.0"})
-	assert.False(t, aclEquals(aclA, aclB))
+	assert.False(t, lb.AclEquals(aclA, aclB))
 }

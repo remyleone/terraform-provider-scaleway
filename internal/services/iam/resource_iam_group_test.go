@@ -3,15 +3,14 @@ package iam_test
 import (
 	"errors"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	iam "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
+	iamSDK "github.com/scaleway/scaleway-sdk-go/api/iam/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/iam"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -23,24 +22,24 @@ func init() {
 
 func testSweepIamGroup(_ string) error {
 	return tests.Sweep(func(scwClient *scw.Client) error {
-		api := iam.NewAPI(scwClient)
+		api := iamSDK.NewAPI(scwClient)
 
 		orgID, exists := scwClient.GetDefaultOrganizationID()
 		if !exists {
 			return errors.New("missing organizationID")
 		}
 
-		listApps, err := api.ListGroups(&iam.ListGroupsRequest{
+		listApps, err := api.ListGroups(&iamSDK.ListGroupsRequest{
 			OrganizationID: orgID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to list groups: %w", err)
 		}
 		for _, group := range listApps.Groups {
-			if !isTestResource(group.Name) {
+			if !tests.IsTestResource(group.Name) {
 				continue
 			}
-			err = api.DeleteGroup(&iam.DeleteGroupRequest{
+			err = api.DeleteGroup(&iamSDK.DeleteGroupRequest{
 				GroupID: group.ID,
 			})
 			if err != nil {
@@ -502,9 +501,9 @@ func testAccCheckScalewayIamGroupExists(tt *tests.TestTools, name string) resour
 			return fmt.Errorf("resource not found: %s", name)
 		}
 
-		iamAPI := iamAPI(tt.Meta)
+		iamAPI := iam.IAMAPI(tt.GetMeta())
 
-		_, err := iamAPI.GetGroup(&iam.GetGroupRequest{
+		_, err := iamAPI.GetGroup(&iamSDK.GetGroupRequest{
 			GroupID: rs.Primary.ID,
 		})
 		if err != nil {
@@ -522,9 +521,9 @@ func testAccCheckScalewayIamGroupDestroy(tt *tests.TestTools) resource.TestCheck
 				continue
 			}
 
-			iamAPI := iamAPI(tt.Meta)
+			iamAPI := iam.IAMAPI(tt.GetMeta())
 
-			_, err := iamAPI.GetGroup(&iam.GetGroupRequest{
+			_, err := iamAPI.GetGroup(&iamSDK.GetGroupRequest{
 				GroupID: rs.Primary.ID,
 			})
 

@@ -41,7 +41,7 @@ func DataSourceScalewayVPCGatewayNetwork() *schema.Resource {
 }
 
 func DataSourceScalewayVPCGatewayNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	vpcAPI, zone, err := vpcgwAPIWithZone(d, meta)
+	vpcAPI, zone, err := VpcgwAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

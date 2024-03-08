@@ -39,7 +39,7 @@ func DataSourceScalewayIamUser() *schema.Resource {
 }
 
 func DataSourceScalewayIamUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	iamAPI := iamAPI(meta)
+	iamAPI := IAMAPI(meta)
 
 	var email, organizationID string
 	userID, ok := d.GetOk("user_id")

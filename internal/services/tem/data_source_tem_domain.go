@@ -36,7 +36,7 @@ func DataSourceScalewayTemDomain() *schema.Resource {
 }
 
 func DataSourceScalewayTemDomainRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := temAPIWithRegion(d, meta)
+	api, region, err := TemAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

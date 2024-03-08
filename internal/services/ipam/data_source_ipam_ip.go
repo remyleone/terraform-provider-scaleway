@@ -15,7 +15,7 @@ import (
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
 )
 
-func DataSourceScalewayIPAMIP() *schema.Resource {
+func DataSourceIP() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: DataSourceScalewayIPAMIPRead,
 		Schema: map[string]*schema.Schema{
@@ -120,7 +120,7 @@ func DataSourceScalewayIPAMIP() *schema.Resource {
 }
 
 func DataSourceScalewayIPAMIPRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, region, err := ipamAPIWithRegion(d, meta)
+	api, region, err := IpamAPIWithRegion(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

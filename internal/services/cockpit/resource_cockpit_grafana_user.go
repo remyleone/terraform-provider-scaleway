@@ -21,10 +21,10 @@ func ResourceScalewayCockpitGrafanaUser() *schema.Resource {
 		ReadContext:   ResourceScalewayCockpitGrafanaUserRead,
 		DeleteContext: ResourceScalewayCockpitGrafanaUserDelete,
 		Timeouts: &schema.ResourceTimeout{
-			Create:  schema.DefaultTimeout(defaultCockpitTimeout),
-			Read:    schema.DefaultTimeout(defaultCockpitTimeout),
-			Delete:  schema.DefaultTimeout(defaultCockpitTimeout),
-			Default: schema.DefaultTimeout(defaultCockpitTimeout),
+			Create:  schema.DefaultTimeout(DefaultCockpitTimeout),
+			Read:    schema.DefaultTimeout(DefaultCockpitTimeout),
+			Delete:  schema.DefaultTimeout(DefaultCockpitTimeout),
+			Default: schema.DefaultTimeout(DefaultCockpitTimeout),
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -59,7 +59,7 @@ func ResourceScalewayCockpitGrafanaUser() *schema.Resource {
 }
 
 func ResourceScalewayCockpitGrafanaUserCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, err := cockpitAPI(meta)
+	api, err := NewAPI(meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -85,12 +85,12 @@ func ResourceScalewayCockpitGrafanaUserCreate(ctx context.Context, d *schema.Res
 	}
 
 	_ = d.Set("password", grafanaUser.Password)
-	d.SetId(cockpitIDWithProjectID(projectID, strconv.FormatUint(uint64(grafanaUser.ID), 10)))
+	d.SetId(CockpitIDWithProjectID(projectID, strconv.FormatUint(uint64(grafanaUser.ID), 10)))
 	return ResourceScalewayCockpitGrafanaUserRead(ctx, d, meta)
 }
 
 func ResourceScalewayCockpitGrafanaUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, projectID, grafanaUserID, err := cockpitAPIGrafanaUserID(meta, d.Id())
+	api, projectID, grafanaUserID, err := CockpitAPIGrafanaUserID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -138,7 +138,7 @@ func ResourceScalewayCockpitGrafanaUserRead(ctx context.Context, d *schema.Resou
 }
 
 func ResourceScalewayCockpitGrafanaUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, projectID, grafanaUserID, err := cockpitAPIGrafanaUserID(meta, d.Id())
+	api, projectID, grafanaUserID, err := CockpitAPIGrafanaUserID(meta, d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

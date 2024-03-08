@@ -4,12 +4,13 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/domain"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
+	domainSDK "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -18,7 +19,7 @@ func TestAccScalewayDomainZone_Basic(t *testing.T) {
 	defer tt.Cleanup()
 
 	testDNSZone := "test-zone"
-	logging.L.Debugf("TestAccScalewayDomainZone_Basic: test dns zone: %s, with domain: %s", testDNSZone, testDomain)
+	logging.L.Debugf("TestAccScalewayDomainZone_Basic: test dns zone: %s, with domain: %s", testDNSZone, tests.TestDomain)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
@@ -31,11 +32,11 @@ func TestAccScalewayDomainZone_Basic(t *testing.T) {
 						domain    = "%s"
 						subdomain = "%s"
 					}
-				`, testDomain, testDNSZone),
+				`, tests.TestDomain, testDNSZone),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayDomainZoneExists(tt, "scaleway_domain_zone.test"),
 					resource.TestCheckResourceAttr("scaleway_domain_zone.test", "subdomain", testDNSZone),
-					resource.TestCheckResourceAttr("scaleway_domain_zone.test", "domain", testDomain),
+					resource.TestCheckResourceAttr("scaleway_domain_zone.test", "domain", tests.TestDomain),
 					resource.TestCheckResourceAttr("scaleway_domain_zone.test", "status", "active"),
 				),
 			},
@@ -50,8 +51,8 @@ func testAccCheckScalewayDomainZoneExists(tt *tests.TestTools, n string) resourc
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		domainAPI := newDomainAPI(tt.Meta)
-		listDNSZones, err := domainAPI.ListDNSZones(&domain.ListDNSZonesRequest{
+		domainAPI := domain.NewDomainAPI(tt.GetMeta())
+		listDNSZones, err := domainAPI.ListDNSZones(&domainSDK.ListDNSZonesRequest{
 			DNSZone: scw.StringPtr(fmt.Sprintf("%s.%s", rs.Primary.Attributes["subdomain"], rs.Primary.Attributes["domain"])),
 		})
 		if err != nil {
@@ -77,8 +78,8 @@ func testAccCheckScalewayDomainZoneDestroy(tt *tests.TestTools) resource.TestChe
 			}
 
 			// check if the zone still exists
-			domainAPI := newDomainAPI(tt.Meta)
-			listDNSZones, err := domainAPI.ListDNSZones(&domain.ListDNSZonesRequest{
+			domainAPI := domain.NewDomainAPI(tt.GetMeta())
+			listDNSZones, err := domainAPI.ListDNSZones(&domainSDK.ListDNSZonesRequest{
 				DNSZone: scw.StringPtr(fmt.Sprintf("%s.%s", rs.Primary.Attributes["subdomain"], rs.Primary.Attributes["domain"])),
 			})
 

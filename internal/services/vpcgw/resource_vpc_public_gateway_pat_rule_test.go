@@ -2,14 +2,13 @@ package vpcgw_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	vpcgw "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func TestAccScalewayVPCPublicGatewayPATRule_Basic(t *testing.T) {
@@ -190,12 +189,12 @@ func testAccCheckScalewayVPCPublicGatewayPATRuleExists(tt *tests.TestTools, n st
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = vpcgwAPI.GetPATRule(&vpcgw.GetPATRuleRequest{
+		_, err = vpcgwAPI.GetPATRule(&vpcgwSDK.GetPATRuleRequest{
 			PatRuleID: ID,
 			Zone:      zone,
 		})
@@ -214,12 +213,12 @@ func testAccCheckScalewayVPCPublicGatewayPATRuleDestroy(tt *tests.TestTools) res
 				continue
 			}
 
-			vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = vpcgwAPI.GetPATRule(&vpcgw.GetPATRuleRequest{
+			_, err = vpcgwAPI.GetPATRule(&vpcgwSDK.GetPATRuleRequest{
 				PatRuleID: ID,
 				Zone:      zone,
 			})

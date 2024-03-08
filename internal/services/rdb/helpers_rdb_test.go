@@ -2,6 +2,7 @@ package rdb_test
 
 import (
 	"context"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
 	"reflect"
 	"testing"
 )
@@ -20,7 +21,7 @@ func TestRDBPrivilegeV1SchemaUpgradeFunc(t *testing.T) {
 		"user_name":     "username",
 	}
 
-	actual, err := rdbPrivilegeV1SchemaUpgradeFunc(context.Background(), v0Schema, nil)
+	actual, err := rdb.RdbPrivilegeV1SchemaUpgradeFunc(context.Background(), v0Schema, nil)
 	if err != nil {
 		t.Fatalf("error migrating state: %s", err)
 	}

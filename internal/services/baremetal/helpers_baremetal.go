@@ -26,7 +26,7 @@ const (
 )
 
 // instanceAPIWithZone returns a new baremetal API and the zone for a Create request
-func baremetalAPIWithZone(d *schema.ResourceData, m interface{}) (*baremetal.API, scw.Zone, error) {
+func BaremetalAPIWithZone(d *schema.ResourceData, m interface{}) (*baremetal.API, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 	baremetalAPI := baremetal.NewAPI(meta.GetScwClient())
 
@@ -38,7 +38,7 @@ func baremetalAPIWithZone(d *schema.ResourceData, m interface{}) (*baremetal.API
 }
 
 // instanceAPIWithZoneAndID returns an baremetal API with zone and ID extracted from the state
-func baremetalAPIWithZoneAndID(m interface{}, id string) (*baremetal.API, locality.ZonedID, error) {
+func BaremetalAPIWithZoneAndID(m interface{}, id string) (*baremetal.API, locality.ZonedID, error) {
 	meta := m.(*meta2.Meta)
 	baremetalAPI := baremetal.NewAPI(meta.GetScwClient())
 
@@ -50,7 +50,7 @@ func baremetalAPIWithZoneAndID(m interface{}, id string) (*baremetal.API, locali
 }
 
 // returns a new baremetal private network API and the zone for a Create request
-func baremetalPrivateNetworkAPIWithZone(d *schema.ResourceData, m interface{}) (*baremetal.PrivateNetworkAPI, scw.Zone, error) {
+func BaremetalPrivateNetworkAPIWithZone(d *schema.ResourceData, m interface{}) (*baremetal.PrivateNetworkAPI, scw.Zone, error) {
 	meta := m.(*meta2.Meta)
 	baremetalPrivateNetworkAPI := baremetal.NewPrivateNetworkAPI(meta.GetScwClient())
 
@@ -61,8 +61,8 @@ func baremetalPrivateNetworkAPIWithZone(d *schema.ResourceData, m interface{}) (
 	return baremetalPrivateNetworkAPI, zone, nil
 }
 
-// baremetalPrivateNetworkAPIWithZoneAndID returns a baremetal private network API with zone and ID extracted from the state
-func baremetalPrivateNetworkAPIWithZoneAndID(m interface{}, id string) (*baremetal.PrivateNetworkAPI, locality.ZonedID, error) {
+// BaremetalPrivateNetworkAPIWithZoneAndID returns a baremetal private network API with zone and ID extracted from the state
+func BaremetalPrivateNetworkAPIWithZoneAndID(m interface{}, id string) (*baremetal.PrivateNetworkAPI, locality.ZonedID, error) {
 	meta := m.(*meta2.Meta)
 	baremetalPrivateNetworkAPI := baremetal.NewPrivateNetworkAPI(meta.GetScwClient())
 
@@ -234,7 +234,7 @@ func flattenBaremetalPrivateNetworks(region scw.Region, privateNetworks []*barem
 }
 
 func detachAllPrivateNetworkFromBaremetal(ctx context.Context, d *schema.ResourceData, m interface{}, serverID string) error {
-	privateNetworkAPI, zone, err := baremetalPrivateNetworkAPIWithZone(d, m)
+	privateNetworkAPI, zone, err := BaremetalPrivateNetworkAPIWithZone(d, m)
 	if err != nil {
 		return err
 	}
@@ -339,7 +339,7 @@ func baremetalInstallServer(ctx context.Context, d *schema.ResourceData, baremet
 	return nil
 }
 
-func baremetalFindOfferByID(ctx context.Context, baremetalAPI *baremetal.API, zone scw.Zone, offerID string) (*baremetal.Offer, error) {
+func BaremetalFindOfferByID(ctx context.Context, baremetalAPI *baremetal.API, zone scw.Zone, offerID string) (*baremetal.Offer, error) {
 	subscriptionPeriods := []baremetal.OfferSubscriptionPeriod{
 		baremetal.OfferSubscriptionPeriodHourly,
 		baremetal.OfferSubscriptionPeriodMonthly,

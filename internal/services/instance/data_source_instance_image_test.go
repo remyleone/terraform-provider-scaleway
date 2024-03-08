@@ -25,10 +25,10 @@ func TestAccScalewayDataSourceInstanceImage_Basic(t *testing.T) {
 						image_id = "cf44b8f5-77e2-42ed-8f1e-09ed5bb028fc"
 					}`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayInstanceImageExists(tt, "data.scaleway_instance_image.test"),
+					CheckImageExists(tt, "data.scaleway_instance_image.test"),
 					resource.TestCheckResourceAttr("data.scaleway_instance_image.test", "name", "Ubuntu 20.04 Focal Fossa"),
 
-					testAccCheckScalewayInstanceImageExists(tt, "data.scaleway_instance_image.test2"),
+					CheckImageExists(tt, "data.scaleway_instance_image.test2"),
 					resource.TestCheckResourceAttr("data.scaleway_instance_image.test2", "image_id", "fr-par-1/cf44b8f5-77e2-42ed-8f1e-09ed5bb028fc"),
 					resource.TestCheckResourceAttr("data.scaleway_instance_image.test2", "name", "Ubuntu 20.04 Focal Fossa"),
 					resource.TestCheckResourceAttr("data.scaleway_instance_image.test2", "architecture", "x86_64"),

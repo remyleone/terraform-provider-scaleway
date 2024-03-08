@@ -2,6 +2,8 @@ package object_test
 
 import (
 	"fmt"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/object"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -39,7 +41,7 @@ func TestAccScalewayDataSourceObjectBucketPolicy_Basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayObjectBucketDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayObjectBucketDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -79,10 +81,10 @@ func TestAccScalewayDataSourceObjectBucketPolicy_Basic(t *testing.T) {
 					data "scaleway_object_bucket_policy" "selected" {
 						bucket = scaleway_object_bucket_policy.main.bucket
 					}
-				`, bucketName, objectTestsMainRegion),
+				`, bucketName, object.ObjectTestsMainRegion),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.main", true),
-					resource.TestCheckResourceAttr("data.scaleway_object_bucket_policy.selected", "bucket", objectTestsMainRegion+"/"+bucketName),
+					checks.TestAccCheckScalewayObjectBucketExists(tt, "scaleway_object_bucket.main", true),
+					resource.TestCheckResourceAttr("data.scaleway_object_bucket_policy.selected", "bucket", object.ObjectTestsMainRegion+"/"+bucketName),
 					resource.TestCheckResourceAttrSet("data.scaleway_object_bucket_policy.selected", "policy"),
 					testAccCheckDataSourcePolicyIsEquivalent("data.scaleway_object_bucket_policy.selected", expectedPolicyText),
 				),

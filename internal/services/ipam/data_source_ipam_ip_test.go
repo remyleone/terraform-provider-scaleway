@@ -14,7 +14,7 @@ func TestAccScalewayDataSourceIPAMIP_Instance(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -67,7 +67,7 @@ func TestAccScalewayDataSourceIPAMIP_InstanceLB(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayInstanceServerDestroy(tt),
+		CheckDestroy:      CheckServerDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -124,7 +124,7 @@ func TestAccScalewayDataSourceIPAMIP_RDB(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      CheckRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `
@@ -179,7 +179,7 @@ func TestAccScalewayDataSourceIPAMIP_ID(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayIPAMIPDestroy(tt),
+		CheckDestroy:      CheckIPDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: `

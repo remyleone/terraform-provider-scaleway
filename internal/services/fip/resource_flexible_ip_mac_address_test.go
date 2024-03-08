@@ -3,6 +3,7 @@ package fip_test
 import (
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/fip"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
@@ -102,7 +103,7 @@ func TestAccScalewayFlexibleIPMACAddress_DuplicateOnOtherFlexibleIPs(t *testing.
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayFlexibleIPDestroy(tt),
-			testAccCheckScalewayBaremetalServerDestroy(tt),
+			CheckServerDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -203,7 +204,7 @@ func testAccCheckScalewayFlexibleIPAttachedMACAddress(tt *tests.TestTools, fipRe
 			return fmt.Errorf("resource not found: %s", macResource)
 		}
 
-		fipAPI, zone, ID, err := fipAPIWithZoneAndID(tt.Meta, fipState.Primary.ID)
+		fipAPI, zone, ID, err := fip.FipAPIWithZoneAndID(tt.GetMeta(), fipState.Primary.ID)
 		if err != nil {
 			return err
 		}

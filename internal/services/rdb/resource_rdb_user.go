@@ -67,7 +67,7 @@ func ResourceScalewayRdbUser() *schema.Resource {
 }
 
 func ResourceScalewayRdbUserCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	// resource depends on the instance locality
 	regionalID := d.Get("instance_id").(string)
 	region, instanceID, err := locality.ParseRegionalID(regionalID)
@@ -116,7 +116,7 @@ func ResourceScalewayRdbUserCreate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayRdbUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	region, instanceID, userName, err := ResourceScalewayRdbUserParseID(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -161,7 +161,7 @@ func ResourceScalewayRdbUserRead(ctx context.Context, d *schema.ResourceData, me
 }
 
 func ResourceScalewayRdbUserUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	// resource depends on the instance locality
 	region, instanceID, userName, err := ResourceScalewayRdbUserParseID(d.Id())
 	if err != nil {
@@ -195,7 +195,7 @@ func ResourceScalewayRdbUserUpdate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func ResourceScalewayRdbUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	rdbAPI := newRdbAPI(meta)
+	rdbAPI := NewRdbAPI(meta)
 	// resource depends on the instance locality
 	region, instanceID, userName, err := ResourceScalewayRdbUserParseID(d.Id())
 	if err != nil {

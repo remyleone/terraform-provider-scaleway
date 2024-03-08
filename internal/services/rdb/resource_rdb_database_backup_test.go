@@ -2,16 +2,16 @@ package rdb_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	rdbSDK "github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
+	"testing"
 )
 
 func init() {
@@ -23,9 +23,9 @@ func init() {
 
 func testSweepRDBDatabaseBackup(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		rdbAPI := rdb.NewAPI(scwClient)
+		rdbAPI := rdbSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the rdb database backups in (%s)", region)
-		listBackups, err := rdbAPI.ListDatabaseBackups(&rdb.ListDatabaseBackupsRequest{
+		listBackups, err := rdbAPI.ListDatabaseBackups(&rdbSDK.ListDatabaseBackupsRequest{
 			Region: region,
 		})
 		if err != nil {
@@ -33,7 +33,7 @@ func testSweepRDBDatabaseBackup(_ string) error {
 		}
 
 		for _, backup := range listBackups.DatabaseBackups {
-			_, err := rdbAPI.DeleteDatabaseBackup(&rdb.DeleteDatabaseBackupRequest{
+			_, err := rdbAPI.DeleteDatabaseBackup(&rdbSDK.DeleteDatabaseBackupRequest{
 				Region:           region,
 				DatabaseBackupID: backup.ID,
 			})
@@ -51,13 +51,13 @@ func TestAccScalewayRdbDatabaseBackup_Basic(t *testing.T) {
 	defer tt.Cleanup()
 
 	instanceName := "TestAccScalewayRdbDatabaseBackup_Basic"
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbDatabaseBackupDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -115,12 +115,12 @@ func testAccCheckScalewayRdbDatabaseBackupDestroy(tt *tests.TestTools) resource.
 				continue
 			}
 
-			rdbAPI, region, ID, err := rdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			rdbAPI, region, ID, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = rdbAPI.GetDatabaseBackup(&rdb.GetDatabaseBackupRequest{
+			_, err = rdbAPI.GetDatabaseBackup(&rdbSDK.GetDatabaseBackupRequest{
 				DatabaseBackupID: ID,
 				Region:           region,
 			})
@@ -147,12 +147,12 @@ func testAccCheckRdbDatabaseBackupExists(tt *tests.TestTools, databaseBackup str
 			return fmt.Errorf("resource not found: %s", databaseBackup)
 		}
 
-		rdbAPI, region, id, err := rdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		rdbAPI, region, id, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = rdbAPI.GetDatabaseBackup(&rdb.GetDatabaseBackupRequest{
+		_, err = rdbAPI.GetDatabaseBackup(&rdbSDK.GetDatabaseBackupRequest{
 			Region:           region,
 			DatabaseBackupID: id,
 		})

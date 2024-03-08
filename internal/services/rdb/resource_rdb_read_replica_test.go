@@ -3,26 +3,28 @@ package rdb_test
 import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	rdbSDK "github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
 )
 
 func TestAccScalewayRdbReadReplica_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -59,13 +61,13 @@ func TestAccScalewayRdbReadReplica_PrivateNetwork(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -107,13 +109,13 @@ func TestAccScalewayRdbReadReplica_Update(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -324,13 +326,13 @@ func TestAccScalewayRdbReadReplica_MultipleEndpoints(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -382,7 +384,7 @@ func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -413,10 +415,10 @@ func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
 					}`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRdbReadReplicaExists(tt, "scaleway_rdb_read_replica.different_zone"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
 					resource.TestCheckResourceAttrPair("scaleway_rdb_read_replica.different_zone", "instance_id", "scaleway_rdb_instance.different_zone", "id"),
 					resource.TestCheckResourceAttr("scaleway_rdb_read_replica.different_zone", "same_zone", "true"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_rdb_read_replica.different_zone", &readReplicaID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_rdb_read_replica.different_zone", &readReplicaID),
 				),
 			},
 			{
@@ -447,10 +449,10 @@ func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
 					}`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRdbReadReplicaExists(tt, "scaleway_rdb_read_replica.different_zone"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
 					resource.TestCheckResourceAttrPair("scaleway_rdb_read_replica.different_zone", "instance_id", "scaleway_rdb_instance.different_zone", "id"),
 					resource.TestCheckResourceAttr("scaleway_rdb_read_replica.different_zone", "same_zone", "true"),
-					testAccCheckScalewayResourceIDPersisted("scaleway_rdb_read_replica.different_zone", &readReplicaID),
+					tests.TestAccCheckScalewayResourceIDPersisted("scaleway_rdb_read_replica.different_zone", &readReplicaID),
 				),
 			},
 			{
@@ -481,10 +483,10 @@ func TestAccScalewayRdbReadReplica_DifferentZone(t *testing.T) {
 					}`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRdbReadReplicaExists(tt, "scaleway_rdb_read_replica.different_zone"),
-					testAccCheckScalewayVPCPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
+					checks.CheckPrivateNetworkExists(tt, "scaleway_vpc_private_network.different_zone"),
 					resource.TestCheckResourceAttrPair("scaleway_rdb_read_replica.different_zone", "instance_id", "scaleway_rdb_instance.different_zone", "id"),
 					resource.TestCheckResourceAttr("scaleway_rdb_read_replica.different_zone", "same_zone", "false"),
-					testAccCheckScalewayResourceIDChanged("scaleway_rdb_read_replica.different_zone", &readReplicaID),
+					tests.TestAccCheckScalewayResourceIDChanged("scaleway_rdb_read_replica.different_zone", &readReplicaID),
 				),
 			},
 		},
@@ -499,7 +501,7 @@ func TestAccScalewayRdbReadReplica_WithInstanceAlsoInPrivateNetwork(t *testing.T
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayRdbInstanceDestroy(tt),
+			checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 			testAccCheckScalewayRdbReadReplicaDestroy(tt),
 		),
 		Steps: []resource.TestStep{
@@ -596,12 +598,12 @@ func testAccCheckRdbReadReplicaExists(tt *tests.TestTools, readReplica string) r
 			return fmt.Errorf("resource not found: %s", readReplica)
 		}
 
-		rdbAPI, region, ID, err := rdbAPIWithRegionAndID(tt.Meta, readReplicaResource.Primary.ID)
+		rdbAPI, region, ID, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), readReplicaResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = rdbAPI.GetReadReplica(&rdb.GetReadReplicaRequest{
+		_, err = rdbAPI.GetReadReplica(&rdbSDK.GetReadReplicaRequest{
 			Region:        region,
 			ReadReplicaID: ID,
 		})
@@ -620,12 +622,12 @@ func testAccCheckScalewayRdbReadReplicaDestroy(tt *tests.TestTools) resource.Tes
 				continue
 			}
 
-			rdbAPI, region, ID, err := rdbAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			rdbAPI, region, ID, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = rdbAPI.GetReadReplica(&rdb.GetReadReplicaRequest{
+			_, err = rdbAPI.GetReadReplica(&rdbSDK.GetReadReplicaRequest{
 				ReadReplicaID: ID,
 				Region:        region,
 			})

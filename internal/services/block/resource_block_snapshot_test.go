@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/block"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	block "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
+	blockSDK "github.com/scaleway/scaleway-sdk-go/api/block/v1alpha1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
@@ -22,11 +23,11 @@ func init() {
 }
 
 func testSweepBlockSnapshot(_ string) error {
-	return tests.SweepZones((&block.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
-		blockAPI := block.NewAPI(scwClient)
+	return tests.SweepZones((&blockSDK.API{}).Zones(), func(scwClient *scw.Client, zone scw.Zone) error {
+		blockAPI := blockSDK.NewAPI(scwClient)
 		logging.L.Debugf("sweeper: destroying the block snapshots in (%s)", zone)
 		listSnapshots, err := blockAPI.ListSnapshots(
-			&block.ListSnapshotsRequest{
+			&blockSDK.ListSnapshotsRequest{
 				Zone: zone,
 			}, scw.WithAllPages())
 		if err != nil {
@@ -34,7 +35,7 @@ func testSweepBlockSnapshot(_ string) error {
 		}
 
 		for _, snapshot := range listSnapshots.Snapshots {
-			err := blockAPI.DeleteSnapshot(&block.DeleteSnapshotRequest{
+			err := blockAPI.DeleteSnapshot(&blockSDK.DeleteSnapshotRequest{
 				SnapshotID: snapshot.ID,
 				Zone:       zone,
 			})
@@ -72,7 +73,7 @@ func TestAccScalewayBlockSnapshot_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayBlockSnapshotExists(tt, "scaleway_block_snapshot.main"),
-					testCheckResourceAttrUUID("scaleway_block_snapshot.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_block_snapshot.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_block_snapshot.main", "name", "test-block-snapshot-basic"),
 				),
 			},
@@ -87,12 +88,12 @@ func testAccCheckScalewayBlockSnapshotExists(tt *tests.TestTools, n string) reso
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		api, zone, id, err := blockAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		api, zone, id, err := block.BlockAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.GetSnapshot(&block.GetSnapshotRequest{
+		_, err = api.GetSnapshot(&blockSDK.GetSnapshotRequest{
 			SnapshotID: id,
 			Zone:       zone,
 		})
@@ -111,12 +112,12 @@ func testAccCheckScalewayBlockSnapshotDestroy(tt *tests.TestTools) resource.Test
 				continue
 			}
 
-			api, zone, id, err := blockAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			api, zone, id, err := block.BlockAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			err = api.DeleteSnapshot(&block.DeleteSnapshotRequest{
+			err = api.DeleteSnapshot(&blockSDK.DeleteSnapshotRequest{
 				SnapshotID: id,
 				Zone:       zone,
 			})

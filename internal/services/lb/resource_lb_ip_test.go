@@ -5,6 +5,8 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/lb"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"testing"
@@ -64,7 +66,7 @@ func TestAccScalewayLbIP_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbIPExists(tt, "scaleway_lb_ip.ipZone"),
-					testCheckResourceAttrIPv4("scaleway_lb_ip.ipZone", "ip_address"),
+					tests.TestCheckResourceAttrIPv4("scaleway_lb_ip.ipZone", "ip_address"),
 					resource.TestCheckResourceAttrSet("scaleway_lb_ip.ipZone", "reverse"),
 					resource.TestCheckResourceAttr("scaleway_lb_ip.ipZone", "zone", "nl-ams-1"),
 				),
@@ -76,7 +78,7 @@ func TestAccScalewayLbIP_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbIPExists(tt, "scaleway_lb_ip.ip01"),
-					testCheckResourceAttrIPv4("scaleway_lb_ip.ip01", "ip_address"),
+					tests.TestCheckResourceAttrIPv4("scaleway_lb_ip.ip01", "ip_address"),
 					resource.TestCheckResourceAttrSet("scaleway_lb_ip.ip01", "reverse"),
 					resource.TestCheckResourceAttr("scaleway_lb_ip.ip01", "zone", "fr-par-1"),
 				),
@@ -89,7 +91,7 @@ func TestAccScalewayLbIP_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbIPExists(tt, "scaleway_lb_ip.ip01"),
-					testCheckResourceAttrIPv4("scaleway_lb_ip.ip01", "ip_address"),
+					tests.TestCheckResourceAttrIPv4("scaleway_lb_ip.ip01", "ip_address"),
 					resource.TestCheckResourceAttr("scaleway_lb_ip.ip01", "reverse", "myreverse.com"),
 				),
 			},
@@ -121,7 +123,7 @@ func testAccCheckScalewayLbIPExists(tt *tests.TestTools, n string) resource.Test
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -145,14 +147,14 @@ func testAccCheckScalewayLbIPDestroy(tt *tests.TestTools) resource.TestCheckFunc
 				continue
 			}
 
-			lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
 			lbID, lbExist := rs.Primary.Attributes["lb_id"]
 			if lbExist && len(lbID) > 0 {
-				retryInterval := defaultWaitLBRetryInterval
+				retryInterval := lb.DefaultWaitLBRetryInterval
 
 				if transport.DefaultWaitRetryInterval != nil {
 					retryInterval = *transport.DefaultWaitRetryInterval
@@ -161,7 +163,7 @@ func testAccCheckScalewayLbIPDestroy(tt *tests.TestTools) resource.TestCheckFunc
 				_, err := lbAPI.WaitForLbInstances(&lbSDK.ZonedAPIWaitForLBInstancesRequest{
 					Zone:          zone,
 					LBID:          lbID,
-					Timeout:       scw.TimeDurationPtr(defaultInstanceServerWaitTimeout),
+					Timeout:       scw.TimeDurationPtr(instance.DefaultInstanceServerWaitTimeout),
 					RetryInterval: &retryInterval,
 				}, scw.WithContext(context.Background()))
 
@@ -171,7 +173,7 @@ func testAccCheckScalewayLbIPDestroy(tt *tests.TestTools) resource.TestCheckFunc
 				}
 			}
 
-			err = resource.RetryContext(context.Background(), retryLbIPInterval, func() *resource.RetryError {
+			err = resource.RetryContext(context.Background(), lb.RetryLbIPInterval, func() *resource.RetryError {
 				_, errGet := lbAPI.GetIP(&lbSDK.ZonedAPIGetIPRequest{
 					Zone: zone,
 					IPID: ID,

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/instance"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/lb"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"reflect"
 	"regexp"
@@ -39,7 +41,7 @@ func testSweepLB(_ string) error {
 		}
 
 		for _, l := range listLBs.LBs {
-			retryInterval := defaultWaitLBRetryInterval
+			retryInterval := lb.DefaultWaitLBRetryInterval
 
 			if transport.DefaultWaitRetryInterval != nil {
 				retryInterval = *transport.DefaultWaitRetryInterval
@@ -48,7 +50,7 @@ func testSweepLB(_ string) error {
 			_, err := lbAPI.WaitForLbInstances(&lbSDK.ZonedAPIWaitForLBInstancesRequest{
 				Zone:          zone,
 				LBID:          l.ID,
-				Timeout:       scw.TimeDurationPtr(defaultInstanceServerWaitTimeout),
+				Timeout:       scw.TimeDurationPtr(instance.DefaultInstanceServerWaitTimeout),
 				RetryInterval: &retryInterval,
 			}, scw.WithContext(context.Background()))
 			if err != nil {
@@ -91,7 +93,7 @@ func TestAccScalewayLbLb_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbExists(tt, "scaleway_lb.main"),
-					testCheckResourceAttrUUID("scaleway_lb.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_lb.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "name", "test-lb-basic"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "type", "LB-S"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "tags.#", "1"),
@@ -115,7 +117,7 @@ func TestAccScalewayLbLb_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbExists(tt, "scaleway_lb.main"),
-					testCheckResourceAttrUUID("scaleway_lb.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_lb.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "name", "test-lb-rename"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "tags.#", "2"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "description", "another description"),
@@ -146,7 +148,7 @@ func TestAccScalewayLbLb_Private(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbExists(tt, "scaleway_lb.main"),
-					testCheckResourceAttrUUID("scaleway_lb.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_lb.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "assign_flexible_ip", "false"),
 					resource.TestCheckNoResourceAttr("scaleway_lb.main", "ip_address"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "name", "test-lb-basic"),
@@ -168,7 +170,7 @@ func TestAccScalewayLbLb_Private(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbExists(tt, "scaleway_lb.main"),
-					testCheckResourceAttrUUID("scaleway_lb.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_lb.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "assign_flexible_ip", "false"),
 					resource.TestCheckNoResourceAttr("scaleway_lb.main", "ip_address"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "name", "test-lb-rename"),
@@ -564,14 +566,14 @@ func TestAccScalewayLbLb_WithPrivateNetworksOnDHCPConfig(t *testing.T) {
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			testAccCheckScalewayInstanceServerDestroy(tt),
+			CheckServerDestroy(tt),
 			testAccCheckScalewayLbDestroy(tt),
 			testAccCheckScalewayLbIPDestroy(tt),
-			testAccCheckScalewayVPCGatewayNetworkDestroy(tt),
-			testAccCheckScalewayVPCPrivateNetworkDestroy(tt),
-			testAccCheckScalewayVPCPublicGatewayDHCPDestroy(tt),
-			testAccCheckScalewayVPCPublicGatewayDestroy(tt),
-			testAccCheckScalewayVPCPublicGatewayIPDestroy(tt),
+			CheckVPCGatewayNetworkDestroy(tt),
+			CheckPrivateNetworkDestroy(tt),
+			CheckVPCPublicGatewayDHCPDestroy(tt),
+			CheckVPCPublicGatewayDestroy(tt),
+			CheckVPCPublicGatewayIPDestroy(tt),
 		),
 		Steps: []resource.TestStep{
 			{
@@ -721,7 +723,7 @@ func TestAccScalewayLbLb_DifferentLocalityIPID(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayLbExists(tt, "scaleway_lb.main"),
-					testCheckResourceAttrUUID("scaleway_lb.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_lb.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "name", "test-lb-basic"),
 					resource.TestCheckResourceAttr("scaleway_lb.main", "type", "LB-S"),
 				),
@@ -764,7 +766,7 @@ func testAccCheckScalewayLbExists(tt *tests.TestTools, n string) resource.TestCh
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -788,7 +790,7 @@ func testAccCheckScalewayLbDestroy(tt *tests.TestTools) resource.TestCheckFunc {
 				continue
 			}
 
-			lbAPI, zone, ID, err := lbAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			lbAPI, zone, ID, err := lb.LbAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
@@ -821,7 +823,7 @@ func TestLbUpgradeV1SchemaUpgradeFunc(t *testing.T) {
 		"id": "fr-par-1/22c61530-834c-4ab4-aa71-aaaa2ac9d45a",
 	}
 
-	actual, err := lbUpgradeV1SchemaUpgradeFunc(context.Background(), v0Schema, nil)
+	actual, err := lb.LbUpgradeV1SchemaUpgradeFunc(context.Background(), v0Schema, nil)
 	if err != nil {
 		t.Fatalf("error migrating state: %s", err)
 	}

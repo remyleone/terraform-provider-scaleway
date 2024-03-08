@@ -3,23 +3,22 @@ package mnq_test
 import (
 	"context"
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/scaleway/provider"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	accountV3 "github.com/scaleway/scaleway-sdk-go/api/account/v3"
-	mnq "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	accountSDK "github.com/scaleway/scaleway-sdk-go/api/account/v3"
+	mnqSDK "github.com/scaleway/scaleway-sdk-go/api/mnq/v1beta1"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/provider"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/account"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/mnq"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
@@ -50,7 +49,7 @@ func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
 
 					resource scaleway_mnq_sqs_queue main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-queue-basic"
+						name = "test-mnqSDK-sqs-queue-basic"
 						sqs_endpoint = scaleway_mnq_sqs.main.endpoint
 						access_key = scaleway_mnq_sqs_credentials.main.access_key
 						secret_key = scaleway_mnq_sqs_credentials.main.secret_key
@@ -58,8 +57,8 @@ func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSQSQueueExists(tt, "scaleway_mnq_sqs_queue.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "name", "test-mnq-sqs-queue-basic"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "name", "test-mnqSDK-sqs-queue-basic"),
 				),
 			},
 			{
@@ -81,7 +80,7 @@ func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
 
 					resource scaleway_mnq_sqs_queue main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-queue-basic"
+						name = "test-mnqSDK-sqs-queue-basic"
 						sqs_endpoint = scaleway_mnq_sqs.main.endpoint
 						access_key = scaleway_mnq_sqs_credentials.main.access_key
 						secret_key = scaleway_mnq_sqs_credentials.main.secret_key
@@ -91,7 +90,7 @@ func TestAccScalewayMNQSQSQueue_Basic(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSQSQueueExists(tt, "scaleway_mnq_sqs_queue.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "message_max_age", "720"),
 				),
 			},
@@ -105,9 +104,9 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 
 	ctx := context.Background()
 
-	accountAPI := accountV3.NewProjectAPI(tt.meta.GetScwClient())
+	accountAPI := accountSDK.NewProjectAPI(tt.GetMeta().GetScwClient())
 	projectID := ""
-	project, err := accountAPI.CreateProject(&accountV3.ProjectAPICreateProjectRequest{
+	project, err := accountAPI.CreateProject(&accountSDK.ProjectAPICreateProjectRequest{
 		Name: "tf_tests_mnq_sqs_queue_default_project",
 	})
 	require.NoError(t, err)
@@ -117,9 +116,9 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: func() map[string]func() (*schema.Provider, error) {
-			metaProd, err := buildMeta(ctx, &meta.metaConfig{
-				terraformVersion: "terraform-tests",
-				httpClient:       tt.Meta.httpClient,
+			metaProd, err := meta.BuildMeta(ctx, &meta.MetaConfig{
+				TerraformVersion: "terraform-tests",
+				HttpClient:       tt.GetMeta().GetHTTPClient(),
 			})
 			require.NoError(t, err)
 
@@ -132,7 +131,7 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			testAccCheckScalewayMNQSQSQueueDestroy(tt),
 			func(_ *terraform.State) error {
-				return accountAPI.DeleteProject(&accountV3.ProjectAPIDeleteProjectRequest{
+				return accountAPI.DeleteProject(&accountSDK.ProjectAPIDeleteProjectRequest{
 					ProjectID: projectID,
 				})
 			},
@@ -153,15 +152,15 @@ func TestAccScalewayMNQSQSQueue_DefaultProject(t *testing.T) {
 
 					resource scaleway_mnq_sqs_queue main {
 						project_id = scaleway_mnq_sqs.main.project_id
-						name = "test-mnq-sqs-queue-basic"
+						name = "test-mnqSDK-sqs-queue-basic"
 						access_key = scaleway_mnq_sqs_credentials.main.access_key
 						secret_key = scaleway_mnq_sqs_credentials.main.secret_key
 					}
 				`, projectID),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckScalewayMNQSQSQueueExists(tt, "scaleway_mnq_sqs_queue.main"),
-					testCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
-					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "name", "test-mnq-sqs-queue-basic"),
+					tests.TestCheckResourceAttrUUID("scaleway_mnq_sqs_queue.main", "id"),
+					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "name", "test-mnqSDK-sqs-queue-basic"),
 					resource.TestCheckResourceAttr("scaleway_mnq_sqs_queue.main", "project_id", projectID),
 				),
 			},
@@ -176,12 +175,12 @@ func testAccCheckScalewayMNQSQSQueueExists(tt *tests.TestTools, n string) resour
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		region, _, queueName, err := decomposeMNQID(rs.Primary.ID)
+		region, _, queueName, err := mnq.DecomposeMNQID(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		sqsClient, err := newSQSClient(tt.Meta.httpClient, region.String(), rs.Primary.Attributes["sqs_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
+		sqsClient, err := mnq.NewSQSClient(tt.GetMeta().GetHTTPClient(), region.String(), rs.Primary.Attributes["sqs_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
 		if err != nil {
 			return err
 		}
@@ -204,15 +203,15 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *tests.TestTools) resource.TestCh
 				continue
 			}
 
-			region, projectID, queueName, err := decomposeMNQID(rs.Primary.ID)
+			region, projectID, queueName, err := mnq.DecomposeMNQID(rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
 			// Project may have been deleted, check for it first
 			// Checking for Queue first may lead to an AccessDenied if project has been deleted
-			accountAPI := accountV3ProjectAPI(tt.Meta)
-			_, err = accountAPI.GetProject(&accountV3.ProjectAPIGetProjectRequest{
+			accountAPI := account.AccountV3ProjectAPI(tt.GetMeta())
+			_, err = accountAPI.GetProject(&accountSDK.ProjectAPIGetProjectRequest{
 				ProjectID: projectID,
 			})
 			if err != nil {
@@ -223,8 +222,8 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *tests.TestTools) resource.TestCh
 				return err
 			}
 
-			mnqAPI := mnq.NewSqsAPI(tt.meta.GetScwClient())
-			sqsInfo, err := mnqAPI.GetSqsInfo(&mnq.SqsAPIGetSqsInfoRequest{
+			mnqAPI := mnqSDK.NewSqsAPI(tt.GetMeta().GetScwClient())
+			sqsInfo, err := mnqAPI.GetSqsInfo(&mnqSDK.SqsAPIGetSqsInfoRequest{
 				Region:    region,
 				ProjectID: projectID,
 			})
@@ -233,11 +232,11 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *tests.TestTools) resource.TestCh
 			}
 
 			// SQS may be disabled for project, this means the queue does not exist
-			if sqsInfo.Status == mnq.SqsInfoStatusDisabled {
+			if sqsInfo.Status == mnqSDK.SqsInfoStatusDisabled {
 				return nil
 			}
 
-			sqsClient, err := newSQSClient(tt.Meta.httpClient, region.String(), rs.Primary.Attributes["sqs_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
+			sqsClient, err := mnq.NewSQSClient(tt.GetMeta().GetHTTPClient(), region.String(), rs.Primary.Attributes["sqs_endpoint"], rs.Primary.Attributes["access_key"], rs.Primary.Attributes["secret_key"])
 			if err != nil {
 				return err
 			}
@@ -254,7 +253,7 @@ func testAccCheckScalewayMNQSQSQueueDestroy(tt *tests.TestTools) resource.TestCh
 			}
 
 			if err == nil {
-				return fmt.Errorf("mnq sqs queue (%s) still exists", rs.Primary.ID)
+				return fmt.Errorf("mnqSDK sqs queue (%s) still exists", rs.Primary.ID)
 			}
 
 			if !http_errors.Is404Error(err) {

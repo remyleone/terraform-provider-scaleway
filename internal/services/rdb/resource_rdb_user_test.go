@@ -3,13 +3,13 @@ package rdb_test
 import (
 	"errors"
 	"fmt"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	rdbSDK "github.com/scaleway/scaleway-sdk-go/api/rdb/v1"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/rdb"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests/checks"
+	"testing"
 )
 
 func TestAccScalewayRdbUser_Basic(t *testing.T) {
@@ -17,12 +17,12 @@ func TestAccScalewayRdbUser_Basic(t *testing.T) {
 	defer tt.Cleanup()
 
 	instanceName := "TestAccScalewayRdbUser_Basic"
-	latestEngineVersion := testAccCheckScalewayRdbEngineGetLatestVersion(tt, postgreSQLEngineName)
+	latestEngineVersion := checks.TestAccCheckScalewayRdbEngineGetLatestVersion(tt, tests.PostgreSQLEngineName)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { tests.TestAccPreCheck(t) },
 		ProviderFactories: tt.ProviderFactories,
-		CheckDestroy:      testAccCheckScalewayRdbInstanceDestroy(tt),
+		CheckDestroy:      checks.TestAccCheckScalewayRdbInstanceDestroy(tt),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`
@@ -84,17 +84,17 @@ func testAccCheckRdbUserExists(tt *tests.TestTools, instance string, user string
 			return fmt.Errorf("resource not found: %s", user)
 		}
 
-		rdbAPI, _, _, err := rdbAPIWithRegionAndID(tt.Meta, instanceResource.Primary.ID)
+		rdbAPI, _, _, err := rdb.RdbAPIWithRegionAndID(tt.GetMeta(), instanceResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		region, instanceID, userName, err := ResourceScalewayRdbUserParseID(userResource.Primary.ID)
+		region, instanceID, userName, err := rdb.ResourceScalewayRdbUserParseID(userResource.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		users, err := rdbAPI.ListUsers(&rdb.ListUsersRequest{
+		users, err := rdbAPI.ListUsers(&rdbSDK.ListUsersRequest{
 			InstanceID: instanceID,
 			Region:     region,
 			Name:       &userName,

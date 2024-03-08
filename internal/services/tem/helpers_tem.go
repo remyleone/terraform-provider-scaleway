@@ -3,24 +3,24 @@ package tem
 import (
 	"context"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/locality"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/types"
-"github.com/scaleway/terraform-provider-scaleway/v2/internal/transport"
-"time"
+	"time"
 
-meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
+	meta2 "github.com/scaleway/terraform-provider-scaleway/v2/internal/meta"
 
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
-"github.com/scaleway/scaleway-sdk-go/scw"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	tem "github.com/scaleway/scaleway-sdk-go/api/tem/v1alpha1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 
 const (
-	defaultTemDomainTimeout       = 5 * time.Minute
+	DefaultTemDomainTimeout       = 5 * time.Minute
 	defaultTemDomainRetryInterval = 15 * time.Second
 )
 
-// temAPIWithRegion returns a new Tem API and the region for a Create request
-func temAPIWithRegion(d *schema.ResourceData, m interface{}) (*tem.API, scw.Region, error) {
+// TemAPIWithRegion returns a new Tem API and the region for a Create request
+func TemAPIWithRegion(d *schema.ResourceData, m interface{}) (*tem.API, scw.Region, error) {
 	meta := m.(*meta2.Meta)
 	api := tem.NewAPI(meta.GetScwClient())
 
@@ -31,8 +31,8 @@ func temAPIWithRegion(d *schema.ResourceData, m interface{}) (*tem.API, scw.Regi
 	return api, region, nil
 }
 
-// temAPIWithRegionAndID returns a Tem API with zone and ID extracted from the state
-func temAPIWithRegionAndID(m interface{}, id string) (*tem.API, scw.Region, string, error) {
+// TemAPIWithRegionAndID returns a Tem API with zone and ID extracted from the state
+func TemAPIWithRegionAndID(m interface{}, id string) (*tem.API, scw.Region, string, error) {
 	meta := m.(*meta2.Meta)
 	api := tem.NewAPI(meta.GetScwClient())
 
@@ -43,7 +43,7 @@ func temAPIWithRegionAndID(m interface{}, id string) (*tem.API, scw.Region, stri
 	return api, region, id, nil
 }
 
-func waitForTemDomain(ctx context.Context, api *tem.API, region scw.Region, id string, timeout time.Duration) (*tem.Domain, error) {
+func WaitForTemDomain(ctx context.Context, api *tem.API, region scw.Region, id string, timeout time.Duration) (*tem.Domain, error) {
 	retryInterval := defaultTemDomainRetryInterval
 	if transport.DefaultWaitRetryInterval != nil {
 		retryInterval = *transport.DefaultWaitRetryInterval

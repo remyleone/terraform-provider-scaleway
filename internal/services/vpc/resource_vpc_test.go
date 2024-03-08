@@ -2,16 +2,15 @@ package vpc_test
 
 import (
 	"fmt"
-	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
-	"testing"
-
-	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
+	vpcSDK "github.com/scaleway/scaleway-sdk-go/api/vpc/v2"
 	"github.com/scaleway/scaleway-sdk-go/scw"
+	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpc"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
+	"testing"
 )
 
 func init() {
@@ -24,11 +23,11 @@ func init() {
 
 func testSweepVPC(_ string) error {
 	return tests.SweepRegions(scw.AllRegions, func(scwClient *scw.Client, region scw.Region) error {
-		vpcAPI := vpc.NewAPI(scwClient)
+		vpcAPI := vpcSDK.NewAPI(scwClient)
 
 		logging.L.Debugf("sweeper: deleting the VPCs in (%s)", region)
 
-		listVPCs, err := vpcAPI.ListVPCs(&vpc.ListVPCsRequest{Region: region}, scw.WithAllPages())
+		listVPCs, err := vpcAPI.ListVPCs(&vpcSDK.ListVPCsRequest{Region: region}, scw.WithAllPages())
 		if err != nil {
 			return fmt.Errorf("error listing secrets in (%s) in sweeper: %s", region, err)
 		}
@@ -37,7 +36,7 @@ func testSweepVPC(_ string) error {
 			if v.IsDefault {
 				continue
 			}
-			err := vpcAPI.DeleteVPC(&vpc.DeleteVPCRequest{
+			err := vpcAPI.DeleteVPC(&vpcSDK.DeleteVPCRequest{
 				VpcID:  v.ID,
 				Region: region,
 			})
@@ -157,12 +156,12 @@ func testAccCheckScalewayVPCExists(tt *tests.TestTools, n string) resource.TestC
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcAPI, region, ID, err := vpcAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+		vpcAPI, region, ID, err := vpc.VpcAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = vpcAPI.GetVPC(&vpc.GetVPCRequest{
+		_, err = vpcAPI.GetVPC(&vpcSDK.GetVPCRequest{
 			VpcID:  ID,
 			Region: region,
 		})
@@ -181,12 +180,12 @@ func testAccCheckScalewayVPCDestroy(tt *tests.TestTools) resource.TestCheckFunc 
 				continue
 			}
 
-			vpcAPI, region, ID, err := vpcAPIWithRegionAndID(tt.Meta, rs.Primary.ID)
+			vpcAPI, region, ID, err := vpc.VpcAPIWithRegionAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = vpcAPI.GetVPC(&vpc.GetVPCRequest{
+			_, err = vpcAPI.GetVPC(&vpcSDK.GetVPCRequest{
 				VpcID:  ID,
 				Region: region,
 			})

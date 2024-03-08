@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/domain"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 	"os"
 	"regexp"
@@ -13,7 +14,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
+	domainSDK "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 )
 
 var (
@@ -25,14 +26,14 @@ var (
 		regexp.MustCompile(`.*scaleway\..*`),
 		regexp.MustCompile(`.*dedibox.*`),
 	}
-	testDomain     = ""
-	testDomainZone = ""
+
+	TestDomainZone = ""
 )
 
 func init() {
 	testDomainPtr := flag.String("test-domain", os.Getenv("TF_TEST_DOMAIN"), "Test domain")
 	if testDomainPtr != nil && *testDomainPtr != "" {
-		testDomain = *testDomainPtr
+		tests.TestDomain = *testDomainPtr
 	} else {
 		logging.L.Infof("environment variable TF_TEST_DOMAIN is required")
 
@@ -42,7 +43,7 @@ func init() {
 	// check if the test domain is not a Scaleway reserved domain
 	isReserved := false
 	for _, reservedDomain := range reservedDomains {
-		if reservedDomain.MatchString(testDomain) {
+		if reservedDomain.MatchString(tests.TestDomain) {
 			isReserved = true
 			break
 		}
@@ -53,25 +54,25 @@ func init() {
 		return
 	}
 
-	logging.L.Infof("start domain record test with domain: %s", testDomain)
+	logging.L.Infof("start domain record test with domain: %s", tests.TestDomain)
 
 	testDomainZonePtr := flag.String("test-domain-zone", os.Getenv("TF_TEST_DOMAIN_ZONE"), "Test domain zone")
 	if testDomainZonePtr != nil && *testDomainZonePtr != "" {
-		testDomainZone = *testDomainZonePtr
+		TestDomainZone = *testDomainZonePtr
 	} else {
 		logging.L.Infof("environment variable TF_TEST_DOMAIN_ZONE is required")
 
 		return
 	}
 
-	logging.L.Infof("start domain record test with domain zone: %s", testDomainZone)
+	logging.L.Infof("start domain record test with domain zone: %s", TestDomainZone)
 }
 
 func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-basic." + testDomain
+	testDNSZone := "test-basic." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_Basic: test dns zone: %s", testDNSZone)
 
 	name := "tf"
@@ -107,7 +108,7 @@ func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "priority", strconv.Itoa(priority)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "fqdn", testDNSZone),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
 				),
 			},
 			{
@@ -130,7 +131,7 @@ func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "priority", strconv.Itoa(priority)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "fqdn", name+"."+testDNSZone),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
 				),
 			},
 			{
@@ -153,7 +154,7 @@ func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "priority", strconv.Itoa(priority)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "fqdn", name+"."+testDNSZone),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
 				),
 			},
 			{
@@ -176,7 +177,7 @@ func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "ttl", strconv.Itoa(ttlUpdated)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "priority", strconv.Itoa(priorityUpdated)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "fqdn", name+"."+testDNSZone),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
 				),
 			},
 			{
@@ -209,7 +210,7 @@ func TestAccScalewayDomainRecord_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_MX", "priority", "1"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_MX", "fqdn", "record_mx."+testDNSZone),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "fqdn", name+"."+testDNSZone),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_MX", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_MX", "id"),
 				),
 			},
 		},
@@ -220,7 +221,7 @@ func TestAccScalewayDomainRecord_Basic2(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-basic2." + testDomain
+	testDNSZone := "test-basic2." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_Basic: test dns zone: %s", testDNSZone)
 
 	recordType := "A"
@@ -277,7 +278,7 @@ func TestAccScalewayDomainRecord_Basic2(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "data", data),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A", "priority", strconv.Itoa(priority)),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A", "id"),
 					testAccCheckScalewayDomainRecordExists(tt, "scaleway_domain_record.aws_mx"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.aws_mx", "dns_zone", testDNSZone),
 					resource.TestCheckResourceAttr("scaleway_domain_record.aws_mx", "name", ""),
@@ -285,9 +286,9 @@ func TestAccScalewayDomainRecord_Basic2(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.aws_mx", "data", "10 feedback-smtp.eu-west-1.amazonses.com."),
 					resource.TestCheckResourceAttr("scaleway_domain_record.aws_mx", "ttl", "300"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.aws_mx", "priority", "10"),
-					testCheckResourceAttrUUID("scaleway_domain_record.aws_mx", "id"),
-					testCheckResourceAttrUUID("scaleway_domain_record.mx", "id"),
-					testCheckResourceAttrUUID("scaleway_domain_record.txt_dmarc", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.aws_mx", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.mx", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.txt_dmarc", "id"),
 				),
 			},
 		},
@@ -298,7 +299,7 @@ func TestAccScalewayDomainRecord_Arobase(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-arobase." + testDomain
+	testDNSZone := "test-arobase." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_Arobase: test dns zone: %s", testDNSZone)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -339,7 +340,7 @@ func TestAccScalewayDomainRecord_GeoIP(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-geoip." + testDomain
+	testDNSZone := "test-geoip." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_GeoIP: test dns zone: %s", testDNSZone)
 
 	name := "tf_geo_ip"
@@ -386,7 +387,7 @@ func TestAccScalewayDomainRecord_GeoIP(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.0.data", "1.2.3.4"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.1.continents.0", "NA"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.1.data", "1.2.3.5"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_geo_ip", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_geo_ip", "id"),
 				),
 			},
 			{
@@ -424,7 +425,7 @@ func TestAccScalewayDomainRecord_GeoIP(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.0.data", "1.2.3.4"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.1.countries.0", "CI"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_geo_ip", "geo_ip.0.matches.1.data", "1.2.3.5"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_geo_ip", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_geo_ip", "id"),
 				),
 			},
 		},
@@ -435,7 +436,7 @@ func TestAccScalewayDomainRecord_HTTPService(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-httpservice." + testDomain
+	testDNSZone := "test-httpservice." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_HTTPService: test dns zone: %s", testDNSZone)
 
 	name := "tf_http_service"
@@ -479,7 +480,7 @@ func TestAccScalewayDomainRecord_HTTPService(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.url", "http://mywebsite.com/health"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.user_agent", "scw_service_up"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.strategy", "hashed"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_http_service", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_http_service", "id"),
 				),
 			},
 			{
@@ -511,7 +512,7 @@ func TestAccScalewayDomainRecord_HTTPService(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.url", "http://mywebsite.com/healthcheck"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.user_agent", "scw_service_online"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_http_service", "http_service.0.strategy", "random"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_http_service", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_http_service", "id"),
 				),
 			},
 		},
@@ -522,7 +523,7 @@ func TestAccScalewayDomainRecord_View(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-view." + testDomain
+	testDNSZone := "test-view." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_View: test dns zone: %s", testDNSZone)
 
 	name := "tf_view"
@@ -565,7 +566,7 @@ func TestAccScalewayDomainRecord_View(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.0.data", "1.2.3.4"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.1.subnet", "100.1.0.0/16"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.1.data", "4.3.2.1"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_view", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_view", "id"),
 				),
 			},
 			{
@@ -603,7 +604,7 @@ func TestAccScalewayDomainRecord_View(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.1.data", "4.3.2.2"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.2.subnet", "1.1.1.1/16"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_view", "view.2.data", "2.2.2.2"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_view", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_view", "id"),
 				),
 			},
 		},
@@ -614,7 +615,7 @@ func TestAccScalewayDomainRecord_Weighted(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-weighted." + testDomain
+	testDNSZone := "test-weighted." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_Weighted: test dns zone: %s", testDNSZone)
 
 	name := "tf_weighted"
@@ -657,7 +658,7 @@ func TestAccScalewayDomainRecord_Weighted(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.0.weight", "1"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.1.ip", "4.3.2.1"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.1.weight", "2"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_weighted", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_weighted", "id"),
 				),
 			},
 			{
@@ -695,7 +696,7 @@ func TestAccScalewayDomainRecord_Weighted(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.1.weight", "1"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.2.ip", "5.6.7.8"),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_A_weighted", "weighted.2.weight", "999"),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_A_weighted", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_A_weighted", "id"),
 				),
 			},
 		},
@@ -706,7 +707,7 @@ func TestAccScalewayDomainRecord_SRVZone(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-srv." + testDomain
+	testDNSZone := "test-srv." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_SRVZone: test dns zone: %s", testDNSZone)
 
 	name := "_proxy-preproduction._tcp"
@@ -738,7 +739,7 @@ func TestAccScalewayDomainRecord_SRVZone(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.proxy_srv", "data", data),
 					resource.TestCheckResourceAttr("scaleway_domain_record.proxy_srv", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.proxy_srv", "priority", strconv.Itoa(priority)),
-					testCheckResourceAttrUUID("scaleway_domain_record.proxy_srv", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.proxy_srv", "id"),
 				),
 			},
 		},
@@ -752,8 +753,8 @@ func testAccCheckScalewayDomainRecordExists(tt *tests.TestTools, n string) resou
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		domainAPI := newDomainAPI(tt.Meta)
-		listDNSZones, err := domainAPI.ListDNSZoneRecords(&domain.ListDNSZoneRecordsRequest{
+		domainAPI := domain.NewDomainAPI(tt.GetMeta())
+		listDNSZones, err := domainAPI.ListDNSZoneRecords(&domainSDK.ListDNSZoneRecordsRequest{
 			DNSZone: rs.Primary.Attributes["dns_zone"],
 		})
 		if err != nil {
@@ -775,7 +776,7 @@ func TestAccScalewayDomainRecord_CNAME(t *testing.T) {
 	tt := tests.NewTestTools(t)
 	defer tt.Cleanup()
 
-	testDNSZone := "test-basic-cname." + testDomain
+	testDNSZone := "test-basic-cname." + tests.TestDomain
 	logging.L.Debugf("TestAccScalewayDomainRecord_Basic: test dns zone: %s", testDNSZone)
 
 	name := "tf"
@@ -811,7 +812,7 @@ func TestAccScalewayDomainRecord_CNAME(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "data", data),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "priority", strconv.Itoa(priority)),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
 				),
 			},
 			{
@@ -833,7 +834,7 @@ func TestAccScalewayDomainRecord_CNAME(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "data", dataUpdated),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "ttl", strconv.Itoa(ttl)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "priority", strconv.Itoa(priority)),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
 				),
 			},
 			{
@@ -855,7 +856,7 @@ func TestAccScalewayDomainRecord_CNAME(t *testing.T) {
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "data", dataUpdated),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "ttl", strconv.Itoa(ttlUpdated)),
 					resource.TestCheckResourceAttr("scaleway_domain_record.tf_CNAME", "priority", strconv.Itoa(priorityUpdated)),
-					testCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
+					tests.TestCheckResourceAttrUUID("scaleway_domain_record.tf_CNAME", "id"),
 				),
 			},
 		},
@@ -870,8 +871,8 @@ func testAccCheckScalewayDomainRecordDestroy(tt *tests.TestTools) resource.TestC
 			}
 
 			// check if the zone still exists
-			domainAPI := newDomainAPI(tt.Meta)
-			listDNSZones, err := domainAPI.ListDNSZoneRecords(&domain.ListDNSZoneRecordsRequest{
+			domainAPI := domain.NewDomainAPI(tt.GetMeta())
+			listDNSZones, err := domainAPI.ListDNSZoneRecords(&domainSDK.ListDNSZoneRecordsRequest{
 				DNSZone: rs.Primary.Attributes["dns_zone"],
 			})
 			if errs.Is403Error(err) { // forbidden: subdomain not found

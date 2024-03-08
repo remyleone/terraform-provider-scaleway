@@ -4,13 +4,14 @@ import (
 	"fmt"
 	http_errors "github.com/scaleway/terraform-provider-scaleway/v2/internal/errs"
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/logging"
+	"github.com/scaleway/terraform-provider-scaleway/v2/internal/services/vpcgw"
 	"testing"
 
 	"github.com/scaleway/terraform-provider-scaleway/v2/internal/tests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
+	vpcgwSDK "github.com/scaleway/scaleway-sdk-go/api/vpcgw/v1"
 )
 
 func TestAccScalewayVPCPublicGatewayDHCPEntry_Basic(t *testing.T) {
@@ -145,12 +146,12 @@ func testAccCheckScalewayVPCPublicGatewayDHCPReservationExists(tt *tests.TestToo
 			return fmt.Errorf("resource not found: %s", n)
 		}
 
-		vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+		vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 		if err != nil {
 			return err
 		}
 
-		entry, err := vpcgwAPI.GetDHCPEntry(&vpcgw.GetDHCPEntryRequest{
+		entry, err := vpcgwAPI.GetDHCPEntry(&vpcgwSDK.GetDHCPEntryRequest{
 			DHCPEntryID: ID,
 			Zone:        zone,
 		})
@@ -170,12 +171,12 @@ func testAccCheckScalewayVPCPublicGatewayDHCPEntryDestroy(tt *tests.TestTools) r
 				continue
 			}
 
-			vpcgwAPI, zone, ID, err := vpcgwAPIWithZoneAndID(tt.Meta, rs.Primary.ID)
+			vpcgwAPI, zone, ID, err := vpcgw.VpcgwAPIWithZoneAndID(tt.GetMeta(), rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = vpcgwAPI.GetDHCPEntry(&vpcgw.GetDHCPEntryRequest{
+			_, err = vpcgwAPI.GetDHCPEntry(&vpcgwSDK.GetDHCPEntryRequest{
 				DHCPEntryID: ID,
 				Zone:        zone,
 			})

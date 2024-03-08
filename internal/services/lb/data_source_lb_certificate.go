@@ -34,7 +34,7 @@ func DataSourceScalewayLbCertificate() *schema.Resource {
 }
 
 func DataSourceScalewayLbCertificateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api, zone, err := lbAPIWithZone(d, meta)
+	api, zone, err := LbAPIWithZone(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}

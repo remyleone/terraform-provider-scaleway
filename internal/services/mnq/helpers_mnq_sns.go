@@ -34,7 +34,7 @@ func SNSClientWithRegion(d *schema.ResourceData, m interface{}) (*sns.SNS, scw.R
 	accessKey := d.Get("access_key").(string)
 	secretKey := d.Get("secret_key").(string)
 
-	snsClient, err := newSNSClient(meta.GetHTTPClient(), region.String(), endpoint, accessKey, secretKey)
+	snsClient, err := NewSNSClient(meta.GetHTTPClient(), region.String(), endpoint, accessKey, secretKey)
 	if err != nil {
 		return nil, "", err
 	}
@@ -58,7 +58,7 @@ func SNSClientWithRegionFromID(d *schema.ResourceData, m interface{}, regionalID
 	accessKey := d.Get("access_key").(string)
 	secretKey := d.Get("secret_key").(string)
 
-	snsClient, err := newSNSClient(meta.GetHTTPClient(), region.String(), endpoint, accessKey, secretKey)
+	snsClient, err := NewSNSClient(meta.GetHTTPClient(), region.String(), endpoint, accessKey, secretKey)
 	if err != nil {
 		return nil, "", err
 	}
@@ -66,7 +66,7 @@ func SNSClientWithRegionFromID(d *schema.ResourceData, m interface{}, regionalID
 	return snsClient, region, err
 }
 
-func newSNSClient(httpClient *http.Client, region string, endpoint string, accessKey string, secretKey string) (*sns.SNS, error) {
+func NewSNSClient(httpClient *http.Client, region string, endpoint string, accessKey string, secretKey string) (*sns.SNS, error) {
 	config := &aws.Config{}
 	config.WithRegion(region)
 	config.WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
@@ -88,7 +88,7 @@ func composeMNQSubscriptionID(region scw.Region, projectID string, topicName str
 	return fmt.Sprintf("%s/%s/%s/%s", region, projectID, topicName, subscriptionID)
 }
 
-func decomposeMNQSubscriptionID(id string) (arn *ARN, err error) {
+func DecomposeMNQSubscriptionID(id string) (arn *ARN, err error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 4 {
 		return nil, fmt.Errorf("invalid ID format: %q", id)
